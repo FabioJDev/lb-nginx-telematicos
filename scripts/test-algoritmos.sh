@@ -11,6 +11,7 @@
 #   WORK_PATH=/api/mixed ID=E04 scripts/test-algoritmos.sh # E-04 costo variable
 #   POLICIES="ip_hash hash_client" ID=E05 scripts/test-algoritmos.sh   # E-05 trampa ip_hash
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

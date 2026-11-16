@@ -3,6 +3,7 @@
 # y conteo por backend. Con round_robin y backends homogéneos se espera reparto
 # exacto (diferencia < 2 % y Jain > 0,99).
 # Uso: scripts/test-seq.sh [N=1000] [ruta=/api/info]
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

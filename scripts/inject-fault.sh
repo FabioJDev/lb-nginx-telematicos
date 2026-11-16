@@ -14,6 +14,7 @@
 #   restore   fault:none
 #
 # Registra el evento en events.csv de la corrida en curso (si la hay) y anota en Grafana.
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

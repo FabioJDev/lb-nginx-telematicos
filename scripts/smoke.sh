@@ -8,6 +8,7 @@
 # de la misma IP) y así se informa.
 #
 # Uso: scripts/smoke.sh [N=30] [ruta=/api/info]
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

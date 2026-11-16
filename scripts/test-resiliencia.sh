@@ -12,6 +12,7 @@
 #   acción: rm | stop | kill | pause | crash | fault:error500 | fault:hang | fault:slow
 # El análisis (make analyze) dibuja errores/s y p99/s con líneas en los eventos.
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

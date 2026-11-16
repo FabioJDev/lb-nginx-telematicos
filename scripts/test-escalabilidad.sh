@@ -6,6 +6,7 @@
 #
 # Variables: NS="1 2 3 5 7"  REPS=2  SCENARIO=rampa.yml  POLICY=round_robin  COOLDOWN=20
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

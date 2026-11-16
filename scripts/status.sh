@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # scripts/status.sh — estado del balanceador: stub_status, política vigente,
 # réplicas activas con IP y últimos reintentos registrados en el log.
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

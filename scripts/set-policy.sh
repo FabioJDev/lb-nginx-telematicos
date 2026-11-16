@@ -7,11 +7,12 @@
 #   4. muestra la cabecera X-LB-Policy de una petición de prueba.
 #
 # Uso: scripts/set-policy.sh <round_robin|least_conn|ip_hash|hash_client|hash_remote_addr|random_two>
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 P="${1:?política}"
 load_env
-[ -f "$ROOT_DIR/nginx/policies/$P.conf" ] || die "no existe nginx/policies/$P.conf. Disponibles: $(ls "$ROOT_DIR/nginx/policies" | sed 's/\.conf$//' | tr '\n' ' ')"
+[ -f "$ROOT_DIR/nginx/policies/$P.conf" ] || die "no existe nginx/policies/$P.conf. Disponibles: $(find "$ROOT_DIR/nginx/policies" -name '*.conf' -exec basename {} .conf \; | sort | tr '\n' ' ')"
 
 set_env_var LB_POLICY "$P"
 export LB_POLICY="$P"

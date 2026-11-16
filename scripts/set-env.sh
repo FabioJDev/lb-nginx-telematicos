@@ -3,6 +3,7 @@
 # SOLO el servicio lb para que tome el nuevo valor (sin tocar los backends).
 #
 # Uso: scripts/set-env.sh <CLAVE> <VALOR> [--recreate-lb]
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 KEY="${1:?clave}"; VALUE="${2:?valor}"; RECREATE="${3:-}"

@@ -21,6 +21,7 @@
 #   NOTES="texto"           nota libre que queda en metadata.json
 #   STATS_INTERVAL=2        intervalo de docker stats
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

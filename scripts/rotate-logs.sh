@@ -2,6 +2,7 @@
 # scripts/rotate-logs.sh — rotación manual del log JSON del balanceador para no
 # llenar el disco: renombra access.json con marca de tiempo y pide a NGINX que
 # reabra los archivos (nginx -s reopen), sin cortar el servicio.
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 stamp=$(date +%Y%m%d-%H%M%S)

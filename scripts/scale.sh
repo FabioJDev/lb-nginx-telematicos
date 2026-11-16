@@ -4,6 +4,7 @@
 # réplicas nuevas por DNS sin recargar (E-10).
 #
 # Uso: scripts/scale.sh <N>
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 
 N="${1:?número de réplicas}"

@@ -10,6 +10,7 @@
 #
 # Variables: NS="1 3 5"  POLICY=round_robin  COOLDOWN=30
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

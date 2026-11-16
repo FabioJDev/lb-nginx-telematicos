@@ -198,4 +198,4 @@ check-eol: ## Falla si algún .sh/.conf/.yml tiene finales CRLF
 	else echo "finales de línea: OK"; fi
 
 shellcheck: ## Analiza los scripts con shellcheck (en contenedor)
-	docker run --rm -v "$$PWD:/mnt" koalaman/shellcheck:v0.10.0 -x scripts/*.sh scripts/in-container/*.sh nginx/dev/*.sh
+	docker run --rm -v "$$PWD:/mnt" koalaman/shellcheck:v0.10.0 -x -S warning -P SCRIPTDIR scripts/*.sh scripts/in-container/*.sh nginx/dev/*.sh

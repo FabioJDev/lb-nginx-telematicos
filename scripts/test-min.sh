@@ -16,6 +16,7 @@
 #            BEST_POLICY (round_robin), COOLDOWN (20), SKIP="M03 M04" para saltar bloques.
 # Duración aproximada con REPS=3: ~1 h de máquina.
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 

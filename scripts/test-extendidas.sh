@@ -19,6 +19,7 @@
 #
 # Uso: scripts/test-extendidas.sh <E03|E04|...|all>      Variables: REPS=2 COOLDOWN=20
 # =============================================================================
+# shellcheck source=lib.sh
 source "$(dirname "$0")/lib.sh"
 load_env
 
