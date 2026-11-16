@@ -281,7 +281,10 @@ def nginx_metrics(df: pd.DataFrame, warmup: float, events: pd.DataFrame | None, 
                     out[f"errors_30s_after_{name}"] = int(win["is_error"].sum())
                     out[f"error_rate_30s_after_{name}"] = float(win["is_error"].mean())
                     out[f"p99_30s_after_{name}_ms"] = float(win["request_time"].quantile(0.99) * 1000)
-            if name in ("backend_restored", "backend_started", "backend_unpaused", "scaled"):
+            if name in ("backend_restore_start", "scale_start", "backend_started", "backend_unpaused"):
+                # Recuperación: desde que EMPIEZA la reposición hasta la primera respuesta de un nodo nuevo
+                # (scale.sh registra 'backend_restored' al terminar los healthchecks, pero NGINX ya
+                # envía tráfico a la réplica nueva en cuanto el DNS la resuelve).
                 # Primer nodo "nuevo" (que no aparecía justo antes del evento) y tiempo hasta recibir tráfico
                 before_nodes = set(df[(df["t_rel"] < t_ev) & (df["t_rel"] > t_ev - 20)]["backend_node"])
                 after = df[df["t_rel"] > t_ev]

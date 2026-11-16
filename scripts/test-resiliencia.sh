@@ -54,7 +54,8 @@ sleep_until "$T_FAULT"
 
 sleep_until "$T_RESTORE"
 case "$ACTION" in
-  rm)       "$ROOT_DIR/scripts/scale.sh" "$N"; log_event "$RUN_DIR" backend_restored "accion=scale N=$N"
+  rm)       log_event "$RUN_DIR" backend_restore_start "accion=scale N=$N (inicio)"
+            "$ROOT_DIR/scripts/scale.sh" "$N"; log_event "$RUN_DIR" backend_restored "accion=scale N=$N (réplica healthy)"
             grafana_annotate "backend repuesto (scale $N)" "recuperacion" ;;
   stop)     "$ROOT_DIR/scripts/inject-fault.sh" start 1 ;;
   pause)    "$ROOT_DIR/scripts/inject-fault.sh" unpause 1 ;;

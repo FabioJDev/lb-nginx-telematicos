@@ -355,6 +355,26 @@ forma de medir cada criterio y el análisis de sensibilidad, están en
 > [`docs/resultados-extendidos.md`](docs/resultados-extendidos.md) y se copian las corridas de
 > referencia a [`results/ejemplos/`](results/ejemplos/).
 
+### Resultados de referencia (GitHub Actions, corrida rápida `QUICK=1`)
+
+Fuente: [`results/ejemplos/lote-test-min-quick-actions/`](results/ejemplos/lote-test-min-quick-actions/)
+(runner `ubuntu-latest`, **2 vCPU**, 7,9 GB; NGINX 1.30.6; Artillery 2.0.34). Detalle y lectura en
+[`docs/resultados-minimos.md`](docs/resultados-minimos.md).
+
+| Prueba | Resultado medido |
+|---|---|
+| M-00 smoke | 3 nodos, **10 / 10 / 10**, 0 fallos |
+| M-02 1000 peticiones secuenciales | 334 / 333 / 333 · Jain **1,000** · diferencia 0,3 % |
+| M-03 retirar un backend bajo 300 req/s | disponibilidad **100 %**, **0 errores**, 3 reintentos (las peticiones en vuelo), p99 22 ms antes/durante/después (round_robin y least_conn) |
+| M-04 1000 usuarios concurrentes | 1000 creados / 1000 completados / **0 fallidos**; meseta de **1000 activos durante 60 s**; 70 000 × HTTP 200; p99 44 ms |
+| M-05 rampa 5 → 150 VU/s (270 s) | 274 510 peticiones por política, 0 errores; p99 (log) 22,0 ms en round_robin, least_conn e ip_hash |
+| M-06 distribución (log vs Artillery) | round_robin y least_conn: 33,3 % cada réplica (Jain 1,000); **ip_hash: 100 % a una réplica (Jain 0,333)**; diferencia log vs Artillery 0,00 % |
+| Cuello de botella | Artillery (CPU 43–114 %); NGINX ≤ 11 %; backends ≤ 5 % → el runner limita al generador, no al balanceador |
+
+![Resiliencia M-03](docs/figuras/resiliencia_M03_round_robin.png)
+
+![Distribución por backend M-05](docs/figuras/algoritmos_distribucion_M05.png)
+
 Evidencia esperada por prueba mínima (se rellena con `make analyze`):
 
 | Prueba | Evidencia |

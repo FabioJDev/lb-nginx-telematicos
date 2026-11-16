@@ -125,7 +125,7 @@ E09() {
   at 40;  "$S/inject-fault.sh" rm 1
   at 70;  "$S/inject-fault.sh" rm 1       # queda 1 de 3
   at 100; "$S/inject-fault.sh" rm 1       # 0 de 3 -> página de mantenimiento (502)
-  at 130; "$S/scale.sh" 3; log_event "$RUN_DIR" backend_restored "scale 3"
+  at 130; log_event "$RUN_DIR" backend_restore_start "scale 3 (inicio)"; "$S/scale.sh" 3; log_event "$RUN_DIR" backend_restored "scale 3 (healthy)"
   finish_bg_run
 }
 
@@ -133,8 +133,8 @@ E10() {
   log "===== E-10 escalado en caliente bajo carga (3 -> 6 -> 2) ====="
   "$S/scale.sh" 3; "$S/set-policy.sh" round_robin; cooldown "$COOLDOWN"
   start_bg_run E10 constante.yml hotscale
-  at 60;  "$S/scale.sh" 6; log_event "$RUN_DIR" scaled "3->6 (sin recargar NGINX: resolve)"
-  at 120; "$S/scale.sh" 2; log_event "$RUN_DIR" scaled "6->2 (scale-in)"
+  at 60;  log_event "$RUN_DIR" scale_start "3->6 (inicio)"; "$S/scale.sh" 6; log_event "$RUN_DIR" scaled "3->6 healthy (sin recargar NGINX: resolve)"
+  at 120; log_event "$RUN_DIR" scale_start "6->2 (inicio)"; "$S/scale.sh" 2; log_event "$RUN_DIR" scaled "6->2 (scale-in)"
   finish_bg_run
   "$S/scale.sh" "$BASE"
 }
