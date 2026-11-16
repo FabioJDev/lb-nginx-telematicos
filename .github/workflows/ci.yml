@@ -64,6 +64,14 @@ jobs:
           scripts/scale.sh 3
           scripts/set-policy.sh round_robin
 
+      - name: Afinidad de sesión por política (hash + resolve)
+        run: |
+          for pol in round_robin ip_hash hash_client hash_client_plain hash_remote_addr; do
+            scripts/set-policy.sh "$pol" >/dev/null
+            scripts/check-affinity.sh 30 5 || true
+          done
+          scripts/set-policy.sh round_robin >/dev/null
+
       - name: Escenario smoke de Artillery con el ejecutor completo
         run: scripts/run-test.sh CI smoke.yml
 
