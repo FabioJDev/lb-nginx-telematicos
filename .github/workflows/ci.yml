@@ -73,9 +73,16 @@ jobs:
           docker compose --profile tools run --rm analysis
           docker compose --profile tools run --rm analysis python decision_matrix.py > /dev/null
 
-      - name: Logs del balanceador (diagnóstico)
+      - name: Diagnóstico (estado, healthchecks y logs)
         if: always()
-        run: docker compose logs --no-color lb | tail -50
+        run: |
+          docker compose ps -a || true
+          for id in $(docker compose ps -aq); do
+            echo "== $(docker inspect -f '{{.Name}} health={{if .State.Health}}{{.State.Health.Status}}{{end}} exit={{.State.ExitCode}}' "$id")"
+            docker inspect -f '{{range .State.Health.Log}}{{.ExitCode}} {{.Output}}{{end}}' "$id" 2>/dev/null | tail -3 || true
+          done
+          docker compose logs --no-color backend | tail -40 || true
+          docker compose logs --no-color lb | tail -50 || true
 
       - name: Publicar corrida
         if: always()

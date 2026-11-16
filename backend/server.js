@@ -410,7 +410,6 @@ const server = http.createServer((req, res) => {
 // Keep-alive hacia NGINX (keepalive 64 en el upstream): mantener conexiones abiertas
 server.keepAliveTimeout = 65000;
 server.headersTimeout = 70000;
-server.maxConnections = 0; // sin límite artificial
 
 // ---------------------------------------------------------------------------
 // Apagado elegante: SIGTERM (docker stop) deja de aceptar conexiones y termina
