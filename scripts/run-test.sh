@@ -62,6 +62,7 @@ log "escenario=$SCENARIO target=$TARGET work_path=$WORK_PATH política=$POLICY r
 # ---------------------------------------------------------------------------
 # Offset del log de NGINX (para extraer solo las líneas de esta corrida)
 # ---------------------------------------------------------------------------
+sleep 1.5   # access_log tiene buffer con flush=1s: esperar a que lo anterior esté en disco
 OFFSET=$(lb_exec sh -c 'wc -c < /var/log/nginx/access.json 2>/dev/null || echo 0' | tr -d '[:space:]')
 OFFSET="${OFFSET:-0}"
 

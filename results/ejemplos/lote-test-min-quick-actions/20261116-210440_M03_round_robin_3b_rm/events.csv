@@ -1,0 +1,5 @@
+epoch,iso,event,detail
+1794863080.979030162,2026-11-16T21:04:40.984Z,artillery_start,"scenario=constante.yml policy=round_robin replicas=3 target=http://lb"
+1794863141.195821090,2026-11-16T21:05:41.199Z,backend_removed,"node=525cff00d9fe container=lbnginx-backend-1 accion=rm"
+1794863207.810560158,2026-11-16T21:06:47.814Z,backend_restored,"accion=scale N=3"
+1794863264.230183844,2026-11-16T21:07:44.232Z,artillery_end,"exit=0 duration_s=184"

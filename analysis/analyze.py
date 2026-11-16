@@ -29,6 +29,7 @@ Variables: RESULTS_DIR (/results), DOCS_DIR (/docs), WARMUP_SECONDS (30), ONLY (
 from __future__ import annotations
 
 import csv
+import gzip
 import json
 import os
 import re
@@ -173,10 +174,14 @@ def parse_artillery(path: Path) -> dict:
 # Log JSON de NGINX
 # ---------------------------------------------------------------------------
 def parse_nginx_log(path: Path) -> pd.DataFrame:
+    gz = path.with_suffix(path.suffix + ".gz")
+    if not path.exists() and gz.exists():
+        path = gz
     if not path.exists() or path.stat().st_size == 0:
         return pd.DataFrame()
     recs = []
-    with open(path, encoding="utf-8", errors="replace") as f:
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", encoding="utf-8", errors="replace") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -236,6 +241,7 @@ def nginx_metrics(df: pd.DataFrame, warmup: float, events: pd.DataFrame | None, 
         "ng_lat_p99_ms": float(post["request_time"].quantile(0.99) * 1000),
         "ng_lat_max_ms": float(post["request_time"].max() * 1000),
         "ng_backend_counts": {k: int(v) for k, v in counts.items()},
+        "ng_backend_counts_all": {k: int(v) for k, v in df["backend_node"].value_counts().items()},
         "ng_backends": int(len(real)),
         "ng_jain": jain(padded),
         "ng_cv": cv(padded),
@@ -249,9 +255,11 @@ def nginx_metrics(df: pd.DataFrame, warmup: float, events: pd.DataFrame | None, 
     if "client_id" in post.columns:
         cid = post[post["client_id"].fillna("") != ""]
         if len(cid):
-            per_client = cid.groupby("client_id")["backend_node"].nunique()
-            out["ng_affinity_pct"] = float((per_client == 1).mean() * 100)
-            out["ng_clients"] = int(len(per_client))
+            g = cid.groupby("client_id")["backend_node"]
+            per_client = g.nunique()[g.size() >= 2]   # con 1 petición la afinidad es trivial
+            if len(per_client):
+                out["ng_affinity_pct"] = float((per_client == 1).mean() * 100)
+                out["ng_clients"] = int(len(per_client))
     # Tiempos de detección / recuperación respecto a los eventos de falla
     if events is not None and not events.empty:
         t0_abs = df["msec"].iloc[0]
@@ -542,17 +550,19 @@ def analyze_run(run: Path) -> dict | None:
     row.update(res)
 
     # Comparación log NGINX vs contadores Artillery (deben coincidir, M-06)
-    ng_counts = ng.get("ng_backend_counts", {})
+    ng_counts = ng.get("ng_backend_counts", {})            # tras el calentamiento (para Jain)
+    ng_counts_all = ng.get("ng_backend_counts_all", {})    # corrida completa (comparable con Artillery)
     art_counts = art.get("art_backend_counts", {})
-    if ng_counts and art_counts:
-        common = set(ng_counts) | set(art_counts)
-        diff = sum(abs(ng_counts.get(n, 0) - art_counts.get(n, 0)) for n in common)
+    if ng_counts_all and art_counts:
+        common = set(ng_counts_all) | set(art_counts)
+        diff = sum(abs(ng_counts_all.get(n, 0) - art_counts.get(n, 0)) for n in common)
         row["diff_log_vs_artillery"] = int(diff)
-        row["diff_log_vs_artillery_pct"] = float(diff / max(sum(ng_counts.values()), 1) * 100)
+        row["diff_log_vs_artillery_pct"] = float(diff / max(sum(ng_counts_all.values()), 1) * 100)
     dist = pd.DataFrame({
-        "backend": sorted(set(ng_counts) | set(art_counts)),
+        "backend": sorted(set(ng_counts_all) | set(art_counts)),
     })
-    dist["nginx_log"] = dist["backend"].map(lambda n: ng_counts.get(n, 0))
+    dist["nginx_log"] = dist["backend"].map(lambda n: ng_counts_all.get(n, 0))
+    dist["nginx_log_post_warmup"] = dist["backend"].map(lambda n: ng_counts.get(n, 0))
     dist["artillery"] = dist["backend"].map(lambda n: art_counts.get(n, 0))
     total = max(dist["nginx_log"].sum(), 1)
     dist["pct_log"] = dist["nginx_log"] / total * 100
@@ -574,13 +584,14 @@ def analyze_run(run: Path) -> dict | None:
 
     t0_abs = float(df["msec"].iloc[0]) if not df.empty else float(meta.get("start_epoch", 0))
     fig_timeline(run, serie, events, t0_abs, title)
-    fig_distribution(run, ng_counts, art_counts, title)
+    fig_distribution(run, ng_counts_all, art_counts, title)
     fig_resources(run, ds, title)
     fig_vusers(run, inter, title)
 
     # Resumen por corrida
     full = dict(row)
     full["ng_backend_counts"] = ng_counts
+    full["ng_backend_counts_all"] = ng_counts_all
     full["art_backend_counts"] = art_counts
     full["art_codes"] = art.get("art_codes", {})
     full["art_errors"] = art.get("art_errors", {})
@@ -757,10 +768,15 @@ def main() -> int:
             src = run / "figuras" / "timeline.png"
             if src.exists():
                 shutil.copy(src, FIG_DIR / f"resiliencia_{run.name}.png")
+                pol = (load_json(run / "metadata.json") or {}).get("policy", "")
+                shutil.copy(src, FIG_DIR / f"resiliencia_{tid}_{pol}.png")
+                if tid == "M03":
+                    shutil.copy(src, FIG_DIR / "resiliencia_M03.png")
         if tid in ("M04", "M04b"):
             src = run / "figuras" / "usuarios_activos.png"
             if src.exists():
                 shutil.copy(src, FIG_DIR / f"usuarios_activos_{run.name}.png")
+                shutil.copy(src, FIG_DIR / f"usuarios_activos_{tid}.png")
     log(f"figuras comparativas en {FIG_DIR}")
     return 0
 

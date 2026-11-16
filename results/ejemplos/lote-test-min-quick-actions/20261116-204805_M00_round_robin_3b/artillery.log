@@ -1,0 +1,436 @@
+ Image artilleryio/artillery:2.0.34 Pulling 
+ dbee32951853 Pulling fs layer 0B
+ 4a1398fd43fa Pulling fs layer 0B
+ da539b676105 Pulling fs layer 0B
+ 72e110fbfa2e Pulling fs layer 0B
+ a5a499265c26 Pulling fs layer 0B
+ 847ab3f8daac Pulling fs layer 0B
+ f9b3c93b5d7a Pulling fs layer 0B
+ 4f4fb700ef54 Pulling fs layer 0B
+ f8f119d91589 Pulling fs layer 0B
+ 4f4fb700ef54 Already exists 0B
+ dbee32951853 Download complete 0B
+ 4a1398fd43fa Download complete 0B
+ da539b676105 Downloading 5.243MB
+ 72e110fbfa2e Download complete 0B
+ a5a499265c26 Download complete 0B
+ 847ab3f8daac Downloading 2.097MB
+ f9b3c93b5d7a Downloading 8.389MB
+ f8f119d91589 Downloading 6.291MB
+ da539b676105 Downloading 17.83MB
+ 847ab3f8daac Downloading 15.73MB
+ f9b3c93b5d7a Downloading 22.02MB
+ f8f119d91589 Downloading 18.87MB
+ da539b676105 Downloading 28.24MB
+ 847ab3f8daac Downloading 28.31MB
+ f9b3c93b5d7a Downloading 34.6MB
+ f8f119d91589 Downloading 29.36MB
+ da539b676105 Downloading 28.24MB
+ 847ab3f8daac Downloading 44.04MB
+ f9b3c93b5d7a Downloading 49.28MB
+ f8f119d91589 Downloading 45.09MB
+ da539b676105 Downloading 28.24MB
+ 847ab3f8daac Downloading 68.16MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 66.06MB
+ da539b676105 Downloading 28.24MB
+ 847ab3f8daac Downloading 90.18MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 88.08MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 114.3MB
+ da539b676105 Downloading 28.24MB
+ 847ab3f8daac Downloading 116.4MB
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 120.6MB
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 155.2MB
+ da539b676105 Download complete 0B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 192.9MB
+ da539b676105 Extracting 1B
+ f8f119d91589 Downloading 228.6MB
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 265.3MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 298.8MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 337.6MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 351.3MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 380.6MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 418.4MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 1B
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 439.3MB
+ 847ab3f8daac Downloading 117.6MB
+ da539b676105 Extracting 1B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ 847ab3f8daac Downloading 117.6MB
+ f9b3c93b5d7a Downloading 49.4MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ f8f119d91589 Downloading 439.3MB
+ 847ab3f8daac Downloading 117.6MB
+ da539b676105 Extracting 2B
+ f8f119d91589 Downloading 439.3MB
+ 847ab3f8daac Downloading 117.6MB
+ da539b676105 Extracting 2B
+ 847ab3f8daac Downloading 117.6MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ f8f119d91589 Downloading 439.3MB
+ 847ab3f8daac Downloading 117.6MB
+ da539b676105 Extracting 2B
+ 847ab3f8daac Downloading 117.6MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ 847ab3f8daac Downloading 117.6MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ 847ab3f8daac Downloading 117.6MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ 847ab3f8daac Downloading 117.6MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 2B
+ f9b3c93b5d7a Download complete 0B
+ f8f119d91589 Downloading 439.3MB
+ 847ab3f8daac Downloading 117.6MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ 847ab3f8daac Download complete 0B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 3B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 4B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 5B
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Extracting 5B
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ da539b676105 Pull complete 0B
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Downloading 439.3MB
+ f8f119d91589 Download complete 0B
+ a5a499265c26 Pull complete 0B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ f9b3c93b5d7a Extracting 1B
+ 4a1398fd43fa Pull complete 0B
+ 72e110fbfa2e Pull complete 0B
+ f9b3c93b5d7a Pull complete 0B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 1B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 2B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 3B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 4B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 5B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 6B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 7B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 8B
+ 847ab3f8daac Extracting 9B
+ 847ab3f8daac Pull complete 0B
+ 4f4fb700ef54 Extracting 1B
+ 4f4fb700ef54 Pull complete 0B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 1B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 2B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 3B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 4B
+ f8f119d91589 Extracting 5B
+ f8f119d91589 Extracting 5B
+ dbee32951853 Pull complete 0B
+ f8f119d91589 Pull complete 0B
+ Image artilleryio/artillery:2.0.34 Pulled 
+ Container lbnginx-artillery-run-e8d830dfcb1d Creating 
+ Container lbnginx-artillery-run-e8d830dfcb1d Created 
+Test run id: trez4_68jzc7tjh4zcjczddbk8mfnpfjxta_8crx
+Phase started: smoke (index: 0, duration: 10s) 20:48:39(+0000)
+
+Phase completed: smoke (index: 0, duration: 10s) 20:48:49(+0000)
+
+--------------------------------------
+Metrics for period to: 20:48:50(+0000) (width: 9s)
+--------------------------------------
+
+backend.2f4a34fa714b: .......................................................... 3
+backend.525cff00d9fe: .......................................................... 3
+backend.a397ee21ae65: .......................................................... 4
+http.codes.200: ................................................................ 10
+http.downloaded_bytes: ......................................................... 2170
+http.request_rate: ............................................................. 1/sec
+http.requests: ................................................................. 10
+http.response_time:
+  min: ......................................................................... 0
+  max: ......................................................................... 3
+  mean: ........................................................................ 0.7
+  median: ...................................................................... 0
+  p95: ......................................................................... 1
+  p99: ......................................................................... 1
+http.response_time.2xx:
+  min: ......................................................................... 0
+  max: ......................................................................... 3
+  mean: ........................................................................ 0.7
+  median: ...................................................................... 0
+  p95: ......................................................................... 1
+  p99: ......................................................................... 1
+http.responses: ................................................................ 10
+lb.policy.round_robin: ......................................................... 10
+plugins.metrics-by-endpoint./api/info.codes.200: ............................... 10
+plugins.metrics-by-endpoint.response_time./api/info:
+  min: ......................................................................... 0
+  max: ......................................................................... 3
+  mean: ........................................................................ 0.7
+  median: ...................................................................... 0
+  p95: ......................................................................... 1
+  p99: ......................................................................... 1
+vusers.completed: .............................................................. 10
+vusers.created: ................................................................ 10
+vusers.created_by_name.smoke: una petición a /api/info: ........................ 10
+vusers.failed: ................................................................. 0
+vusers.session_length:
+  min: ......................................................................... 2.3
+  max: ......................................................................... 20.1
+  mean: ........................................................................ 4.5
+  median: ...................................................................... 2.7
+  p95: ......................................................................... 3.4
+  p99: ......................................................................... 3.4
+
+
+All VUs finished. Total time: 10 seconds
+
+--------------------------------
+Summary report @ 20:48:51(+0000)
+--------------------------------
+
+backend.2f4a34fa714b: .......................................................... 3
+backend.525cff00d9fe: .......................................................... 3
+backend.a397ee21ae65: .......................................................... 4
+http.codes.200: ................................................................ 10
+http.downloaded_bytes: ......................................................... 2170
+http.request_rate: ............................................................. 1/sec
+http.requests: ................................................................. 10
+http.response_time:
+  min: ......................................................................... 0
+  max: ......................................................................... 3
+  mean: ........................................................................ 0.7
+  median: ...................................................................... 0
+  p95: ......................................................................... 1
+  p99: ......................................................................... 1
+http.response_time.2xx:
+  min: ......................................................................... 0
+  max: ......................................................................... 3
+  mean: ........................................................................ 0.7
+  median: ...................................................................... 0
+  p95: ......................................................................... 1
+  p99: ......................................................................... 1
+http.responses: ................................................................ 10
+lb.policy.round_robin: ......................................................... 10
+plugins.metrics-by-endpoint./api/info.codes.200: ............................... 10
+plugins.metrics-by-endpoint.response_time./api/info:
+  min: ......................................................................... 0
+  max: ......................................................................... 3
+  mean: ........................................................................ 0.7
+  median: ...................................................................... 0
+  p95: ......................................................................... 1
+  p99: ......................................................................... 1
+vusers.completed: .............................................................. 10
+vusers.created: ................................................................ 10
+vusers.created_by_name.smoke: una petición a /api/info: ........................ 10
+vusers.failed: ................................................................. 0
+vusers.session_length:
+  min: ......................................................................... 2.3
+  max: ......................................................................... 20.1
+  mean: ........................................................................ 4.5
+  median: ...................................................................... 2.7
+  p95: ......................................................................... 3.4
+  p99: ......................................................................... 3.4
+Log file: /results/20261116-204805_M00_round_robin_3b/artillery.json
+
+Checks:
+ok: vusers.failed == 0
+ok: http.response_time.p99 < 1000

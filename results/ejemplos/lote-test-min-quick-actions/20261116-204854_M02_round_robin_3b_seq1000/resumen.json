@@ -1,0 +1,28 @@
+{
+  "run": "20261116-204854_M02_round_robin_3b_seq1000",
+  "test_id": "M02",
+  "scenario": "secuencial",
+  "policy": "round_robin",
+  "replicas": 3,
+  "label": "",
+  "label_base": "",
+  "feature": "",
+  "keepalive": "",
+  "target": "",
+  "notes": "",
+  "started_at": "2026-11-16T20:48:57Z",
+  "artillery_exit": "",
+  "ng_requests": 1000,
+  "ng_errors": 0,
+  "ng_error_rate": 0.0,
+  "ng_backends": 3,
+  "ng_jain": 0.999998000004,
+  "ng_cv": 0.001414213562373095,
+  "ng_max_share": 0.334,
+  "ng_backend_counts": {
+    "2f4a34fa714b": 334,
+    "525cff00d9fe": 333,
+    "a397ee21ae65": 333
+  },
+  "seq_max_diff_pct": 0.3
+}
