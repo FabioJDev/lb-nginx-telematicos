@@ -1,0 +1,101 @@
+# .github/workflows/pruebas.yml — Pruebas de carga bajo demanda en GitHub Actions.
+#
+# Ejecuta un lote (test-min, test-algoritmos, test-escalabilidad, test-quiebre o
+# test-ext E=…) en un runner ubuntu-latest, corre el análisis y publica results/ y
+# docs/figuras/ como artefacto descargable. Sirve para obtener resultados REALES
+# cuando no se dispone de una máquina con Docker; el entorno (2 vCPU, RAM) queda
+# registrado en metadata.json de cada corrida y debe reportarse como limitación.
+#
+#   gh workflow run pruebas.yml -f lote=test-min -f quick=true
+#   gh run download <id> -n resultados-<lote>-<id>
+name: pruebas
+
+on:
+  workflow_dispatch:
+    inputs:
+      lote:
+        description: "Lote a ejecutar"
+        type: choice
+        required: true
+        default: test-min
+        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext]
+      reps:
+        description: "Repeticiones por configuración (REPS)"
+        type: string
+        default: "3"
+      quick:
+        description: "QUICK=1 (una sola repetición, para validar el lote)"
+        type: boolean
+        default: false
+      extra:
+        description: "Para test-ext: E03|E04|E05|E06|E07|E08|E09|E10|E11|E12|E14|E15|all"
+        type: string
+        default: "E05"
+      policy:
+        description: "Para test-resiliencia: política"
+        type: string
+        default: "round_robin"
+
+jobs:
+  carga:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    env:
+      REPS: ${{ inputs.reps }}
+      QUICK: ${{ inputs.quick && '1' || '0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Entorno del runner
+        run: |
+          cp .env.example .env
+          echo "cpus=$(nproc) mem=$(awk '/MemTotal/ {printf "%d MB", $2/1024}' /proc/meminfo)"
+          docker version --format 'docker {{.Server.Version}}'; docker compose version --short
+
+      - name: Levantar stack base
+        run: |
+          docker compose up -d --build
+          scripts/wait-healthy.sh backend 3 120
+          scripts/wait-healthy.sh lb 1 60
+          scripts/smoke.sh 30
+
+      - name: Ejecutar lote ${{ inputs.lote }}
+        run: |
+          case "${{ inputs.lote }}" in
+            test-min)          scripts/test-min.sh ;;
+            test-algoritmos)   scripts/test-algoritmos.sh ;;
+            test-resiliencia)  scripts/test-resiliencia.sh "${{ inputs.policy }}" ;;
+            test-escalabilidad) scripts/test-escalabilidad.sh ;;
+            test-quiebre)      scripts/test-quiebre.sh ;;
+            test-ext)          scripts/test-extendidas.sh "${{ inputs.extra }}" ;;
+          esac
+
+      - name: Análisis y matrices
+        if: always()
+        run: |
+          docker compose --profile tools build analysis
+          docker compose --profile tools run --rm analysis || true
+          docker compose --profile tools run --rm analysis python decision_matrix.py > /dev/null || true
+          sudo chown -R "$(id -u):$(id -g)" results docs || true
+          ls -la results | head -40
+          cat results/significancia.txt 2>/dev/null || true
+
+      - name: Comprimir logs grandes de NGINX
+        if: always()
+        run: find results -name 'nginx_access.jsonl' -size +2M -exec gzip -9 {} \; ; du -sh results
+
+      - name: Publicar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-${{ inputs.lote }}-${{ github.run_id }}
+          path: |
+            results/
+            docs/figuras/
+            docs/decision-matrix-generada.md
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Bajar stack
+        if: always()
+        run: docker compose --profile tools --profile loadtest down -v --remove-orphans
