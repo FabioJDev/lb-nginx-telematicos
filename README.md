@@ -347,7 +347,9 @@ forma de medir cada criterio y el análisis de sensibilidad, están en
 ## 8. Resultados
 
 > **Regla:** ninguna cifra de este README, del informe o de las diapositivas existe sin un archivo
-> de origen en `results/`. Este repositorio se construyó en una máquina sin Docker; las corridas las
+> de origen en `results/`. Este repositorio se construyó en una máquina sin Docker; la CI de GitHub
+> Actions ya verificó el stack completo (compose, `nginx -t`, smoke 10/10/10, cambio de política,
+> escalado 3 → 5 sin recarga, Artillery y análisis; ver `docs/entorno.md`). Las corridas de carga las
 > ejecuta el equipo en la máquina de pruebas y luego se completan
 > [`docs/resultados-minimos.md`](docs/resultados-minimos.md) y
 > [`docs/resultados-extendidos.md`](docs/resultados-extendidos.md) y se copian las corridas de

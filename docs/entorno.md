@@ -46,3 +46,11 @@ hay en `results/` proviene de ejecuciones hechas por el equipo en la máquina de
 validó estáticamente al construirlo: sintaxis de `server.js` y `processor.js` (`node --check`),
 sintaxis de todos los scripts (`bash -n`), YAML/JSON de compose, Artillery, Prometheus y Grafana,
 y el pipeline `analyze.py` + `decision_matrix.py` con datos sintéticos que **no** se incluyen en el repo.
+
+La **primera ejecución real** del stack fue la integración continua de GitHub Actions
+(`.github/workflows/ci.yml`, ejecución verde del 16 de noviembre de 2026 en `ubuntu-latest`):
+`docker compose config` de los cuatro archivos, shellcheck, build del backend, `nginx -t`,
+backends sin puertos, smoke 10/10/10 con round-robin, cambio a `least_conn`, escalado 3 → 5 con las
+réplicas nuevas recibiendo tráfico sin recargar NGINX (`resolve`), escenario `smoke.yml` de Artillery con
+contadores `backend.*` y `make analyze`. Los artefactos de esa corrida quedan en la pestaña *Actions*
+(artefacto `results-ci`); no sustituyen a las pruebas de carga, que requieren la máquina del equipo.
