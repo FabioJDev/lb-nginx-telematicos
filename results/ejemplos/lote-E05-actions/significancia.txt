@@ -1,0 +1,1 @@
+E05 (3 backends): mejor p99 hash_client (22.0 ms) vs hash_remote_addr (22.0 ms): diferencia 0.0 ms, desv. máx. 0.0 ms -> distinguible

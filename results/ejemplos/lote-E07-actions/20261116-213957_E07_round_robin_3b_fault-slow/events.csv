@@ -1,0 +1,5 @@
+epoch,iso,event,detail
+1794865199.368771985,2026-11-16T21:39:59.378Z,artillery_start,"scenario=constante.yml policy=round_robin replicas=3 target=http://lb"
+1794865259.592676602,2026-11-16T21:40:59.597Z,fault_slow,"node=bf7e57c2212f container=lbnginx-backend-1 accion=fault respuesta={'node':'bf7e57c2212f','mode':'slow','delayMs':2000}"
+1794865319.576969770,2026-11-16T21:41:59.591Z,fault_none,"node=bf7e57c2212f container=lbnginx-backend-1 accion=restore respuesta={'node':'bf7e57c2212f','mode':'none','delayMs':2000}"
+1794865383.231448400,2026-11-16T21:43:03.234Z,artillery_end,"exit=0 duration_s=186"

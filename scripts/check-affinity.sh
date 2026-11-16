@@ -4,7 +4,8 @@
 # desde la misma IP; se reporta el % de clientes que siempre cayeron en el mismo
 # backend y cuántos backends distintos respondieron en total.
 #   round_robin / least_conn / random_two -> afinidad baja, 3 backends
-#   hash_client / hash_client_plain       -> afinidad 100 %, varios backends
+#   hash_client                           -> afinidad 100 %, varios backends
+#   hash_client_consistent                -> afinidad ~0 % con resolve (hallazgo, docs/hallazgos.md)
 #   ip_hash / hash_remote_addr            -> afinidad 100 %, 1 solo backend (misma IP)
 # Uso: scripts/check-affinity.sh [clientes=30] [peticiones=5] [--expect-sticky]
 # shellcheck source=lib.sh

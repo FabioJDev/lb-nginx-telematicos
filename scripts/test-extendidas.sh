@@ -6,8 +6,8 @@
 #   E03  backends heterogéneos (compose.weighted.yml): round_robin, least_conn,
 #        random_two y round-robin ponderado (weight 3:1)
 #   E04  peticiones de costo variable (/api/mixed): round_robin vs least_conn
-#   E05  trampa de ip_hash vs hash_client (afinidad L7)
-#   E06  hash consistente al quitar un nodo (5 -> 4 réplicas): hash_client vs ip_hash
+#   E05  trampa de ip_hash vs hash_client (afinidad L7) y hash consistent + resolve
+#   E06  remapeo al quitar un nodo (5 -> 4): hash_client, hash_client_consistent, ip_hash
 #   E07  modos de falla bajo carga: stop, kill, pause, crash, error500, slow, hang
 #   E08  matriz timeouts x reintentos bajo 'hang' (read_timeout 3s/10s, next_upstream on/off)
 #   E09  falla múltiple y total (2 de 3, 3 de 3, regreso)
@@ -78,12 +78,13 @@ E04() {
 
 E05() {
   log "===== E-05 trampa de ip_hash vs afinidad L7 (hash_client, hash_remote_addr) ====="
-  ID=E05 POLICIES="ip_hash hash_client hash_remote_addr" REPS="$REPS" "$S/test-algoritmos.sh"
+  ID=E05 POLICIES="ip_hash hash_client hash_client_consistent hash_remote_addr" REPS="$REPS" "$S/test-algoritmos.sh"
 }
 
 E06() {
   log "===== E-06 hash consistente al quitar un nodo (5 -> 4) ====="
-  for pol in hash_client ip_hash; do
+  # hash_client (simple) vs hash_client_consistent: ver docs/hallazgos.md sobre consistent + resolve
+  for pol in hash_client hash_client_consistent ip_hash; do
     "$S/scale.sh" 5; "$S/set-policy.sh" "$pol"; cooldown "$COOLDOWN"
     start_bg_run E06 constante.yml "$pol"
     at 60; "$S/inject-fault.sh" rm 5

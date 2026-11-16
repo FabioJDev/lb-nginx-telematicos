@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794864073.568965744,2026-11-16T21:21:13.577Z,artillery_start,"scenario=quiebre.yml policy=round_robin replicas=1 target=http://lb"
+1794864424.042476700,2026-11-16T21:27:04.459Z,artillery_end,"exit=0 duration_s=353"

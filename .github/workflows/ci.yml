@@ -66,7 +66,7 @@ jobs:
 
       - name: Afinidad de sesión por política (hash + resolve)
         run: |
-          for pol in round_robin ip_hash hash_client hash_client_plain hash_remote_addr; do
+          for pol in round_robin least_conn random_two ip_hash hash_client hash_client_consistent hash_remote_addr; do
             scripts/set-policy.sh "$pol" >/dev/null
             scripts/check-affinity.sh 30 5 || true
           done
