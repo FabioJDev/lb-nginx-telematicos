@@ -35,6 +35,10 @@ on:
         description: "Para test-resiliencia: política"
         type: string
         default: "round_robin"
+      work_path:
+        description: "Endpoint de carga (WORK_PATH), p. ej. /api/work?ms=20&cpu=3 para saturar CPU"
+        type: string
+        default: "/api/work?ms=20"
 
 jobs:
   carga:
@@ -43,6 +47,7 @@ jobs:
     env:
       REPS: ${{ inputs.reps }}
       QUICK: ${{ inputs.quick && '1' || '0' }}
+      WORK_PATH: ${{ inputs.work_path }}
     steps:
       - uses: actions/checkout@v4
 

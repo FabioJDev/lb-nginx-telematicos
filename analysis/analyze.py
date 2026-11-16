@@ -263,17 +263,21 @@ def nginx_metrics(df: pd.DataFrame, warmup: float, events: pd.DataFrame | None, 
     # Tiempos de detección / recuperación respecto a los eventos de falla
     if events is not None and not events.empty:
         t0_abs = df["msec"].iloc[0]
+        ev_times = sorted(float(e) - t0_abs for e in events["epoch"].dropna())
         for _, ev in events.iterrows():
             name = str(ev["event"])
             detail = str(ev.get("detail", ""))
             t_ev = float(ev["epoch"]) - t0_abs
+            # La ventana de análisis de una falla termina en el siguiente evento (p. ej. la
+            # reposición) o a los 60 s, lo que ocurra antes
+            t_next = min([t for t in ev_times if t > t_ev + 0.5] + [t_ev + 60])
             m = re.search(r"node=(\S+)", detail)
             node = m.group(1) if m else None
             if name in ("backend_removed", "backend_stopped", "backend_killed", "backend_paused", "backend_crashed") or name.startswith("fault_"):
                 if node and node in df["backend_node"].values:
                     # Detección: última respuesta correcta del nodo caído dentro de los 60 s
                     # posteriores a la falla (antes de cualquier reposición)
-                    served_after = df[(df["backend_node"] == node) & (df["t_rel"] > t_ev) & (df["t_rel"] < t_ev + 60) & (~df["is_error"])]
+                    served_after = df[(df["backend_node"] == node) & (df["t_rel"] > t_ev) & (df["t_rel"] < t_next) & (~df["is_error"])]
                     last_ok = served_after["t_rel"].max() if len(served_after) else t_ev
                     out[f"detect_s_{name}"] = float(max(last_ok - t_ev, 0))
                 win = df[(df["t_rel"] >= t_ev) & (df["t_rel"] < t_ev + 30)]
