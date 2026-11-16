@@ -1,0 +1,36 @@
+# artillery/scenarios/p04-1000-usuarios.yml — M-04 / R-23: 1000 usuarios
+# CONCURRENTES durante al menos 60 s.
+#
+# Artillery usa un modelo ABIERTO (llegadas por segundo), no "usuarios concurrentes".
+# La concurrencia resulta de la ley de Little: L = λ · W.
+#   λ = 1000 VU / 10 s ;  W ≈ 70 peticiones x (think 1 s + ~20 ms) ≈ 71 s
+#   -> tras los 10 s de llegada hay ~1000 VU activos durante > 60 s (meseta).
+# Documentar este razonamiento en el informe.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 1100
+  phases:
+    - name: "Llegada de 1000 usuarios en 10 s"
+      duration: 10
+      arrivalCount: 1000
+  plugins:
+    metrics-by-endpoint: {}
+    ensure: {}
+  ensure:
+    thresholds:
+      - "http.response_time.p99": 2000
+scenarios:
+  - name: "Usuario activo ~70 s (≈1000 concurrentes durante ≥60 s)"
+    beforeScenario: "setClientId"
+    flow:
+      - loop:
+          - get:
+              url: "/api/work?ms=20"
+              headers:
+                X-Client-Id: "{{ clientId }}"
+              afterResponse: "trackBackend"
+          - think: 1
+        count: 70

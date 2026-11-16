@@ -1,0 +1,26 @@
+# artillery/scenarios/p04b-abierto.yml — variante de MODELO ABIERTO para contrastar
+# con M-04: 1000 llegadas por segundo durante 60 s, UNA petición cada una.
+# Son 60 000 peticiones; la concurrencia instantánea es λ·W = 1000 x ~0,03 s ≈ 30
+# usuarios activos, muy distinta de los 1000 concurrentes de p04-1000-usuarios.yml.
+# Explica por qué "1000 usuarios/s" y "1000 usuarios concurrentes" no son lo mismo.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 500
+  phases:
+    - name: "1000 llegadas/s durante 60 s"
+      duration: 60
+      arrivalRate: 1000
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "una petición por usuario"
+    beforeScenario: "setClientId"
+    flow:
+      - get:
+          url: "/api/work?ms=20"
+          headers:
+            X-Client-Id: "{{ clientId }}"
+          afterResponse: "trackBackend"

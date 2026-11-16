@@ -1,0 +1,164 @@
+% docs/informe/informe.tex — Informe en formato IEEE (conference), máximo 7 páginas.
+% Compilar sin instalar nada en el host:  make informe
+%   (docker run --rm -v "$PWD/docs/informe:/work" -w /work texlive/texlive:TL2024-historic latexmk -pdf informe.tex)
+%
+% BORRADOR: las cifras marcadas con \todo{} se completan ÚNICAMENTE con valores de results/.
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue}
+\graphicspath{{../figuras/}{../diagramas/}}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+% Incluye la figura si existe en docs/figuras o docs/diagramas; si no, deja un marcador.
+\newcommand{\figura}[1]{\IfFileExists{../figuras/#1}{\includegraphics[width=\columnwidth]{#1}}{\IfFileExists{../diagramas/#1}{\includegraphics[width=\columnwidth]{#1}}{\fbox{\parbox{0.95\columnwidth}{\centering\vspace{2em}\todo{Figura pendiente: docs/figuras/#1 (make analyze)}\vspace{2em}}}}}}
+\lstset{basicstyle=\ttfamily\scriptsize,breaklines=true,frame=single,columns=fullflexible}
+
+\begin{document}
+
+\title{Balanceador de carga web con NGINX: diseño, implementación y evaluación experimental de un clúster contenedorizado}
+
+\author{\IEEEauthorblockN{Fabio Jordan C.}
+\IEEEauthorblockA{Ingeniería Informática\\Servicios Telemáticos 2026-02\\fabio.jordan@\todo{correo}}
+\and
+\IEEEauthorblockN{Juan David Morales}
+\IEEEauthorblockA{Ingeniería Informática\\Servicios Telemáticos 2026-02\\\todo{correo}}}
+
+\maketitle
+
+\begin{abstract}
+Una aplicación web servida por un único servidor tiene un punto único de falla y un techo de capacidad. Este trabajo diseña, implementa y evalúa un clúster web con balanceo de carga de capa 7 basado en NGINX, totalmente contenedorizado con Docker Compose: $N$ backends escalables descubiertos por DNS, seis políticas de balanceo intercambiables, detección pasiva de fallos con reintentos y observabilidad con \texttt{stub\_status}, Prometheus y Grafana. Se construyó una metodología experimental reproducible con Artillery (rampa progresiva, 1000 usuarios concurrentes, inyección de fallos en caliente y escalabilidad de 1 a 7 backends) y un pipeline de análisis que convierte cada corrida en métricas derivadas (índice de Jain, disponibilidad observada, tiempos de detección y recuperación, eficiencia de escalado). La selección de la tecnología y del algoritmo se estructura con matrices de decisión multicriterio con análisis de sensibilidad. \todo{Resultado principal con un número: p.\,ej. ``con 3 backends el clúster sostuvo X req/s con p99 de Y ms y disponibilidad observada de Z\,\% al eliminar un backend bajo carga''.}
+\end{abstract}
+
+\begin{IEEEkeywords}
+balanceo de carga, NGINX, proxy inverso, Docker Compose, Artillery, pruebas de carga, alta disponibilidad, matrices de decisión multicriterio
+\end{IEEEkeywords}
+
+\section{Introducción}
+El balanceo de carga es la técnica central para escalar horizontalmente un servicio web y tolerar la caída de sus servidores. Este proyecto, correspondiente al Proyecto~2 del curso (Lista~1), implementa un balanceador NGINX frente a un conjunto de backends en contenedores y lo evalúa experimentalmente. Los aportes son: (i) una infraestructura reproducible con un solo comando, en la que la configuración de NGINX es completamente externa a la imagen y parametrizada por \texttt{.env}; (ii) la comparación medida de \texttt{round\_robin}, \texttt{least\_conn} e \texttt{ip\_hash}, extendida a hash consistente y \emph{random two choices}~\cite{mitzenmacher2001}; (iii) una caracterización de la resiliencia ante siete modos de falla inyectados bajo carga; y (iv) un proceso de selección estructurado con tres matrices multicriterio.
+
+\section{Contexto (problema)}
+Un único servidor concentra la disponibilidad y la capacidad del servicio. Un balanceador de carga de capa~4 reparte conexiones TCP sin inspeccionar el contenido; uno de capa~7 actúa como \emph{proxy inverso} HTTP y puede decidir por URI, cabeceras o cookies~\cite{digitalocean_haproxy}. NGINX opera en L7: el cliente solo conoce al balanceador y los backends no publican puertos. Los algoritmos clásicos son round-robin (turnos, ponderables), \emph{least connections} (menos conexiones activas) y \emph{source} (hash de la IP de origen)~\cite{nginx_lb}; a ellos se suman el hash consistente~\cite{karger1997} y el \emph{power of two choices}~\cite{mitzenmacher2001}. NGINX de código abierto no tiene \emph{health checks} activos (son de NGINX Plus): la detección es pasiva (\texttt{max\_fails}/\texttt{fail\_timeout}) y se combina con reintentos (\texttt{proxy\_next\_upstream})~\cite{nginx_upstream}.
+
+\section{Alternativas de solución}
+\subsection{Tecnología de balanceo (matriz 4.1)}
+Se evaluaron NGINX, HAProxy, Traefik, Apache \texttt{mod\_proxy\_balancer} y LVS/IPVS con ocho criterios (Tabla~\ref{tab:m41}). Cada criterio define cómo se mide: C1 por throughput y p99 en el mismo escenario y hardware (comparativa A-05 con HAProxy) o benchmarks publicados y CPU con \texttt{docker stats}; C2 por conteo de algoritmos en la documentación de la versión libre; C3 con escala 5 = checks activos + reintentos, 3 = solo pasivos + reintentos; C4 por métricas por backend sin módulos de pago; C5 por líneas de configuración y encuesta interna; C6 por descubrimiento de réplicas sin reinicio; C7 por madurez y documentación; C8 por funciones L7 en la versión libre.
+
+\begin{table}[t]
+\caption{Matriz 4.1: tecnología de balanceo (puntuación 1--5; puntaje $=\sum p_i s_i/5$).}
+\label{tab:m41}
+\centering\scriptsize
+\begin{tabular}{lccccc}
+\toprule
+Criterio (peso) & NGINX & HAProxy & Traefik & Apache & LVS\\
+\midrule
+C1 Desempeño (20) & 5 & 5 & 4 & 3 & 5\\
+C2 Algoritmos (15) & 4 & 5 & 3 & 4 & 5\\
+C3 Detección de fallos (15) & 3 & 5 & 4 & 4 & 1\\
+C4 Observabilidad (10) & 2 & 5 & 5 & 3 & 2\\
+C5 Facilidad (10) & 4 & 3 & 4 & 3 & 2\\
+C6 Docker/descubrimiento (10) & 4 & 4 & 5 & 2 & 1\\
+C7 Madurez (10) & 5 & 4 & 4 & 4 & 3\\
+C8 Funciones L7 (10) & 5 & 3 & 3 & 4 & 1\\
+\midrule
+\textbf{Puntaje /100} & \textbf{81} & \textbf{88} & \textbf{79} & \textbf{68} & \textbf{56}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\emph{Sensibilidad.} Variando cada peso $\pm5$ puntos (redistribuidos proporcionalmente) el ranking no cambia; NGINX pasaría al primer lugar solo si C8 pesara $\geq 24$, C5 $\geq 34$ o C7 $\geq 34$, y Traefik si C6 $\geq 38$. \emph{Reflexión.} HAProxy supera a NGINX en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre). NGINX se selecciona porque es la restricción del proyecto asignado, queda en el grupo líder con ranking estable, aporta funciones L7 completas en un componente y sus debilidades se mitigan en el diseño: detección pasiva más reintentos (C3), exportador Prometheus, logs JSON por petición y \texttt{/metrics} por réplica (C4) y re-resolución DNS con \texttt{resolve} (C6).
+
+\subsection{Algoritmo recomendado (matriz 4.2)}
+Se llena exclusivamente con datos medidos: p99 con backends homogéneos (20) y heterogéneos (25), índice de Jain (15), errores durante la falla de un backend (20), afinidad de sesión (10) y simplicidad operativa (10), con normalización a 1--5 (menor es mejor: $5\cdot\text{mejor}/\text{valor}$; Jain: $5J$). \todo{Tabla generada por \texttt{make matrix} (docs/decision-matrix-generada.md).}
+
+\subsection{Descubrimiento de backends (matriz 4.3)}
+Servidores estáticos (60), DNS con \texttt{resolve} (78) y regenerar configuración + \emph{reload} (64), con criterios de escalar sin tocar la configuración (30), pesos por servidor (20), simplicidad (20) y robustez (30). Se eligió DNS con \texttt{resolve}~\cite{nginx_changes}.
+
+\section{Diseño de la solución}
+La Fig.~\ref{fig:arq} muestra la arquitectura. NGINX (\texttt{lb}) está en dos redes Docker con nombre: \texttt{lbnginx\_frontend}, desde la que se publica el puerto, y \texttt{lbnginx\_backend} (\texttt{internal: true}), donde viven las réplicas sin salida al host ni a Internet. Un único servicio \texttt{backend} se escala con \texttt{--scale backend=N}; el \texttt{upstream} declara \texttt{server backend:3000 resolve} con \texttt{zone} y \texttt{resolver 127.0.0.11 valid=5s}, por lo que NGINX re-resuelve el nombre y las réplicas nuevas reciben tráfico sin recarga. La configuración es 100\,\% externa: \texttt{nginx.conf}, plantillas, políticas y extras se montan en solo lectura; las plantillas se procesan con el \texttt{envsubst} del \emph{entrypoint} oficial~\cite{docker_nginx} y la política es un \texttt{include} de un archivo por algoritmo. El backend (Node.js sin dependencias) identifica el nodo con la cabecera \texttt{X-Backend-Node}, simula latencia y CPU, admite inyección de fallos (\texttt{error500}, \texttt{slow}, \texttt{hang}, \texttt{unhealthy}, \texttt{crash}) y expone \texttt{/metrics}. La observabilidad se compone de \texttt{stub\_status}~\cite{nginx_stub} (global), un log JSON con \texttt{\$upstream\_addr} y el nodo por petición, Prometheus/Grafana~\cite{nginx_exporter} y los contadores por backend de Artillery.
+
+\begin{figure}[t]
+\centering
+\figura{arquitectura.png}
+\caption{Arquitectura: redes, servicios y flujos (punteado = monitoreo).}
+\label{fig:arq}
+\end{figure}
+
+\section{Implementación}
+Fragmento clave del \texttt{upstream} y de los reintentos (generado desde \texttt{.env}):
+\begin{lstlisting}
+resolver 127.0.0.11 valid=5s ipv6=off;
+upstream backend_pool {
+  zone backend_pool 128k;
+  include /etc/nginx/policies/${LB_POLICY}.conf;  # least_conn; | ip_hash; | hash $http_x_client_id consistent; ...
+  server backend:3000 resolve max_fails=3 fail_timeout=10s;
+  keepalive 64;
+}
+location / {
+  proxy_pass http://backend_pool;
+  proxy_connect_timeout 2s; proxy_read_timeout 10s;
+  proxy_next_upstream error timeout http_502 http_503 http_504;
+  proxy_next_upstream_tries 3; proxy_next_upstream_timeout 15s;
+}
+\end{lstlisting}
+El \texttt{docker-compose.yml} define \texttt{lb}, \texttt{backend} (3 réplicas, límites de 0,5 CPU y 256\,MB, \emph{healthcheck}), \texttt{artillery} (\emph{profile loadtest}) y, en \emph{profiles} aparte, el exportador, Prometheus, Pushgateway, Grafana y el contenedor de análisis. El \texttt{docker-compose.override.yml} añade un \emph{watcher} que detecta cambios por \emph{checksum}, regenera plantillas, valida con \texttt{nginx -t} y recarga con \texttt{nginx -s reload} sin reiniciar el contenedor. Un \texttt{Makefile} orquesta las tareas (\texttt{up}, \texttt{smoke}, \texttt{policy P=}, \texttt{scale N=}, \texttt{test-*}, \texttt{analyze}) y \texttt{scripts/run-test.sh} deja cada corrida en \texttt{results/} con metadatos, JSON de Artillery, la porción exacta del log de NGINX, sondeo de \texttt{stub\_status}, \texttt{docker stats} y eventos con marca de tiempo. Un flujo de integración continua valida la composición, construye el backend y ejecuta el \emph{smoke test}.
+
+\section{Pruebas}
+\subsection{Metodología}
+Variables independientes: política, número de backends, tipo y momento de la falla, \emph{timeouts}, \emph{keepalive} y perfil de carga. Dependientes: latencia (media, p95, p99), throughput, tasa de error, distribución por backend (índice de Jain $J=(\sum x_i)^2/(n\sum x_i^2)$~\cite{jain1984}), reintentos, tiempos de detección y recuperación y CPU por contenedor. Reglas: límites de CPU en los backends, 30\,s de calentamiento descartados, tres repeticiones en orden aleatorio, 20\,s de enfriamiento, y criterio de significancia práctica: si la diferencia entre dos configuraciones es menor que la desviación observada se reporta como \emph{no distinguible}. Para los 1000 usuarios concurrentes se aplica la ley de Little~\cite{little1961} $L=\lambda W$: 1000 llegadas en 10\,s con sesiones de $\approx 70$\,s producen una meseta de $\approx 1000$ usuarios activos durante más de 60\,s. Equipo: \todo{CPU, RAM, versión de Docker (metadata.json)}.
+
+\subsection{Resultados de las pruebas mínimas}
+\todo{M-00 smoke: 3 nodos, 10/10/10.} \todo{M-02: 1000 peticiones secuenciales, $J=$\_\_\_.} La Tabla~\ref{tab:alg} y la Fig.~\ref{fig:alg} comparan los algoritmos (M-05/M-06); la Fig.~\ref{fig:res} muestra la prueba de resiliencia (M-03); la Fig.~\ref{fig:vu} la meseta de usuarios activos (M-04).
+
+\begin{table}[t]
+\caption{M-05/M-06: latencia y distribución por algoritmo (rampa.yml, 3 backends, media $\pm$ desv., $n=3$).}
+\label{tab:alg}
+\centering\scriptsize
+\begin{tabular}{lcccc}
+\toprule
+Política & Media (ms) & p99 (ms) & req/s & Jain\\
+\midrule
+round\_robin & \todo{} & \todo{} & \todo{} & \todo{}\\
+least\_conn & \todo{} & \todo{} & \todo{} & \todo{}\\
+ip\_hash & \todo{} & \todo{} & \todo{} & \todo{}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]\centering
+\figura{algoritmos_latencia_M05.png}
+\caption{Latencia media y p99 por algoritmo con barras de error.}\label{fig:alg}
+\end{figure}
+
+\begin{figure}[t]\centering
+\figura{resiliencia_M03.png}
+\caption{M-03: errores/s y p99/s al eliminar un backend en $t=60$\,s y reponerlo en $t=120$\,s.}\label{fig:res}
+\end{figure}
+
+\begin{figure}[t]\centering
+\figura{usuarios_activos_M04.png}
+\caption{M-04: usuarios virtuales activos; meseta de $\approx$1000 durante $>60$\,s.}\label{fig:vu}
+\end{figure}
+
+\subsection{Pruebas extendidas}
+\todo{E-02 escalabilidad (Fig. escalabilidad.png): throughput, p95 y eficiencia para $N=1,2,3,5,7$.} \todo{E-03 heterogéneos: p99 por política con un backend lento.} \todo{E-05: ip\_hash concentra \_\_\_\,\% del tráfico; hash\_client reparte con $J=$\_\_\_ y afinidad \_\_\_\,\%.} \todo{E-07: tabla falla $\to$ errores, detección, recuperación.} \todo{E-13: carga máxima sostenible por $N$.}
+
+\section{Discusión de las pruebas}
+\todo{Interpretación: hipótesis confirmadas y refutadas (round\_robin $\approx$ least\_conn con homogéneos; ip\_hash y la /24; caída vs cuelgue; error500 no se reintenta por defecto); cuello de botella según docker stats; limitación de un solo host; ruido y significancia.}
+
+\section{Conclusiones}
+\todo{Respuestas a los objetivos: algoritmo recomendado con datos (matriz 4.2); capacidad y punto de quiebre; resiliencia medida; trabajo futuro: alta disponibilidad del balanceador con keepalived/VRRP, TLS/HTTP2, orquestación con Kubernetes.}
+
+\bibliographystyle{IEEEtran}
+\bibliography{referencias}
+
+\end{document}

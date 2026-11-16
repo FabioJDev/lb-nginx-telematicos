@@ -1,0 +1,245 @@
+# =============================================================================
+# docker-compose.yml — Proyecto 2: Balanceador de carga web con NGINX
+# Servicios Telemáticos 2026-02 · Grupo 3
+#
+# Stack base (sin profile): lb (NGINX) + backend (N réplicas) + artillery (profile
+# loadtest). Observabilidad en profile 'monitoring', análisis en profile 'tools'.
+#
+# Validar siempre con:  docker compose config -q && docker compose exec lb nginx -t
+# =============================================================================
+name: ${COMPOSE_PROJECT_NAME:-lbnginx}
+
+# Anclas reutilizables -------------------------------------------------------
+x-backend-common: &backend-common
+  build:
+    context: ./backend
+  image: lbnginx-backend:local
+  # Sin 'ports': los backends NUNCA se publican al host (R-16); solo 'expose'.
+  expose:
+    - "3000"
+  networks:
+    - backend
+  healthcheck:
+    test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+    interval: 5s
+    timeout: 2s
+    retries: 3
+    start_period: 3s
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  # ---------------------------------------------------------------------------
+  # Balanceador NGINX (R-07, R-09, R-10, R-15, R-17)
+  # ---------------------------------------------------------------------------
+  lb:
+    image: ${NGINX_IMAGE:-nginx:1.30-alpine}
+    # Debe empezar por 'nginx' para que corra el entrypoint oficial (envsubst)
+    command: ["nginx", "-g", "daemon off;"]
+    ports:
+      - "${LB_PUBLIC_PORT:-8080}:80"
+    environment:
+      # Entrypoint oficial: procesa /etc/nginx/templates/*.template con envsubst
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx/generated
+      NGINX_ENVSUBST_FILTER: "^(NGINX_|LB_)"
+      NGINX_WORKER_PROCESSES: ${NGINX_WORKER_PROCESSES:-auto}
+      NGINX_WORKER_CONNECTIONS: ${NGINX_WORKER_CONNECTIONS:-4096}
+      LB_POLICY: ${LB_POLICY:-round_robin}
+      LB_FEATURE: ${LB_FEATURE:-none}
+      LB_UPSTREAM_KEEPALIVE: ${LB_UPSTREAM_KEEPALIVE:-on}
+      LB_MAX_FAILS: ${LB_MAX_FAILS:-3}
+      LB_FAIL_TIMEOUT: ${LB_FAIL_TIMEOUT:-10s}
+      LB_CONNECT_TIMEOUT: ${LB_CONNECT_TIMEOUT:-2s}
+      LB_SEND_TIMEOUT: ${LB_SEND_TIMEOUT:-10s}
+      LB_READ_TIMEOUT: ${LB_READ_TIMEOUT:-10s}
+      LB_NEXT_UPSTREAM: ${LB_NEXT_UPSTREAM:-error timeout http_502 http_503 http_504}
+      LB_NEXT_UPSTREAM_TRIES: ${LB_NEXT_UPSTREAM_TRIES:-3}
+      LB_NEXT_UPSTREAM_TIMEOUT: ${LB_NEXT_UPSTREAM_TIMEOUT:-15s}
+      LB_WEIGHT_FAST: ${LB_WEIGHT_FAST:-1}
+      LB_WEIGHT_SLOW: ${LB_WEIGHT_SLOW:-1}
+    volumes:
+      # Configuración 100 % externa, montada en solo lectura (R-15)
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/policies:/etc/nginx/policies:ro
+      - ./nginx/extras:/etc/nginx/extras:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      # Logs del balanceador (access.json / error.log) persistidos en el host
+      - ./logs/nginx:/var/log/nginx
+    tmpfs:
+      - /etc/nginx/generated          # destino escribible de envsubst
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/lb-health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Backends (R-07, R-14, R-16). Sin container_name para poder escalar:
+  #   docker compose up -d --scale backend=N
+  # ---------------------------------------------------------------------------
+  backend:
+    <<: *backend-common
+    environment:
+      PORT: "3000"
+      BASE_DELAY_MS: ${BACKEND_BASE_DELAY_MS:-0}
+      FAULT_MODE: none
+    deploy:
+      replicas: ${BACKEND_REPLICAS:-3}
+      resources:
+        limits:
+          cpus: "${BACKEND_CPUS:-0.50}"
+          memory: ${BACKEND_MEMORY:-256M}
+
+  # ---------------------------------------------------------------------------
+  # Generador de carga (R-14). No arranca con 'up': se usa con 'run'.
+  #   docker compose run --rm artillery run /scripts/scenarios/smoke.yml
+  # ---------------------------------------------------------------------------
+  artillery:
+    image: ${ARTILLERY_IMAGE:-artilleryio/artillery:2.0.34}
+    profiles: ["loadtest"]
+    environment:
+      TARGET: http://lb
+      WORK_PATH: ${WORK_PATH:-/api/work?ms=20}
+      ARTILLERY_DISABLE_TELEMETRY: "true"
+    volumes:
+      - ./artillery:/scripts:ro
+      - ./results:/results
+    networks:
+      - frontend
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  # ---------------------------------------------------------------------------
+  # Observabilidad (R-18, profile monitoring)
+  # ---------------------------------------------------------------------------
+  nginx-exporter:
+    image: ${NGINX_EXPORTER_IMAGE:-nginx/nginx-prometheus-exporter:1.5.3}
+    profiles: ["monitoring"]
+    command:
+      - "--nginx.scrape-uri=http://lb:8080/stub_status"
+    networks:
+      - backend
+    depends_on:
+      lb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.16.0}
+    profiles: ["monitoring"]
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  pushgateway:
+    image: ${PUSHGATEWAY_IMAGE:-prom/pushgateway:v1.11.5}
+    profiles: ["monitoring"]
+    networks:
+      - backend
+      - frontend
+    restart: unless-stopped
+
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:12.4.15}
+    profiles: ["monitoring"]
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-cambiar-esto}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/lbnginx.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks:
+      - frontend
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # cAdvisor: CPU/RAM por contenedor. Opcional (profile aparte) porque en Docker
+  # Desktop a veces no arranca; Prometheus lo ignora si no está.
+  cadvisor:
+    image: ${CADVISOR_IMAGE:-gcr.io/cadvisor/cadvisor:v0.52.1}
+    profiles: ["cadvisor"]
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Análisis de resultados (profile tools): pandas + matplotlib en contenedor.
+  #   docker compose run --rm analysis            -> analyze.py
+  #   docker compose run --rm analysis python decision_matrix.py
+  # ---------------------------------------------------------------------------
+  analysis:
+    build:
+      context: ./analysis
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
+    image: lbnginx-analysis:local
+    profiles: ["tools"]
+    environment:
+      WARMUP_SECONDS: ${WARMUP_SECONDS:-30}
+      MPLBACKEND: Agg
+    volumes:
+      - ./results:/results
+      - ./docs:/docs
+    network_mode: none
+
+# Redes con nombre explícito (R-16). 'backend' es internal: sin salida a Internet
+# ni al host; solo lb (y los servicios de monitoreo) la alcanzan.
+networks:
+  frontend:
+    name: ${COMPOSE_PROJECT_NAME:-lbnginx}_frontend
+    driver: bridge
+  backend:
+    name: ${COMPOSE_PROJECT_NAME:-lbnginx}_backend
+    driver: bridge
+    internal: true
+
+volumes:
+  prometheus-data:
+  grafana-data:

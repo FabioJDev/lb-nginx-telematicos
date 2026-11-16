@@ -1,0 +1,48 @@
+# =============================================================================
+# compose.weighted.yml — Experimento de backends HETEROGÉNEOS y pesos (E-03).
+#
+# Añade el servicio 'backend-slow' (misma imagen, pero con latencia artificial
+# BASE_DELAY_MS y menos CPU) y monta encima de la plantilla de servidores una
+# versión con dos grupos y pesos (LB_WEIGHT_FAST / LB_WEIGHT_SLOW).
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f compose.weighted.yml up -d
+#   make weighted-up        (equivalente)
+#   LB_WEIGHT_FAST=3 LB_WEIGHT_SLOW=1 make weighted-up   (round-robin ponderado)
+# =============================================================================
+services:
+  lb:
+    volumes:
+      # Mismo destino que el archivo de templates/: Compose fusiona los volúmenes por
+      # ruta de destino, así que este bind de un solo archivo queda ENCIMA del directorio.
+      - ./nginx/weighted/upstream_servers.conf.template:/etc/nginx/templates/upstream_servers.conf.template:ro
+    depends_on:
+      backend-slow:
+        condition: service_healthy
+
+  backend-slow:
+    build:
+      context: ./backend
+    image: lbnginx-backend:local
+    environment:
+      PORT: "3000"
+      NODE_LABEL: slow
+      BASE_DELAY_MS: ${SLOW_BACKEND_DELAY_MS:-150}
+      FAULT_MODE: none
+    expose:
+      - "3000"
+    networks:
+      - backend
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "${SLOW_BACKEND_CPUS:-0.25}"
+          memory: ${BACKEND_MEMORY:-256M}
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 3s
+    restart: unless-stopped

@@ -1,0 +1,45 @@
+# monitoring/prometheus/prometheus.yml — montado :ro en el contenedor prometheus.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  # stub_status de NGINX a través del exporter (nginx_connections_*, nginx_http_requests_total, nginx_up)
+  - job_name: nginx
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+        labels:
+          service: lb
+
+  # TODAS las réplicas del backend, descubiertas por el DNS interno de Docker
+  # (igual que hace NGINX con 'resolve'). Métricas backend_* por instancia.
+  - job_name: backends
+    dns_sd_configs:
+      - names: ["backend", "backend-slow"]
+        type: A
+        port: 3000
+        refresh_interval: 5s
+    relabel_configs:
+      - source_labels: [__meta_dns_name]
+        target_label: service
+
+  # Métricas de Artillery publicadas vía Pushgateway (PUBLISH_METRICS=1)
+  - job_name: artillery
+    honor_labels: true
+    static_configs:
+      - targets: ["pushgateway:9091"]
+
+  # cAdvisor (profile cadvisor): CPU/RAM por contenedor. Si no está, el target queda DOWN.
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # HAProxy (compose.haproxy.yml): métricas nativas para la comparativa A-05
+  - job_name: haproxy
+    static_configs:
+      - targets: ["haproxy:8404"]
+    metrics_path: /metrics
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

@@ -1,0 +1,9 @@
+# nginx/templates/upstream_servers.conf.template -> /etc/nginx/generated/upstream_servers.conf
+# Servidores del pool. Un solo nombre DNS ('backend') que Docker resuelve a TODAS
+# las réplicas del servicio; 'resolve' hace que NGINX lo re-resuelva periódicamente
+# (resolver ... valid=5s), de modo que escalar con --scale no requiere recargar.
+# 'resolve' en upstream existe en NGINX OSS desde 1.27.3 (estable >= 1.28).
+#
+# compose.weighted.yml monta encima otra versión de este archivo con dos servidores
+# (rápido y lento) y pesos distintos (E-03).
+server backend:3000 resolve max_fails=${LB_MAX_FAILS} fail_timeout=${LB_FAIL_TIMEOUT};

@@ -1,0 +1,42 @@
+# artillery/scenarios/rampa.yml — perfil con RAMP-UP PROGRESIVO (R-11) usado para
+# comparar algoritmos (M-05, E-03, E-04, E-05, E-12) y escalabilidad (E-02).
+#   calentamiento 30 s @ 5 VU/s  -> rampa 90 s de 5 a 150 VU/s
+#   -> sostenido 120 s @ 150 VU/s -> descenso 30 s de 150 a 5 VU/s   (total 270 s)
+# Cada VU hace 10 peticiones a WORK_PATH (por defecto /api/work?ms=20) con 0,5 s
+# de pausa: por la ley de Little, en la fase sostenida hay ~150 x 5,5 s ≈ 800 VU activos.
+# El análisis descarta los primeros WARMUP_SECONDS (30 s).
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 200
+  phases:
+    - name: calentamiento
+      duration: 30
+      arrivalRate: 5
+    - name: rampa
+      duration: 90
+      arrivalRate: 5
+      rampTo: 150
+    - name: sostenido
+      duration: 120
+      arrivalRate: 150
+    - name: descenso
+      duration: 30
+      arrivalRate: 150
+      rampTo: 5
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "rampa: 10 peticiones por usuario"
+    beforeScenario: "setClientId"
+    flow:
+      - loop:
+          - get:
+              url: "{{ $env.WORK_PATH }}"
+              headers:
+                X-Client-Id: "{{ clientId }}"
+              afterResponse: "trackBackend"
+          - think: 0.5
+        count: 10

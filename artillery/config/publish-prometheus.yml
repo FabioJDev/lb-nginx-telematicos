@@ -1,0 +1,13 @@
+# artillery/config/publish-prometheus.yml — configuración ADICIONAL que se fusiona
+# con el escenario cuando PUBLISH_METRICS=1 (run-test.sh añade --config ...).
+# Publica las métricas de Artillery en Prometheus a través del Pushgateway
+# (profile monitoring); Grafana las muestra en el panel "Artillery".
+config:
+  plugins:
+    publish-metrics:
+      - type: prometheus
+        pushgateway: "http://pushgateway:9091"
+        prefix: "artillery_"
+        tags:
+          - "source:artillery"
+          - "project:lbnginx"

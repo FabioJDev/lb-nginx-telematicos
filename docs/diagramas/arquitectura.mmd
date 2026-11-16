@@ -1,0 +1,29 @@
+flowchart LR
+    subgraph HOST["Host (Windows 11 + WSL2 + Docker Desktop)"]
+        direction LR
+        CLI[("curl / navegador<br/>localhost:8080")]
+        subgraph FRONT["red lbnginx_frontend (bridge)"]
+            ART["artillery<br/>(profile loadtest)"]
+            GRAF["grafana :3000<br/>(profile monitoring)"]
+        end
+        subgraph LBN["lb — NGINX 1.30 (en ambas redes)"]
+            NGX["upstream backend_pool<br/>policy include · resolve · keepalive<br/>:80 público · :8080 stub_status"]
+        end
+        subgraph BACK["red lbnginx_backend (internal: true — sin host ni Internet)"]
+            B1["backend réplica 1<br/>node:24-alpine :3000"]
+            B2["backend réplica 2"]
+            B3["backend réplica N<br/>(--scale backend=N)"]
+            EXP["nginx-prometheus-exporter"]
+            PROM["prometheus :9090"]
+            PUSH["pushgateway"]
+        end
+    end
+    CLI -- "HTTP :8080→80" --> NGX
+    ART -- "HTTP http://lb" --> NGX
+    NGX -- "proxy_pass (DNS 'backend' → N IPs)" --> B1 & B2 & B3
+    EXP -. "scrape lb:8080/stub_status" .-> NGX
+    PROM -. "scrape" .-> EXP
+    PROM -. "dns_sd backend:3000/metrics" .-> B1 & B2 & B3
+    ART -. "publish-metrics (opcional)" .-> PUSH
+    PROM -. "scrape" .-> PUSH
+    GRAF -. "PromQL" .-> PROM

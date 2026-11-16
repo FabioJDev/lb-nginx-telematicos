@@ -1,0 +1,21 @@
+# =============================================================================
+# docker-compose.override.yml — SOLO DESARROLLO (R-19: recarga en caliente).
+# Compose lo aplica automáticamente junto con docker-compose.yml.
+# Para un despliegue "limpio" sin override:  docker compose -f docker-compose.yml up -d
+#
+# Aporta:
+#   1. stub_status visible desde el host, solo en 127.0.0.1:${LB_STATUS_PORT}.
+#   2. Watcher que detecta cambios en nginx.conf / plantillas / políticas / extras,
+#      regenera las plantillas (envsubst), valida (nginx -t) y recarga (nginx -s reload)
+#      SIN reiniciar el contenedor. Si la configuración es inválida, conserva la anterior.
+# =============================================================================
+services:
+  lb:
+    ports:
+      - "127.0.0.1:${LB_STATUS_PORT:-8081}:8080"
+    environment:
+      CONFIG_WATCH_INTERVAL: "2"
+    volumes:
+      # El entrypoint oficial ejecuta los *.sh de /docker-entrypoint.d/ (en orden)
+      # antes de lanzar nginx. Requiere bit ejecutable en git.
+      - ./nginx/dev/40-config-watcher.sh:/docker-entrypoint.d/40-config-watcher.sh:ro

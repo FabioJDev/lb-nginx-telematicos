@@ -1,0 +1,33 @@
+# artillery/scenarios/spike.yml — E-14: PICO SÚBITO. Base de 50 VU/s con una
+# ráfaga de 800 VU/s durante 20 s y retorno a la base; mide el tiempo que tarda
+# la latencia en normalizarse después del pico.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 1000
+  phases:
+    - name: "base 50 VU/s"
+      duration: 60
+      arrivalRate: 50
+    - name: "pico 800 VU/s"
+      duration: 20
+      arrivalRate: 800
+    - name: "recuperación 50 VU/s"
+      duration: 60
+      arrivalRate: 50
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "3 peticiones por usuario"
+    beforeScenario: "setClientId"
+    flow:
+      - loop:
+          - get:
+              url: "{{ $env.WORK_PATH }}"
+              headers:
+                X-Client-Id: "{{ clientId }}"
+              afterResponse: "trackBackend"
+          - think: 0.3
+        count: 3

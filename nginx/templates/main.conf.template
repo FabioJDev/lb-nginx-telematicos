@@ -1,0 +1,6 @@
+# nginx/templates/main.conf.template -> /etc/nginx/generated/main.conf
+# Contexto principal. Variables sustituidas por envsubst desde .env (R-17).
+worker_processes ${NGINX_WORKER_PROCESSES};
+# Descriptores de archivo por worker: con 1000+ conexiones concurrentes el valor
+# por defecto (1024) se agota; compose también sube ulimits.nofile.
+worker_rlimit_nofile 65535;

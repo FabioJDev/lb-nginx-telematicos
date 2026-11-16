@@ -1,0 +1,40 @@
+# =============================================================================
+# compose.haproxy.yml — Comparativa con HAProxy (A-05, matriz 4.1 con datos).
+#
+# Añade un segundo balanceador (HAProxy) sobre los MISMOS backends, publicado en
+# otro puerto, para correr los mismos escenarios de Artillery contra ambos.
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f compose.haproxy.yml up -d
+#   make haproxy-up
+#   TARGET=http://haproxy scripts/run-test.sh A05-haproxy rampa.yml
+#   Panel de estadísticas: http://localhost:${HAPROXY_STATS_PORT}/stats
+# =============================================================================
+services:
+  haproxy:
+    image: ${HAPROXY_IMAGE:-haproxy:3.2-alpine}
+    ports:
+      - "${HAPROXY_PUBLIC_PORT:-8090}:80"
+      - "127.0.0.1:${HAPROXY_STATS_PORT:-8404}:8404"
+    environment:
+      # roundrobin | leastconn | source  (equivalentes a round_robin / least_conn / ip_hash)
+      HAPROXY_BALANCE: ${HAPROXY_BALANCE:-roundrobin}
+    volumes:
+      - ./nginx/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8404/healthz || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    restart: unless-stopped

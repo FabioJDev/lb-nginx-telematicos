@@ -1,0 +1,29 @@
+# artillery/scenarios/constante.yml — tasa FIJA de 100 VU/s durante 180 s.
+# Escenario de referencia para las pruebas de fallo y operación en caliente
+# (M-03, E-06 a E-11): la carga constante hace visibles los cambios de
+# comportamiento (errores/s y p99/s) alrededor de los eventos de events.csv.
+# Cada VU hace 3 peticiones con pausas de 0,3 s (~1 s de vida -> ~100 VU activos).
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 200
+  phases:
+    - name: "constante 100 VU/s"
+      duration: 180
+      arrivalRate: 100
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "3 peticiones por usuario"
+    beforeScenario: "setClientId"
+    flow:
+      - loop:
+          - get:
+              url: "{{ $env.WORK_PATH }}"
+              headers:
+                X-Client-Id: "{{ clientId }}"
+              afterResponse: "trackBackend"
+          - think: 0.3
+        count: 3

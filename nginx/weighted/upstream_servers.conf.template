@@ -1,0 +1,6 @@
+# nginx/weighted/upstream_servers.conf.template — se monta ENCIMA de
+# /etc/nginx/templates/upstream_servers.conf.template con compose.weighted.yml (E-03).
+# Dos grupos de réplicas: 'backend' (rápido) y 'backend-slow' (lento: BASE_DELAY_MS
+# y menos CPU). Los pesos permiten probar round-robin PONDERADO.
+server backend:3000      resolve weight=${LB_WEIGHT_FAST} max_fails=${LB_MAX_FAILS} fail_timeout=${LB_FAIL_TIMEOUT};
+server backend-slow:3000 resolve weight=${LB_WEIGHT_SLOW} max_fails=${LB_MAX_FAILS} fail_timeout=${LB_FAIL_TIMEOUT};

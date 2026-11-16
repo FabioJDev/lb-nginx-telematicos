@@ -1,0 +1,27 @@
+# artillery/scenarios/quiebre.yml — E-13: PUNTO DE QUIEBRE. Rampa de 50 a 3000
+# llegadas/s en 300 s, una petición por VU, SIN umbral 'ensure' (queremos ver fallar).
+# El análisis busca, con resolución de 10 s (intermediate), la mayor tasa con
+# error < 1 % y p99 < 1 s. Si Artillery avisa de CPU alta, el generador es el
+# cuello de botella (docker_stats.csv lo muestra): reportarlo como limitación.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 10
+    pool: 2000
+  phases:
+    - name: "rampa 50 -> 3000 VU/s"
+      duration: 300
+      arrivalRate: 50
+      rampTo: 3000
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "una petición por usuario"
+    beforeScenario: "setClientId"
+    flow:
+      - get:
+          url: "{{ $env.WORK_PATH }}"
+          headers:
+            X-Client-Id: "{{ clientId }}"
+          afterResponse: "trackBackend"

@@ -1,0 +1,92 @@
+# .github/workflows/ci.yml — A-06: integración continua.
+# En cada push/PR: valida compose, construye el backend, levanta el stack, corre
+# nginx -t, el smoke test (30 peticiones, 3 nodos) y el escenario smoke de Artillery,
+# y publica la corrida como artefacto. Todo en contenedores (como en el proyecto).
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  validate-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Finales de línea LF en scripts y configuración
+        run: make check-eol
+
+      - name: Crear .env
+        run: cp .env.example .env
+
+      - name: Validar docker-compose (base, override, weighted, haproxy)
+        run: |
+          docker compose config -q
+          docker compose -f docker-compose.yml config -q
+          docker compose -f docker-compose.yml -f compose.weighted.yml config -q
+          docker compose -f docker-compose.yml -f compose.haproxy.yml config -q
+
+      - name: shellcheck
+        run: make shellcheck
+
+      - name: Construir backend
+        run: docker compose build backend
+
+      - name: Levantar stack base
+        run: |
+          docker compose up -d
+          scripts/wait-healthy.sh backend 3 120
+          scripts/wait-healthy.sh lb 1 60
+          docker compose ps
+
+      - name: nginx -t y configuración generada
+        run: |
+          docker compose exec -T lb nginx -t
+          docker compose exec -T lb cat /etc/nginx/generated/http.conf
+
+      - name: Backends sin puertos publicados (R-16)
+        run: |
+          if docker compose ps backend --format '{{.Ports}}' | grep -E '0\.0\.0\.0|:::' ; then
+            echo "ERROR: un backend publica puertos al host"; exit 1; fi
+          echo "OK: backends solo con expose"
+
+      - name: Smoke test (30 peticiones, >= 3 nodos)
+        run: scripts/smoke.sh 30
+
+      - name: Cambio de política y escalado en caliente
+        run: |
+          scripts/set-policy.sh least_conn
+          scripts/scale.sh 5
+          scripts/smoke.sh 30
+          scripts/scale.sh 3
+          scripts/set-policy.sh round_robin
+
+      - name: Escenario smoke de Artillery con el ejecutor completo
+        run: scripts/run-test.sh CI smoke.yml
+
+      - name: Análisis
+        run: |
+          docker compose --profile tools build analysis
+          docker compose --profile tools run --rm analysis
+          docker compose --profile tools run --rm analysis python decision_matrix.py > /dev/null
+
+      - name: Logs del balanceador (diagnóstico)
+        if: always()
+        run: docker compose logs --no-color lb | tail -50
+
+      - name: Publicar corrida
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-ci
+          path: |
+            results/
+            docs/figuras/
+          if-no-files-found: ignore
+
+      - name: Bajar stack
+        if: always()
+        run: docker compose --profile tools --profile loadtest down -v --remove-orphans

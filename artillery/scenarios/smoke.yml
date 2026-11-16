@@ -1,0 +1,29 @@
+# artillery/scenarios/smoke.yml — verificación rápida tras cada cambio (M-00).
+# 1 usuario virtual por segundo durante 10 s, una petición cada uno.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 10
+  phases:
+    - name: smoke
+      duration: 10
+      arrivalRate: 1
+  plugins:
+    metrics-by-endpoint: {}
+    ensure: {}
+  ensure:
+    thresholds:
+      - "http.response_time.p99": 1000
+    conditions:
+      - expression: "vusers.failed == 0"
+        strict: true
+scenarios:
+  - name: "smoke: una petición a /api/info"
+    beforeScenario: "setClientId"
+    flow:
+      - get:
+          url: "/api/info"
+          headers:
+            X-Client-Id: "{{ clientId }}"
+          afterResponse: "trackBackend"

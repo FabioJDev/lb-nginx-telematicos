@@ -1,0 +1,132 @@
+# nginx/templates/http.conf.template -> /etc/nginx/generated/http.conf
+#
+# envsubst solo reemplaza las variables de entorno DEFINIDAS y que cumplen el
+# filtro NGINX_ENVSUBST_FILTER=^(NGINX_|LB_). Las variables propias de NGINX
+# ($remote_addr, $upstream_addr, ...) quedan intactas.
+
+# ---------------------------------------------------------------------------
+# Log de acceso en JSON (R-25 / M-06): una línea por petición con el backend que
+# respondió ($upstream_http_x_backend_node), la dirección del upstream (con comas
+# si hubo reintentos), latencias y la política activa.
+# ---------------------------------------------------------------------------
+log_format lb_json escape=json '{'
+  '"time":"$time_iso8601","msec":"$msec","request_id":"$request_id",'
+  '"client":"$remote_addr","client_id":"$http_x_client_id",'
+  '"method":"$request_method","uri":"$request_uri","status":$status,'
+  '"bytes":$body_bytes_sent,'
+  '"request_time":$request_time,"upstream_addr":"$upstream_addr",'
+  '"upstream_status":"$upstream_status",'
+  '"upstream_connect_time":"$upstream_connect_time",'
+  '"upstream_response_time":"$upstream_response_time",'
+  '"backend_node":"$upstream_http_x_backend_node",'
+  '"retried":$lb_retried,'
+  '"policy":"${LB_POLICY}","feature":"${LB_FEATURE}"}';
+
+access_log /var/log/nginx/access.json lb_json buffer=32k flush=1s;
+
+# 1 si la petición pasó por más de un backend (reintento con proxy_next_upstream)
+map $upstream_addr $lb_retried {
+    default 0;
+    "~,"    1;
+}
+
+# DNS interno de Docker: permite que 'backend' se re-resuelva al escalar réplicas
+resolver 127.0.0.11 valid=5s ipv6=off;
+
+# Función L7 opcional a nivel http (A-01 limitación de tasa / A-02 microcaché)
+include /etc/nginx/extras/features/${LB_FEATURE}/http.conf;
+
+# ---------------------------------------------------------------------------
+# Pool de backends (R-07). La política de balanceo es un include (R-08) y DEBE ir
+# antes de 'keepalive' (lo exige la documentación de NGINX).
+# ---------------------------------------------------------------------------
+upstream backend_pool {
+    zone backend_pool 128k;                             # obligatorio para 'resolve'
+    include /etc/nginx/policies/${LB_POLICY}.conf;      # método de balanceo
+    include /etc/nginx/generated/upstream_servers.conf; # server backend:3000 resolve ...
+    include /etc/nginx/extras/keepalive/${LB_UPSTREAM_KEEPALIVE}.conf;  # keepalive 64 (E-12)
+}
+
+# ---------------------------------------------------------------------------
+# Servidor público (puerto 80 del contenedor -> LB_PUBLIC_PORT del host)
+# ---------------------------------------------------------------------------
+server {
+    listen 80 default_server;
+    server_name _;
+
+    location / {
+        proxy_pass http://backend_pool;
+
+        # Necesario para keepalive hacia el upstream
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Request-Id      $request_id;
+
+        # Tiempos de espera (R-10). connect corto = detecta backends caídos rápido;
+        # read debe superar el endpoint legítimo más lento (se varía en E-08).
+        proxy_connect_timeout ${LB_CONNECT_TIMEOUT};
+        proxy_send_timeout    ${LB_SEND_TIMEOUT};
+        proxy_read_timeout    ${LB_READ_TIMEOUT};
+
+        # Reintentos ante fallo del backend (detección PASIVA: NGINX OSS no tiene
+        # health checks activos; esos son de NGINX Plus). Por defecto NGINX no
+        # reenvía peticiones no idempotentes (POST/PATCH) ya enviadas.
+        proxy_next_upstream         ${LB_NEXT_UPSTREAM};
+        proxy_next_upstream_tries   ${LB_NEXT_UPSTREAM_TRIES};
+        proxy_next_upstream_timeout ${LB_NEXT_UPSTREAM_TIMEOUT};
+
+        # Cabeceras de diagnóstico para pruebas (curl / Artillery). Van dentro del
+        # location porque add_header no se hereda si el nivel hijo define alguna.
+        add_header X-Upstream-Addr $upstream_addr always;
+        add_header X-LB-Policy     "${LB_POLICY}" always;
+        add_header X-Request-Id    $request_id always;
+
+        # Función L7 opcional a nivel location (limit_req / proxy_cache)
+        include /etc/nginx/extras/features/${LB_FEATURE}/location.conf;
+    }
+
+    # Healthcheck del propio balanceador (no pasa por los backends)
+    location = /lb-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Página amable cuando no queda ningún backend disponible (E-09)
+    error_page 502 503 504 /maintenance.html;
+    location = /maintenance.html {
+        root /usr/share/nginx/html;
+        internal;
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Métricas en tiempo real (R-09): puerto interno 8080, NO publicado en producción.
+# El exporter de Prometheus lo lee por la red interna; en desarrollo el override
+# lo publica solo en 127.0.0.1:LB_STATUS_PORT.
+# ---------------------------------------------------------------------------
+server {
+    listen 8080;
+    server_name _;
+    access_log off;
+
+    location = /stub_status {
+        stub_status;
+        allow 127.0.0.1;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        allow 192.168.0.0/16;
+        deny  all;
+    }
+
+    # Configuración efectiva (útil en la sustentación): nginx -T equivalente
+    location = /lb-health {
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+}

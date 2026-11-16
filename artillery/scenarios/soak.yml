@@ -1,0 +1,27 @@
+# artillery/scenarios/soak.yml — E-15: RESISTENCIA. 80 VU/s durante 15 minutos
+# para verificar que no hay degradación progresiva de latencia ni fugas de memoria
+# (docker_stats.csv registra la memoria de cada contenedor cada 2 s).
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 300
+  phases:
+    - name: "soak 80 VU/s x 15 min"
+      duration: 900
+      arrivalRate: 80
+  plugins:
+    metrics-by-endpoint: {}
+scenarios:
+  - name: "5 peticiones por usuario"
+    beforeScenario: "setClientId"
+    flow:
+      - loop:
+          - get:
+              url: "{{ $env.WORK_PATH }}"
+              headers:
+                X-Client-Id: "{{ clientId }}"
+              afterResponse: "trackBackend"
+          - think: 0.5
+        count: 5

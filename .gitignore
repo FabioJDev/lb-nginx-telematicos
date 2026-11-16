@@ -1,0 +1,31 @@
+# Secretos y configuración local
+.env
+
+# Resultados de corridas (se versionan solo los ejemplos)
+results/*
+!results/.gitkeep
+!results/ejemplos/
+!results/ejemplos/**
+
+# Logs del balanceador (volumen)
+logs/*
+!logs/nginx/
+logs/nginx/*
+!logs/nginx/.gitkeep
+
+# Artefactos de LaTeX
+docs/informe/*.aux
+docs/informe/*.bbl
+docs/informe/*.blg
+docs/informe/*.log
+docs/informe/*.out
+docs/informe/*.fls
+docs/informe/*.fdb_latexmk
+docs/informe/*.synctex.gz
+
+# Sistema operativo / editores
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

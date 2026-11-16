@@ -1,0 +1,5 @@
+# nginx/templates/events.conf.template -> /etc/nginx/generated/events.conf
+# Contexto 'events'.
+worker_connections ${NGINX_WORKER_CONNECTIONS};
+# Aceptar todas las conexiones nuevas disponibles de una vez
+multi_accept on;
