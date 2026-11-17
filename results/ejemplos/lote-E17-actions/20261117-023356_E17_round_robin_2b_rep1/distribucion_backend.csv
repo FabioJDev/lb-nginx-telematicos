@@ -1,0 +1,3 @@
+backend,nginx_log,nginx_log_post_warmup,artillery,pct_log,lat_mean_ms
+34881d1747d0,32200,31418,32200,50.0,1.0952320325927813
+cfe3e1aaff3e,32200,31419,32200,50.0,1.1297622457748497

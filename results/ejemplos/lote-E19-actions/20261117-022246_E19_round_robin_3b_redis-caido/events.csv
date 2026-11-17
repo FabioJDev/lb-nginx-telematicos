@@ -1,0 +1,5 @@
+epoch,iso,event,detail
+1794882168.243493504,2026-11-17T02:22:48.251Z,artillery_start,"scenario=tienda.yml policy=round_robin replicas=3 target=http://lb"
+1794882248.588278813,2026-11-17T02:24:08.591Z,redis_stopped,"servicio=redis"
+1794882278.542061157,2026-11-17T02:24:38.546Z,redis_started,"servicio=redis"
+1794882361.695979271,2026-11-17T02:26:01.699Z,artillery_end,"exit=0 duration_s=195"

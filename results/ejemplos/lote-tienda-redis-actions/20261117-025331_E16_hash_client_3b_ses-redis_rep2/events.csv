@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794884013.136846693,2026-11-17T02:53:33.145Z,artillery_start,"scenario=tienda.yml policy=hash_client replicas=3 target=http://lb"
+1794884171.171907763,2026-11-17T02:56:11.177Z,artillery_end,"exit=0 duration_s=160"

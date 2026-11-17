@@ -19,6 +19,7 @@
 #   E17  escalabilidad con base de datos compartida (tienda-lectura.yml, N = 1 2 3 5)
 #   E18  caída de PostgreSQL bajo carga
 #   E19  caída de Redis (sesiones) durante compras
+#   E18B / E19B  lo mismo con proxy_next_upstream sin http_503 (hallazgo H-8)
 #
 # Uso: scripts/test-extendidas.sh <E03|E04|...|all>      Variables: REPS=2 COOLDOWN=20
 # =============================================================================
@@ -202,7 +203,7 @@ svc_event() { # svc_event <stop|start> <servicio>
 E18() {
   log "===== E-18 caída de PostgreSQL bajo carga (el balanceador no puede compensarla) ====="
   "$S/scale.sh" "$BASE"; "$S/set-policy.sh" round_robin; cooldown "$COOLDOWN"
-  start_bg_run E18 tienda-lectura.yml bd-caida
+  start_bg_run E18 tienda-lectura.yml "${E18_LABEL:-bd-caida}"
   at 90;  svc_event stop postgres
   at 120; svc_event start postgres
   finish_bg_run
@@ -213,12 +214,24 @@ E19() {
   log "===== E-19 caída de Redis (sesiones compartidas) durante compras ====="
   "$S/scale.sh" "$BASE"; "$S/set-policy.sh" round_robin
   "$S/set-env.sh" SESSION_STORE redis --recreate-backend; cooldown "$COOLDOWN"
-  start_bg_run E19 tienda.yml redis-caido
+  start_bg_run E19 tienda.yml "${E19_LABEL:-redis-caido}"
   at 80;  svc_event stop redis
   at 110; svc_event start redis
   finish_bg_run
   wait_healthy redis 1 60
 }
+
+# Variantes "sin 503" (hallazgo H-8): el 503 que devuelve la aplicación cuando falla
+# una dependencia NO debe contar como caída del backend. Se repite E-18/E-19 con
+# proxy_next_upstream sin http_503 y se restaura la configuración al terminar.
+with_next_upstream() { # with_next_upstream "<condiciones>" <función>
+  local prev="${LB_NEXT_UPSTREAM:-error timeout http_502 http_503 http_504}"
+  "$S/set-env.sh" LB_NEXT_UPSTREAM "$1" --recreate-lb
+  "$2"
+  "$S/set-env.sh" LB_NEXT_UPSTREAM "$prev" --recreate-lb
+}
+E18B() { E18_LABEL=bd-caida-sin503 with_next_upstream "error timeout http_502 http_504" E18; }
+E19B() { E19_LABEL=redis-caido-sin503 with_next_upstream "error timeout http_502 http_504" E19; }
 
 # ---------------------------------------------------------------------------
 WHICH="${1:-}"

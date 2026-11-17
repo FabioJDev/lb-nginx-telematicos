@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794882150.664672690,2026-11-17T02:22:30.684Z,artillery_start,"scenario=tienda-lectura.yml policy=round_robin replicas=5 target=http://lb"
+1794882366.667594431,2026-11-17T02:26:06.670Z,artillery_end,"exit=0 duration_s=217"

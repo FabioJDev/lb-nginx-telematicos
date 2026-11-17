@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794882732.507557252,2026-11-17T02:32:12.516Z,artillery_start,"scenario=tienda.yml policy=sticky_cookie replicas=3 target=http://lb"
+1794882890.586823196,2026-11-17T02:34:50.589Z,artillery_end,"exit=0 duration_s=160"
