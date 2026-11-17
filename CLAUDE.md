@@ -40,7 +40,8 @@ make analyze | make matrix | make monitoring-up
 
 ## Estructura (resumen)
 
-- `backend/` app Node.js instrumentada (sin dependencias).
+- `backend/` app Node.js instrumentada + tienda web (`tienda.js`: `pg` y `redis`, fijadas en `package-lock.json`).
+- `db/init/` esquema y datos de PostgreSQL. `compose.capturas.yml` + `scripts/capturas.sh`: capturas de evidencia.
 - `nginx/` configuración montada: `nginx.conf`, `templates/` (envsubst), `policies/`, `extras/`.
 - `artillery/` escenarios YAML + `lib/processor.js`.
 - `scripts/` ejecutor de pruebas (`run-test.sh`) y lotes (`test-*.sh`).

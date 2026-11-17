@@ -18,7 +18,7 @@ on:
         type: choice
         required: true
         default: test-min
-        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy]
+        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy, capturas]
       reps:
         description: "Repeticiones por configuración (REPS)"
         type: string
@@ -104,6 +104,7 @@ jobs:
             test-tienda)       scripts/test-tienda.sh ;;
             test-cache)        scripts/test-cache.sh ;;
             test-haproxy)      scripts/test-haproxy.sh ;;
+            capturas)          scripts/capturas.sh ;;
           esac
 
       - name: Análisis y matrices
@@ -147,9 +148,10 @@ jobs:
             docs/figuras/
             docs/decision-matrix-generada.md
             docs/comparacion-algoritmos.md
+            docs/capturas/
           if-no-files-found: warn
           retention-days: 90
 
       - name: Bajar stack
         if: always()
-        run: docker compose --profile tools --profile loadtest down -v --remove-orphans
+        run: docker compose -f docker-compose.yml -f compose.capturas.yml --profile tools --profile loadtest --profile monitoring --profile capturas down -v --remove-orphans

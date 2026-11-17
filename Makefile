@@ -19,7 +19,7 @@ F              ?= none
 REPS           ?= 3
 
 .PHONY: help env up up-clean down down-v ps logs logs-lb logs-backend build compare sesiones db-shell db-reset \
-        test-tienda test-cache test-haproxy \
+        test-tienda test-cache test-haproxy capturas \
         smoke nginx-test reload status config policy feature keepalive scale \
         monitoring-up monitoring-down cadvisor-up weighted-up weighted-down \
         haproxy-up haproxy-down \
@@ -163,6 +163,9 @@ test-cache: ## A-02: microcaché del catálogo vs sin caché (tienda-lectura.yml
 
 test-haproxy: ## A-05: NGINX vs HAProxy con los mismos backends y la misma carga
 	REPS=$(REPS) $(SCRIPTS)/test-haproxy.sh
+
+capturas: ## M-00/M-01/R-18: capturas reales de /nodo, stub_status y Grafana por algoritmo -> docs/capturas/
+	$(SCRIPTS)/capturas.sh
 
 sesiones: ## Cambia dónde viven las sesiones y recrea los backends: make sesiones S=memory|redis
 	$(SCRIPTS)/set-env.sh SESSION_STORE $(S) --recreate-backend

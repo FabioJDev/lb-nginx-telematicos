@@ -1,0 +1,31 @@
+# =============================================================================
+# compose.capturas.yml — capturas de pantalla reproducibles de la evidencia
+# (M-00 cambio de nodo, M-01 / R-21 stub_status por algoritmo, R-18 Grafana).
+#
+# Uso: make capturas   (o el lote "capturas" de .github/workflows/pruebas.yml)
+#
+# - navegador: Chromium sin interfaz (imagen oficial de Playwright) en la red
+#   frontend; toma las capturas con `npx playwright screenshot`.
+# - grafana: acceso anónimo de SOLO LECTURA para que el navegador vea el
+#   dashboard sin credenciales. Solo se activa con este archivo, pensado para
+#   entornos efímeros (CI o una sesión local de capturas); el stack normal no
+#   lo usa.
+# =============================================================================
+services:
+  grafana:
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+
+  navegador:
+    image: ${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.49.1-noble}
+    profiles: ["capturas"]
+    command: ["sleep", "infinity"]
+    working_dir: /work
+    shm_size: 1gb
+    environment:
+      NPM_CONFIG_UPDATE_NOTIFIER: "false"
+    volumes:
+      - ./docs/capturas:/out
+    networks:
+      - frontend
