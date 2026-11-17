@@ -77,3 +77,30 @@ cliente en 30 s (33,3 %, uno de cada tres) sin ningún reintento, y uno que tard
 En todas las corridas de GitHub Actions Artillery consumió 43–114 % de CPU mientras NGINX no pasó del
 18 % y los backends del 16 %. Las cifras de capacidad con el endpoint de espera (`ms=20`) miden al
 generador; por eso E-02 y E-13 se repitieron con costo de CPU (`ms=20&cpu=3`).
+
+## H-6 · La afinidad no puede basarse en la cookie de sesión de la aplicación
+
+**Síntoma.** La primera versión de la política `sticky_cookie` hacía `hash $cookie_sid` (la cookie
+de sesión que crea la tienda al iniciar sesión). En la prueba de la CI con sesiones en memoria
+perdió la sesión en **4 de 5 compras**, igual que round-robin (ejecución de CI fallida del
+17-nov-2026, paso "Sesiones en memoria sin y con afinidad").
+
+**Causa.** El login llega **sin** cookie, así que NGINX lo envía a un nodo cualquiera y ese nodo crea
+la sesión. Las peticiones siguientes llevan `sid`, pero `hash(sid)` apunta a un nodo que **no** tiene
+por qué ser el que creó la sesión: la clave de afinidad no existía cuando se tomó la primera decisión.
+
+**Solución aplicada.** La cookie de afinidad la emite **el balanceador**, no la aplicación: en la
+primera respuesta NGINX añade `lbid=$request_id` (el mismo valor que usó para elegir el nodo) y desde
+entonces hace `hash $cookie_lbid`, que siempre devuelve ese nodo. Es lo que hacen el *sticky cookie*
+de NGINX Plus y la directiva `cookie` de HAProxy. Con el cambio, la CI completó **5 de 5 compras** con
+sesiones en memoria.
+
+**Lección.** La afinidad debe decidirse con una clave que exista **desde la primera petición** del
+cliente: una cabecera propia (`X-Client-Id`), la IP o una cookie emitida por el balanceador.
+
+## H-7 · HAProxy solo expande variables de entorno entre comillas dobles
+
+`balance ${HAPROXY_BALANCE}` falló la validación (`haproxy -c`) con "balance only supports
+'roundrobin', …": HAProxy no expande variables fuera de comillas dobles. Se corrigió a
+`balance "${HAPROXY_BALANCE}"`. Lo detectó el paso de validación añadido a la CI antes de
+ejecutar la comparativa A-05.

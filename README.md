@@ -10,6 +10,12 @@ reintentos, métricas en tiempo real (`stub_status` → Prometheus → Grafana),
 carga reproducibles con **Artillery** y un contenedor de análisis que convierte cada corrida
 en tablas y gráficas. Nada se instala en el host.
 
+> **Novedad:** detrás del balanceador corre **TelemaShop**, una tienda web con catálogo, login, carrito y
+> compra sobre **PostgreSQL**, con sesiones en **Redis** o en memoria. Permite probar el balanceo con
+> estado real (sesiones, base de datos compartida), no solo con una página estática. Ver
+> [`docs/tienda.md`](docs/tienda.md) y la comparación de todas las políticas en
+> [`docs/comparacion-algoritmos.md`](docs/comparacion-algoritmos.md).
+>
 > Especificación completa del proyecto: [`docs/especificacion.pdf`](docs/especificacion.pdf) ·
 > Enunciado del curso: [`docs/enunciado/`](docs/enunciado/) ·
 > Matrices de decisión: [`docs/decision-matrix.md`](docs/decision-matrix.md) ·
@@ -83,7 +89,9 @@ Más diagramas (camino de una petición con reintento, flujo de una corrida) en
 | `pushgateway` | `prom/pushgateway:v1.11.5` | backend, frontend | ninguno | `monitoring` | Métricas de Artillery |
 | `grafana` | `grafana/grafana:12.4.15` | frontend | 3000 | `monitoring` | Dashboard aprovisionado |
 | `cadvisor` | `gcr.io/cadvisor/cadvisor:v0.52.1` | backend | ninguno | `cadvisor` | CPU/RAM por contenedor (opcional) |
-| `analysis` | build `./analysis` (`python:3.12-slim`) | ninguna | ninguno | `tools` | Tablas CSV, gráficas PNG, matrices |
+| `postgres` | `postgres:17-alpine` | backend | **ninguno** | — | Base de datos de la tienda, compartida por todas las réplicas |
+| `redis` | `redis:7.4-alpine` | backend | **ninguno** | — | Sesiones compartidas (`SESSION_STORE=redis`) |
+| `analysis` | build `./analysis` (`python:3.12-slim`) | ninguna | ninguno | `tools` | Tablas CSV, gráficas PNG, matrices, comparación consolidada |
 | `haproxy` | `haproxy:3.2-alpine` | frontend, backend | `HAPROXY_PUBLIC_PORT`, `127.0.0.1:8404` | (compose.haproxy.yml) | Comparativa A-05 |
 
 ### Decisiones de diseño clave
@@ -129,7 +137,10 @@ make up                       # construye el backend, levanta lb + 3 backends, e
 make smoke                    # 30 peticiones: debe repartir entre 3 nodos sin errores
 ```
 
-Abrir <http://localhost:8080> y recargar: cada recarga cambia de nodo (y de color) con round-robin.
+Abrir <http://localhost:8080>: es la **tienda** (usuario `usuario1`, contraseña `clave123`). El panel
+"Diagnóstico del balanceo" muestra en cada petición qué réplica respondió, con qué política y por qué
+upstream. La página de identificación del nodo (cambia de color en cada recarga con round-robin) está
+en <http://localhost:8080/nodo>.
 
 Equivalentes sin `make`:
 
@@ -209,6 +220,18 @@ make status                   # política vigente, stub_status, réplicas con IP
 | `hash_remote_addr` | `hash $remote_addr` | Afinidad por IP completa | Un solo contenedor = una sola IP |
 | `hash_client_consistent` | `hash $http_x_client_id consistent` | Reproduce el hallazgo H-1 | Con `resolve` no da afinidad |
 | `random_two` | `random two least_conn` | Muchos backends, buena cola de latencia | Comparar contra least_conn |
+| `sticky_cookie` | `hash` de la cookie `lbid` que emite NGINX | Afinidad de sesión sin cambiar la app ni depender de la IP | Escalar remapea la mayoría de los clientes (E-06) |
+
+### Tienda: sesiones y base de datos
+
+```bash
+make sesiones S=memory      # sesiones en la memoria de cada réplica (recrea los backends)
+make policy P=round_robin   # en la tienda: login, recargar -> "Sesión perdida"
+make policy P=sticky_cookie # afinidad por cookie emitida por NGINX: el carrito se conserva
+make sesiones S=redis       # sesiones compartidas: funciona con cualquier política
+make db-shell               # psql; p. ej. select node, count(*) from orders group by node;
+make db-reset               # recrea la base de datos desde db/init
+```
 
 ### Escalar backends (R-14 / E-10)
 
@@ -293,6 +316,9 @@ Todas las pruebas usan `scripts/run-test.sh <id> <escenario> [etiqueta]`, que de
 | `quiebre.yml` | 50 → 3000 VU/s en 300 s | E-13: punto de quiebre |
 | `spike.yml` | 50 → 800 (20 s) → 50 VU/s | E-14 |
 | `soak.yml` | 80 VU/s · 15 min | E-15 |
+| `tienda.yml` | 2 → 12 recorridos de compra/s (150 s) | E-16: portada, catálogo, búsqueda, detalle, login, carrito, compra |
+| `tienda-lectura.yml` | 5 → 60 recorridos/s (180 s) | E-17, E-18, A-02: navegación del catálogo (solo lecturas) |
+| `tienda-smoke.yml` | 5 recorridos de compra | CI y verificación rápida |
 
 **1000 usuarios concurrentes con Artillery.** Artillery es un modelo abierto (llegadas/s). Por la
 ley de Little, L = λ·W: 1000 llegadas en 10 s con sesiones de ~70 s (70 peticiones con `think: 1`)
@@ -307,7 +333,11 @@ make test-algoritmos     # 5 políticas × REPS, orden aleatorio, rampa.yml
 make test-resiliencia P=round_robin     # M-03: rm de un backend en t=60 s, reposición en t=120 s
 make test-escalabilidad  # E-01/E-02: N = 1, 2, 3, 5, 7
 make test-quiebre        # E-13: N = 1, 3, 5
-make test-ext E=E03      # E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E14 E15 | all
+make test-ext E=E03      # E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E14 E15 E17 E18 E19 | all
+make test-tienda         # E-16: compra completa con 6 políticas y sesiones en memoria/Redis
+make test-cache          # A-02: microcaché del catálogo de la tienda
+make test-haproxy        # A-05: NGINX vs HAProxy con la misma carga
+make compare             # comparación consolidada -> docs/comparacion-algoritmos.md
 make test-all            # todo lo anterior (varias horas)
 ```
 
