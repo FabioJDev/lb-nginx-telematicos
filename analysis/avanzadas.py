@@ -191,7 +191,12 @@ def probe_stats(run: Path) -> dict:
 
     t_kill, t_rest, t_back = ev_ms("lb_killed"), ev_ms("lb_restore_start"), ev_ms("lb_restored")
     out = {"sondas": int(len(pr)), "sondas_fallidas": int((~pr["ok"]).sum())}
-    if t_kill:
+    if t_kill and pr["epoch_ms"].min() > t_kill:
+        # La sonda arrancó después del kill: el failover no quedó medido por la sonda
+        out["sonda_tardia"] = True
+        out["failover_ms"] = float("nan")
+        out["failover_fallidas"] = float("nan")
+    elif t_kill:
         before = pr[pr["epoch_ms"] < t_kill]
         out["svc_antes"] = before[before["ok"]]["svc"].mode().iloc[0] if before["ok"].any() else ""
         win = pr[(pr["epoch_ms"] >= t_kill) & ((pr["epoch_ms"] < t_rest) if t_rest else True)]
@@ -224,16 +229,23 @@ def art_phases(run: Path) -> dict:
         e = events[events["event"] == name]
         return float(e["epoch"].iloc[0]) * 1000 if not e.empty else None
 
-    t_kill, t_rest = ev_ms("lb_killed"), ev_ms("lb_restore_start")
+    t_kill, t_rest, t_back = ev_ms("lb_killed"), ev_ms("lb_restore_start"), ev_ms("lb_restored")
     out = {"art_err_failover": 0, "art_err_failback": 0, "sesion_max_failover_ms": float("nan"),
            "sesion_max_failback_ms": float("nan")}
+    # Intervalos de cada fase: failover = 20 s desde el kill; vuelta = desde que se levanta lb
+    # hasta 10 s después de que lb queda listo (con preempción, ahí recupera la VIP)
+    spans = {}
+    if t_kill:
+        spans["failover"] = (t_kill, t_kill + 20000)
+    if t_rest:
+        spans["failback"] = (t_rest, (t_back or t_rest) + 10000)
     for it in art.get("intermediate", []):
         p0 = float(it.get("period") or 0)
         errs = sum(v for k, v in it.get("counters", {}).items() if k.startswith("errors."))
         smax = it.get("summaries", {}).get("vusers.session_length", {}).get("max")
-        for key, t in (("failover", t_kill), ("failback", t_rest)):
-            # ventana que contiene el evento o la siguiente (los efectos llegan unos segundos después)
-            if t and p0 <= t + 10000 and p0 + 10000 > t:
+        for key, (a, b) in spans.items():
+            # ventana de 10 s de Artillery que se solapa con la fase
+            if p0 < b and p0 + 10000 > a:
                 out[f"art_err_{key}"] += errs
                 if smax is not None:
                     cur = out[f"sesion_max_{key}_ms"]
@@ -287,6 +299,10 @@ def a04() -> tuple[str, list[dict]]:
                   f"| {fmt(x['disponibilidad_pct'], 2, ' %')} | {fmt((x.get('failover_ms') or float('nan')) / 1000, 2, ' s')} "
                   f"| {fmt(x.get('failover_fallidas'), 0)} / {fmt(x.get('failback_fallidas'), 0)} "
                   f"| {fmt(x.get('art_err_failover'), 0)} / {fmt(x.get('art_err_failback'), 0)} |")
+    if "sonda_tardia" in df and df["sonda_tardia"].fillna(False).any():
+        tard = ", ".join(f"`{c}`" for c in df[df["sonda_tardia"].fillna(False)]["corrida"])
+        md += ["", f"En {tard} la sonda arrancó después del kill: su failover no quedó medido por la sonda "
+                   "(«—») y no entra en las medias de failover; los errores de Artillery sí cuentan."]
     md.append("")
     return "\n".join(md), rows
 

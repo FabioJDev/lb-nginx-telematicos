@@ -63,6 +63,15 @@ for pre in ${HA_VARIANTS:-on off}; do
     vip_to_lb
     ok "VIP $VIP en lb · preempt=$pre · repetición $rep"
     cooldown "${COOLDOWN:-20}"
+    # Sonda de la VIP: arranca ANTES de la carga y se espera a que responda, para que
+    # cubra el kill (en una corrida previa arrancó tarde y no vio el failover)
+    PROBE_TMP=$(mktemp)
+    compose --profile loadtest run --rm --no-deps -T --entrypoint node artillery \
+      /scripts/lib/vip-probe.js "http://$VIP/api/info" 200 100 1000 > "$PROBE_TMP" 2>/dev/null &
+    PROBE_PID=$!
+    for _ in $(seq 1 90); do [ "$(wc -l < "$PROBE_TMP")" -gt 10 ] && break; sleep 1; done
+    [ "$(wc -l < "$PROBE_TMP")" -gt 10 ] || die "la sonda de la VIP no arrancó"
+
     before=$(cat "$CURRENT_RUN_FILE" 2>/dev/null || true)
     TARGET="http://$VIP" NOTES="A-04 VIP=$VIP preempt=$pre; kill del NGINX activo en t=${T_FAULT}s, retorno en t=${T_RESTORE}s" \
       "$ROOT_DIR/scripts/run-test.sh" A04 constante.yml "ha-preempt-${pre}_rep$rep" &
@@ -79,11 +88,6 @@ for pre in ${HA_VARIANTS:-on off}; do
       d=$(awk -v a="$t_start" -v t="$1" -v n="$(date +%s.%N)" 'BEGIN{d=a+t-n; printf "%.2f", (d>0?d:0)}')
       sleep "$d"
     }
-
-    # Sonda de la VIP durante toda la corrida
-    compose --profile loadtest run --rm --no-deps -T --entrypoint node artillery \
-      /scripts/lib/vip-probe.js "http://$VIP/api/info" 185 100 1000 > "$RUN_DIR/vip_probe.csv" 2>/dev/null &
-    PROBE_PID=$!
 
     # Mapa hostname -> servicio (X-LB-Host es el hostname del contenedor)
     {
@@ -121,6 +125,7 @@ for pre in ${HA_VARIANTS:-on off}; do
 
     wait "$RUN_PID" || true
     wait "$PROBE_PID" || true
+    mv "$PROBE_TMP" "$RUN_DIR/vip_probe.csv"
     { echo "# keepalived (vrrp1, vrrp2) durante la corrida"; compose logs --no-color --since 10m vrrp1 vrrp2 2>/dev/null | grep -iE 'state|vip|transition|entering|fault|vrrp-entry' | tail -60; } > "$RUN_DIR/keepalived.log" || true
     ok "A-04 preempt=$pre repetición $rep: $RUN_DIR"
   done
