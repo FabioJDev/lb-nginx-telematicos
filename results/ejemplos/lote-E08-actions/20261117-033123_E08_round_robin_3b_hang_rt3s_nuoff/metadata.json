@@ -1,0 +1,61 @@
+{
+  "run_name": "20261117-033123_E08_round_robin_3b_hang_rt3s_nuoff",
+  "test_id": "E08",
+  "label": "hang_rt3s_nuoff",
+  "notes": "read_timeout=3s next_upstream=off",
+  "scenario": "constante.yml",
+  "target": "http://lb",
+  "work_path": "/api/work?ms=20",
+  "policy": "round_robin",
+  "feature": "none",
+  "upstream_keepalive": "on",
+  "nginx_effective": {
+    "proxy_read_timeout": "3s",
+    "proxy_next_upstream": "off"
+  },
+  "replicas": 3,
+  "warmup_seconds": 30,
+  "started_at": "2026-11-17T03:31:23Z",
+  "ended_at": "2026-11-17T03:34:31Z",
+  "start_epoch": 1794886283,
+  "end_epoch": 1794886471,
+  "artillery_exit_code": 0,
+  "nginx_log_lines": 54000,
+  "nginx_log_offset": 25455822,
+  "publish_metrics": "0",
+  "artillery_cloud": "on",
+  "artillery_cloud_url": "https://app.artillery.io/o92smqrhhdjvt/load-tests/t6mnd_rcjpphejck8yqwqydh8gn5e8wnrhc_mr8j",
+  "git_commit": "9ad16c5",
+  "git_dirty": false,
+  "images": {
+    "nginx": "nginx:1.30-alpine",
+    "nginx_version": "1.30.6",
+    "artillery": "artilleryio/artillery:2.0.34",
+    "backend": "lbnginx-backend:local (node:24-alpine)"
+  },
+  "env": {
+    "NGINX_WORKER_PROCESSES": "auto",
+    "NGINX_WORKER_CONNECTIONS": "4096",
+    "LB_MAX_FAILS": "3",
+    "LB_FAIL_TIMEOUT": "10s",
+    "LB_CONNECT_TIMEOUT": "2s",
+    "LB_SEND_TIMEOUT": "10s",
+    "LB_READ_TIMEOUT": "3s",
+    "LB_NEXT_UPSTREAM": "off",
+    "LB_NEXT_UPSTREAM_TRIES": "3",
+    "LB_NEXT_UPSTREAM_TIMEOUT": "15s",
+    "BACKEND_CPUS": "0.50",
+    "BACKEND_MEMORY": "256M",
+    "BACKEND_BASE_DELAY_MS": "0",
+    "SESSION_STORE": "redis",
+    "DB_POOL_MAX": "10",
+    "DB_CPUS": "1.0"
+  },
+  "host": {
+    "docker_server": "29.4.2",
+    "compose": "5.1.3",
+    "cpus": "2",
+    "mem_mb": "7931",
+    "kernel": "7.0.0-1019-azure"
+  }
+}

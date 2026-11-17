@@ -437,6 +437,7 @@ Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida
 | E-07 modos de falla | stop / kill / crash: **0 errores**; pause / hang: 9 errores y p99 10 s (timeout); **error 500: 33 % de errores sin reintento** |
 | E-09 falla total | 0 errores con 2 y 1 réplicas; página de mantenimiento sin réplicas; recuperación en **0,84 s** |
 | E-10 / E-11 / E-14 | escalar 3 → 6, recargar la configuración y un pico × 16 de la tasa: **0 errores**; 6 → 2: 1 error en 54 000 |
+| E-08 cuelgue: timeout × reintentos | con `proxy_read_timeout` 3 s y reintentos: **0 errores** y p99 3 s; con 10 s, p99 10 s y el nodo colgado nunca se marca caído (199 reintentos); sin reintentos ~200 errores |
 | E-12 keepalive on/off | no distinguibles (p99 22 ms en ambos): en la misma red Docker abrir conexiones es casi gratis |
 | E-15 resistencia 15 min | 360 000 peticiones, **0 errores**, p99 21,8 ms al inicio y al final, sin crecimiento de memoria |
 | A-05 NGINX vs HAProxy | misma carga: NGINX p99 32,5 ms con 11,6 % de CPU; HAProxy p99 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) |

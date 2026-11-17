@@ -427,9 +427,28 @@ aleatorio). Detalle y salvedad de configuración en [`decision-matrix.md`](decis
 
 ## E-08 · Timeouts × reintentos ante un backend colgado
 
-> La primera ejecución quedó **invalidada** (hallazgo H-9): por un error de los scripts, las cuatro
-> configuraciones corrieron con el mismo `proxy_read_timeout` de 10 s, como muestran sus `metadata.json`.
-> Repetida tras la corrección; pendiente de resultados.
+Fuente: `results/ejemplos/lote-E08-actions/` (`constante.yml`, 300 req/s; `/admin/fault hang` en 1 de 3
+réplicas en t ≈ 60 s y restauración en t ≈ 120 s). La primera ejecución quedó invalidada por el
+hallazgo H-9; esta repetición registra en `nginx_effective` la configuración realmente aplicada.
+
+| `proxy_read_timeout` | Reintentos (`proxy_next_upstream`) | Errores en los 30 s tras el cuelgue | p99 en esa ventana | Reintentos | Media de toda la corrida |
+|---|---|---|---|---|---|
+| **3 s** | **activados** | **0** | **3 020 ms** | 4 | 20,5 ms |
+| 3 s | desactivados | 201 (2,2 %) | 3 000 ms | 0 | 33,8 ms |
+| 10 s | activados | 9 (0,1 %) | 10 021 ms | 199 | 65,5 ms |
+| 10 s | desactivados | 206 (2,3 %) | 10 000 ms | 0 | 65,3 ms |
+
+Lectura:
+
+- **Los reintentos eliminan los errores**: sin ellos, cada petición enviada al nodo colgado termina en
+  504 (≈ 200 errores en 30 s con cualquier timeout).
+- **El timeout corto acota la latencia del cuelgue**: el p99 de la ventana baja de 10 s a 3 s.
+- **Interacción con la detección pasiva**: con 10 s, cada fallo tarda tanto en producirse que nunca se
+  acumulan `max_fails=3` dentro de `fail_timeout=10s`; NGINX no marca el nodo colgado y le sigue
+  enviando tráfico (199 reintentos). Con 3 s el nodo se detecta casi de inmediato (4 reintentos).
+  Regla práctica: `max_fails × proxy_read_timeout` debe ser menor que `fail_timeout`.
+- **Recomendación**: `proxy_read_timeout` de 3 s (mayor que el endpoint legítimo más lento de esta
+  aplicación) con reintentos activados; o subir `fail_timeout` si el servicio necesita timeouts largos.
 
 ## Pruebas no ejecutadas
 

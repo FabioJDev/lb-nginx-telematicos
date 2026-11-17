@@ -179,6 +179,7 @@ Más allá: 6 políticas, inyección de 7 modos de falla, escalado en caliente s
 |---|---|---|
 | stop / kill / crash | **0** | 22 ms |
 | pause / hang | 9 (0,1 %) | **10 s** (= proxy_read_timeout) |
+| hang con timeout **3 s** + reintentos (E-08) | **0** | **3 s** |
 | responde 500 | **3001 (33 %)** — NGINX no reintenta 500 | 22 ms |
 | sin backends (E-09) | página de mantenimiento 30 s → recupera en **0,84 s** | — |
 
