@@ -50,13 +50,10 @@ C1 medido en las corridas A05B (scripts/test-alternativas.sh).
 
 | Criterio | Peso base | Subiendo el peso | Bajando el peso |
 |---|---|---|---|
-| C1 | 20 | 100 → NGINX | no cambia |
-| C5 | 10 | 100 → NGINX | no cambia |
 | C6 | 10 | 56 → Traefik | no cambia |
-| C7 | 10 | 100 → NGINX | no cambia |
 | C8 | 10 | 46 → NGINX | no cambia |
 
-NGINX obtiene 81/100 (2.º lugar, a 13 puntos de HAProxy). HAProxy gana por criterios puramente de balanceo (checks activos y métricas por servidor en la versión libre) y se reporta tal cual. NGINX se usa porque (1) es la tecnología asignada al proyecto, por lo que la matriz valida la elección en lugar de hacerla; (2) es la mejor alternativa en funciones L7 y desempeño medido; y (3) sus debilidades se mitigan en el diseño: detección pasiva + reintentos (C3), exporter + logs JSON + /metrics por réplica (C4) y `resolve` (C6).
+NGINX obtiene 81/100 (2.º lugar, a 13 puntos de HAProxy). HAProxy gana por criterios puramente de balanceo (checks activos y métricas por servidor en la versión libre) y se reporta tal cual. NGINX se usa porque (1) es la tecnología asignada al proyecto, por lo que la matriz valida la elección en lugar de hacerla; (2) empata con HAProxy en el desempeño medido (p99 y CPU, las mejores de las cuatro medidas) y es la más completa en funciones L7; y (3) sus debilidades se mitigan en el diseño: detección pasiva + reintentos (C3), exporter + logs JSON + /metrics por réplica (C4) y `resolve` (C6).
 
 ## Matriz 4.2 — algoritmo de balanceo recomendado (con datos medidos)
 

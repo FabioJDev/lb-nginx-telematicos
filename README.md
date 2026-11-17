@@ -473,7 +473,7 @@ Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida
 | A-04 keepalived + IP flotante | kill del NGINX activo: failover en **3,5–3,7 s**, disponibilidad **99,93–99,95 %**; con preempción la vuelta corta ≈ 9 conexiones, con `nopreempt` **0** (H-11) |
 | E-12 keepalive on/off | no distinguibles (p99 22 ms en ambos): en la misma red Docker abrir conexiones es casi gratis |
 | E-15 resistencia 15 min | 360 000 peticiones, **0 errores**, p99 21,8 ms al inicio y al final, sin crecimiento de memoria |
-| A-05 NGINX vs HAProxy | misma carga: NGINX p99 32,5 ms con 11,6 % de CPU; HAProxy p99 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) |
+| A-05 / A-05B NGINX vs HAProxy (y Traefik, Apache) | A-05: NGINX p99 32,5 ms con 11,6 % de CPU frente a HAProxy 40,5 ms con 23,5 %, pero HAProxy no reutilizaba conexiones. A-05B, con caso base equivalente: **NGINX 35,7 ms / 9,9 % y HAProxy 36,0 ms / 10,9 % (empate)**; Apache 38,0 / 19,6; Traefik 41,2 / 28,1 |
 
 ### La tienda: sesiones y base de datos (E-16 a E-19, A-02)
 
