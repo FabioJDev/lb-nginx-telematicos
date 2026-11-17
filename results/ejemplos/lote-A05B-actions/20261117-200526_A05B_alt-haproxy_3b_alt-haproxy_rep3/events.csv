@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794945928.317975803,2026-11-17T20:05:28.328Z,artillery_start,"scenario=rampa.yml policy=alt-haproxy replicas=3 target=http://alt-haproxy"
+1794946204.209418007,2026-11-17T20:10:04.212Z,artillery_end,"exit=0 duration_s=278"

@@ -1,0 +1,6 @@
+alternativa,archivos,lineas,nodos_distintos,fallos,verificado
+NGINX,nginx.conf,20,3,0,sí
+HAProxy,haproxy.cfg,18,3,0,sí
+Traefik,traefik.yml+traefik-dinamica.yml,27,3,0,sí
+Apache,httpd.conf,23,3,0,sí
+LVS,lvs-keepalived.conf,33,,,no ejecutado (requiere el módulo ip_vs del kernel del host)

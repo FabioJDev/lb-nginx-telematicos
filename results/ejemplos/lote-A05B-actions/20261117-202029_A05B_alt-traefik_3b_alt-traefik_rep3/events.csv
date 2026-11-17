@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794946831.346997562,2026-11-17T20:20:31.353Z,artillery_start,"scenario=rampa.yml policy=alt-traefik replicas=3 target=http://alt-traefik"
+1794947107.340721086,2026-11-17T20:25:07.343Z,artillery_end,"exit=0 duration_s=278"
