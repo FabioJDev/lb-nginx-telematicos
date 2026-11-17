@@ -1,0 +1,9 @@
+# keepalived (vrrp1, vrrp2) durante la corrida
+vrrp1-1  | vrrp-entry: BACKUP prioridad=150 interfaz=eth0 ip=172.31.250.11 par=172.31.250.12 vip=172.31.250.100 preempt=off
+vrrp1-1  | Tue Nov 17 17:56:49 2026: (VI_LB) removing VIPs.
+vrrp1-1  | Tue Nov 17 17:56:49 2026: (VI_LB) Entering BACKUP STATE
+vrrp2-1  | vrrp-entry: BACKUP prioridad=100 interfaz=eth1 ip=172.31.250.12 par=172.31.250.11 vip=172.31.250.100 preempt=off
+vrrp2-1  | Tue Nov 17 17:54:05 2026: (VI_LB) removing VIPs.
+vrrp2-1  | Tue Nov 17 17:54:05 2026: (VI_LB) Entering BACKUP STATE
+vrrp2-1  | Tue Nov 17 17:55:42 2026: (VI_LB) Entering MASTER STATE
+vrrp2-1  | Tue Nov 17 17:55:42 2026: (VI_LB) setting VIPs.

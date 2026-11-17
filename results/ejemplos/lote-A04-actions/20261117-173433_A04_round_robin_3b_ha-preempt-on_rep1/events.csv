@@ -1,0 +1,7 @@
+epoch,iso,event,detail
+1794936875.541445799,2026-11-17T17:34:35.558Z,artillery_start,"scenario=constante.yml policy=round_robin replicas=3 target=http://172.31.250.100"
+1794936935.848675229,2026-11-17T17:35:35.857Z,lb_killed,"docker kill del NGINX activo (lb); dueño de la VIP: vrrp1"
+1794936939.969969772,2026-11-17T17:35:39.978Z,vip_moved,"la VIP pasó a lb2"
+1794936995.576125491,2026-11-17T17:36:35.584Z,lb_restore_start,"docker compose up lb + keepalived (preempt=on)"
+1794937010.421008573,2026-11-17T17:36:50.429Z,lb_restored,"lb recuperó la VIP (preempción por prioridad)"
+1794937062.517536560,2026-11-17T17:37:42.522Z,artillery_end,"exit=0 duration_s=189"
