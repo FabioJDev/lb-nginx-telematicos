@@ -14,6 +14,9 @@ case "$KEY" in
     [ -d "$ROOT_DIR/nginx/extras/features/$VALUE" ] || die "no existe nginx/extras/features/$VALUE (none|ratelimit|microcache)";;
   LB_UPSTREAM_KEEPALIVE)
     [ -f "$ROOT_DIR/nginx/extras/keepalive/$VALUE.conf" ] || die "valor inválido: $VALUE (on|off)";;
+  LB_TLS)
+    [ -f "$ROOT_DIR/nginx/extras/tls/$VALUE.conf" ] || die "valor inválido: $VALUE (on|off)"
+    if [ "$VALUE" = "on" ] && [ ! -s "$ROOT_DIR/nginx/certs/lb.crt" ]; then die "falta el certificado: scripts/gen-cert.sh"; fi;;
   LB_POLICY)
     [ -f "$ROOT_DIR/nginx/policies/$VALUE.conf" ] || die "no existe nginx/policies/$VALUE.conf";;
 esac

@@ -164,6 +164,13 @@ def parse_artillery(path: Path) -> dict:
             endpoints[name] = {"mean": sm.get("mean"), "p95": sm.get("p95"), "p99": sm.get("p99"), "count": sm.get("count")}
             out[f"ep_p95_{name}"] = sm.get("p95")
             out[f"ep_mean_{name}"] = sm.get("mean")
+    # Códigos HTTP por nombre de petición (p. ej. A-01: 429 del cliente abusivo vs normales)
+    cpre = "plugins.metrics-by-endpoint."
+    for k, v in counters.items():
+        if k.startswith(cpre) and ".codes." in k:
+            name, code = k[len(cpre):].rsplit(".codes.", 1)
+            name = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+            out[f"ep_{name}_c{code}"] = v
     out["art_endpoints"] = endpoints
     # Serie intermedia (cada 10 s): usuarios activos, rps, p99, errores
     rows = []

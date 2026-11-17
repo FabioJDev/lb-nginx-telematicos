@@ -22,12 +22,15 @@ jobs:
       - name: Crear .env
         run: cp .env.example .env
 
-      - name: Validar docker-compose (base, override, weighted, haproxy)
+      - name: Validar docker-compose (base, override, weighted, haproxy, tls, ha, capturas)
         run: |
           docker compose config -q
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f compose.weighted.yml config -q
           docker compose -f docker-compose.yml -f compose.haproxy.yml config -q
+          docker compose -f docker-compose.yml -f compose.tls.yml config -q
+          docker compose -f docker-compose.yml -f compose.ha.yml config -q
+          docker compose -f docker-compose.yml -f compose.capturas.yml config -q
 
       - name: shellcheck
         run: make shellcheck
@@ -54,6 +57,26 @@ jobs:
         run: |
           docker compose exec -T lb nginx -t
           docker compose exec -T lb cat /etc/nginx/generated/http.conf
+
+      - name: TLS + HTTP/2 en el balanceador (A-03)
+        run: |
+          scripts/gen-cert.sh
+          export COMPOSE_EXTRA_ARGS="-f docker-compose.yml -f docker-compose.override.yml -f compose.tls.yml"
+          scripts/set-env.sh LB_TLS on --recreate-lb
+          v=$(docker run --rm --network lbnginx_frontend curlimages/curl:8.11.1 -sk --http2 -o /dev/null -w '%{http_version}' https://lb/api/info)
+          echo "HTTPS negoció HTTP/$v"; [ "$v" = "2" ]
+          scripts/smoke.sh 30
+          scripts/set-env.sh LB_TLS off --recreate-lb
+
+      - name: Limitación de tasa por cliente (A-01)
+        run: |
+          scripts/set-env.sh LB_FEATURE ratelimit --recreate-lb
+          docker run --rm --network lbnginx_frontend curlimages/curl:8.11.1 -s --parallel --parallel-max 50 \
+            -H 'X-Client-Id: ci-rafaga' -w 'CODE=%{http_code}\n' 'http://lb/api/info?i=[1-300]' \
+            | grep -o 'CODE=[0-9]*' | sort | uniq -c | tee /tmp/codes.txt
+          grep -q 'CODE=429' /tmp/codes.txt
+          grep -q 'CODE=200' /tmp/codes.txt
+          scripts/set-env.sh LB_FEATURE none --recreate-lb
 
       - name: Backends sin puertos publicados (R-16)
         run: |

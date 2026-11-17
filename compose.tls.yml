@@ -1,0 +1,15 @@
+# =============================================================================
+# compose.tls.yml — A-03: TLS + HTTP/2 en el balanceador.
+#
+#   scripts/gen-cert.sh                       # certificado autofirmado (en contenedor)
+#   docker compose -f docker-compose.yml -f compose.tls.yml up -d   (con LB_TLS=on)
+#   make tls-up / make test-tls
+#
+# Monta el certificado en solo lectura y publica el puerto 443 del balanceador.
+# =============================================================================
+services:
+  lb:
+    ports:
+      - "${LB_TLS_PORT:-8443}:443"
+    volumes:
+      - ./nginx/certs:/etc/nginx/certs:ro

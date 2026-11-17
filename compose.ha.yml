@@ -1,0 +1,80 @@
+# =============================================================================
+# compose.ha.yml — A-04: alta disponibilidad del propio balanceador.
+#
+#   lb  (172.31.250.11) + vrrp1: keepalived MASTER, prioridad 150
+#   lb2 (172.31.250.12) + vrrp2: keepalived BACKUP, prioridad 100
+#   IP flotante (VIP): 172.31.250.100 en la red lbnginx_ha
+#
+# Cada keepalived comparte el espacio de red de su NGINX (network_mode: service:...),
+# así que la VIP aparece en la interfaz del NGINX que la tiene. VRRP va en unicast
+# entre las dos IP fijas (no depende de multicast en el bridge de Docker). Un script
+# de salud consulta /lb-health: si NGINX no responde, keepalived suelta la VIP.
+#
+# Limitación (documentada): la VIP solo existe DENTRO de la red Docker; desde el host
+# (Docker Desktop/WSL2) no se alcanza. Por eso las pruebas corren en contenedores
+# conectados a la red ha (Artillery y la sonda).
+#
+#   make ha-up | make test-ha     (scripts/test-ha.sh)
+# =============================================================================
+services:
+  lb:
+    networks:
+      frontend: {}
+      backend: {}
+      ha:
+        ipv4_address: 172.31.250.11
+
+  lb2:
+    extends:
+      file: docker-compose.yml
+      service: lb
+    # Sin puertos al host: solo se usa a través de la VIP
+    ports: !reset []
+    volumes: !override
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/policies:/etc/nginx/policies:ro
+      - ./nginx/extras:/etc/nginx/extras:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+      - ./logs/nginx-lb2:/var/log/nginx
+    networks:
+      frontend: {}
+      backend: {}
+      ha:
+        ipv4_address: 172.31.250.12
+
+  vrrp1:
+    image: ${KEEPALIVED_BASE_IMAGE:-alpine:3.22}
+    network_mode: "service:lb"
+    cap_add: [NET_ADMIN, NET_RAW]
+    entrypoint: ["sh", "/ha/vrrp-entry.sh", "MASTER", "150", "172.31.250.11", "172.31.250.12"]
+    volumes:
+      - ./ha:/ha:ro
+    depends_on:
+      - lb
+    restart: unless-stopped
+
+  vrrp2:
+    image: ${KEEPALIVED_BASE_IMAGE:-alpine:3.22}
+    network_mode: "service:lb2"
+    cap_add: [NET_ADMIN, NET_RAW]
+    entrypoint: ["sh", "/ha/vrrp-entry.sh", "BACKUP", "100", "172.31.250.12", "172.31.250.11"]
+    volumes:
+      - ./ha:/ha:ro
+    depends_on:
+      - lb2
+    restart: unless-stopped
+
+  # Artillery también entra a la red ha para llegar a la VIP
+  artillery:
+    networks:
+      frontend: {}
+      ha: {}
+
+networks:
+  ha:
+    name: ${COMPOSE_PROJECT_NAME:-lbnginx}_ha
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24

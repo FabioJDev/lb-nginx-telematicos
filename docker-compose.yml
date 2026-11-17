@@ -51,6 +51,7 @@ services:
       LB_POLICY: ${LB_POLICY:-round_robin}
       LB_FEATURE: ${LB_FEATURE:-none}
       LB_UPSTREAM_KEEPALIVE: ${LB_UPSTREAM_KEEPALIVE:-on}
+      LB_TLS: ${LB_TLS:-off}
       LB_MAX_FAILS: ${LB_MAX_FAILS:-3}
       LB_FAIL_TIMEOUT: ${LB_FAIL_TIMEOUT:-10s}
       LB_CONNECT_TIMEOUT: ${LB_CONNECT_TIMEOUT:-2s}

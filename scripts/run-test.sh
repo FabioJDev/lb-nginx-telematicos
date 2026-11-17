@@ -237,7 +237,10 @@ cat > "$RUN_DIR/metadata.json" <<EOF
     "BACKEND_BASE_DELAY_MS": "$BACKEND_BASE_DELAY_MS",
     "SESSION_STORE": "${SESSION_STORE:-redis}",
     "DB_POOL_MAX": "${DB_POOL_MAX:-10}",
-    "DB_CPUS": "${DB_CPUS:-1.0}"
+    "DB_CPUS": "${DB_CPUS:-1.0}",
+    "LB_TLS": "${LB_TLS:-off}",
+    "LB_FEATURE": "${LB_FEATURE:-none}",
+    "TARGET": "$TARGET"
   },
   "host": {
     "docker_server": "$DOCKER_VER",

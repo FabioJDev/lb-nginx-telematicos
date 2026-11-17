@@ -1,0 +1,41 @@
+# artillery/scenarios/ratelimit.yml — A-01: un cliente abusivo frente a clientes normales.
+#
+# 120 llegadas/s durante 90 s, repartidas por peso:
+#   - abusivo (2/3 ≈ 80 req/s): SIEMPRE el mismo X-Client-Id -> supera el límite de
+#     50 req/s por cliente (limit_req rate=50r/s burst=100 nodelay).
+#   - normal  (1/3 ≈ 40 req/s): cada usuario con su propio X-Client-Id, 1 petición.
+# Con LB_FEATURE=ratelimit se espera 429 solo para el abusivo; los normales no deben
+# notarlo. El plugin metrics-by-endpoint separa los códigos por nombre de petición.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+    pool: 200
+  phases:
+    - name: "rafaga con un cliente abusivo"
+      duration: 90
+      arrivalRate: 120
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+scenarios:
+  - name: "abusivo"
+    weight: 2
+    flow:
+      - get:
+          url: "{{ $env.WORK_PATH }}"
+          name: "abusivo"
+          headers:
+            X-Client-Id: "cliente-abusivo"
+          afterResponse: "trackBackend"
+  - name: "normal"
+    weight: 1
+    beforeScenario: "setClientId"
+    flow:
+      - get:
+          url: "{{ $env.WORK_PATH }}"
+          name: "normal"
+          headers:
+            X-Client-Id: "{{ clientId }}"
+          afterResponse: "trackBackend"

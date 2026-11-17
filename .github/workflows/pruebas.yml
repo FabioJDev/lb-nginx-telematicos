@@ -18,7 +18,7 @@ on:
         type: choice
         required: true
         default: test-min
-        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy, capturas]
+        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy, capturas, test-ratelimit, test-tls, test-ha]
       reps:
         description: "Repeticiones por configuración (REPS)"
         type: string
@@ -105,6 +105,9 @@ jobs:
             test-cache)        scripts/test-cache.sh ;;
             test-haproxy)      scripts/test-haproxy.sh ;;
             capturas)          scripts/capturas.sh ;;
+            test-ratelimit)    scripts/test-ratelimit.sh ;;
+            test-tls)          scripts/test-tls.sh ;;
+            test-ha)           scripts/test-ha.sh ;;
           esac
 
       - name: Análisis y matrices
@@ -114,6 +117,8 @@ jobs:
           docker compose --profile tools run --rm analysis || true
           docker compose --profile tools run --rm analysis python decision_matrix.py > /dev/null || true
           docker compose --profile tools run --rm analysis python compare_all.py || true
+          docker compose --profile tools run --rm analysis python avanzadas.py > /dev/null || true
+          cat results/avanzadas.md 2>/dev/null >> "$GITHUB_STEP_SUMMARY" || true
           sudo chown -R "$(id -u):$(id -g)" results docs || true
           ls -la results | head -40
           cat results/significancia.txt 2>/dev/null || true
@@ -154,4 +159,4 @@ jobs:
 
       - name: Bajar stack
         if: always()
-        run: docker compose -f docker-compose.yml -f compose.capturas.yml --profile tools --profile loadtest --profile monitoring --profile capturas down -v --remove-orphans
+        run: docker compose -f docker-compose.yml -f compose.capturas.yml -f compose.ha.yml -f compose.tls.yml --profile tools --profile loadtest --profile monitoring --profile capturas down -v --remove-orphans

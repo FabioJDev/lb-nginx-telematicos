@@ -69,6 +69,10 @@ server {
     listen 80 default_server;
     server_name _;
 
+    # TLS + HTTP/2 opcional (A-03): LB_TLS=on añade 'listen 443 ssl' y el certificado
+    # (requiere compose.tls.yml, que monta nginx/certs). LB_TLS=off no añade nada.
+    include /etc/nginx/extras/tls/${LB_TLS}.conf;
+
     location / {
         proxy_pass http://backend_pool;
 
@@ -99,6 +103,9 @@ server {
         # location porque add_header no se hereda si el nivel hijo define alguna.
         add_header X-Upstream-Addr $upstream_addr always;
         add_header X-LB-Policy     "${LB_POLICY}" always;
+        # Instancia de NGINX que respondió (con dos balanceadores en A-04, muestra cuál
+        # tiene la IP flotante en cada momento)
+        add_header X-LB-Host       $hostname always;
         add_header X-Request-Id    $request_id always;
         # Cookie de afinidad del balanceador (solo la usa la política sticky_cookie;
         # add_header con valor vacío no envía nada, así que solo se emite una vez)

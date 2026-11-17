@@ -1,0 +1,40 @@
+# ha/keepalived.conf.tmpl — A-04. vrrp-entry.sh sustituye los marcadores __X__.
+global_defs {
+    router_id lbnginx___STATE__
+    script_user root
+    enable_script_security
+    # Anuncios ARP gratuitos al tomar la VIP: los clientes actualizan su caché ARP
+    vrrp_garp_master_delay 1
+    vrrp_garp_master_repeat 3
+}
+
+# Salud del NGINX local (mismo espacio de red): si falla 2 veces, se suelta la VIP
+vrrp_script chk_nginx {
+    script "/usr/bin/wget -q -T 1 -O /dev/null http://127.0.0.1/lb-health"
+    interval 1
+    timeout 2
+    fall 2
+    rise 2
+}
+
+vrrp_instance VI_LB {
+    state __STATE__
+    interface __IFACE__
+    virtual_router_id 51
+    priority __PRIO__
+    advert_int 1
+    unicast_src_ip __SELF__
+    unicast_peer {
+        __PEER__
+    }
+    authentication {
+        auth_type PASS
+        auth_pass lbnginx
+    }
+    virtual_ipaddress {
+        __VIP__/24 dev __IFACE__
+    }
+    track_script {
+        chk_nginx
+    }
+}

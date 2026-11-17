@@ -19,7 +19,7 @@ F              ?= none
 REPS           ?= 3
 
 .PHONY: help env up up-clean down down-v ps logs logs-lb logs-backend build compare sesiones db-shell db-reset \
-        test-tienda test-cache test-haproxy capturas \
+        test-tienda test-cache test-haproxy capturas test-ratelimit test-tls test-ha ha-up ha-down tls-up \
         smoke nginx-test reload status config policy feature keepalive scale \
         monitoring-up monitoring-down cadvisor-up weighted-up weighted-down \
         haproxy-up haproxy-down \
@@ -167,6 +167,27 @@ test-haproxy: ## A-05: NGINX vs HAProxy con los mismos backends y la misma carga
 capturas: ## M-00/M-01/R-18: capturas reales de /nodo, stub_status y Grafana por algoritmo -> docs/capturas/
 	$(SCRIPTS)/capturas.sh
 
+test-ratelimit: ## A-01: cliente abusivo vs clientes normales con y sin limit_req (ratelimit.yml)
+	REPS=$(REPS) $(SCRIPTS)/test-ratelimit.sh
+
+tls-up: env ## A-03: certificado autofirmado + TLS/HTTP2 en https://localhost:8443
+	$(SCRIPTS)/gen-cert.sh
+	COMPOSE_EXTRA_ARGS="-f docker-compose.yml -f docker-compose.override.yml -f compose.tls.yml" $(SCRIPTS)/set-env.sh LB_TLS on --recreate-lb
+
+test-tls: ## A-03: misma carga por http y https; latencia y CPU del balanceador
+	REPS=$(REPS) $(SCRIPTS)/test-tls.sh
+
+ha-up: env ## A-04: dos NGINX con keepalived e IP flotante 172.31.250.100 (solo dentro de Docker)
+	mkdir -p logs/nginx-lb2
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml -f compose.ha.yml up -d
+
+ha-down: ## A-04: quita lb2 y keepalived y vuelve al stack normal
+	$(COMPOSE) -f docker-compose.yml -f docker-compose.override.yml -f compose.ha.yml rm -sf lb2 vrrp1 vrrp2
+	$(COMPOSE) up -d --force-recreate lb
+
+test-ha: ## A-04: kill del NGINX activo bajo carga; mide failover y failback
+	REPS=$(REPS) $(SCRIPTS)/test-ha.sh
+
 sesiones: ## Cambia dónde viven las sesiones y recrea los backends: make sesiones S=memory|redis
 	$(SCRIPTS)/set-env.sh SESSION_STORE $(S) --recreate-backend
 
@@ -228,4 +249,4 @@ check-eol: ## Falla si algún .sh/.conf/.yml tiene finales CRLF
 	else echo "finales de línea: OK"; fi
 
 shellcheck: ## Analiza los scripts con shellcheck (en contenedor)
-	docker run --rm -v "$$PWD:/mnt" koalaman/shellcheck:v0.10.0 -x -S warning -P SCRIPTDIR scripts/*.sh scripts/in-container/*.sh nginx/dev/*.sh
+	docker run --rm -v "$$PWD:/mnt" koalaman/shellcheck:v0.10.0 -x -S warning -P SCRIPTDIR scripts/*.sh scripts/in-container/*.sh nginx/dev/*.sh ha/*.sh
