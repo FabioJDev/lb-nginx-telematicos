@@ -1,0 +1,8 @@
+# A-03: negociación TLS/HTTP2 contra https://lb (curl en contenedor, 2026-11-17T16:31:28Z)
+http_version=2 ssl_verify_result=18 time_connect=0.000655 time_appconnect=0.007363 time_total=0.008701
+* ALPN: curl offers h2,http/1.1
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / x25519 / RSASSA-PSS
+* ALPN: server accepted h2
+< HTTP/2 200 
+< x-lb-policy: round_robin
+< x-lb-host: c2c6657c1f11

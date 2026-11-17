@@ -1,0 +1,32 @@
+# .github/workflows/analisis.yml — vuelve a analizar los resultados versionados
+# (results/ejemplos/) en el contenedor analysis, sin ejecutar pruebas nuevas.
+# Publica avanzadas.md (A-01/A-03/A-04), comparación consolidada y matrices.
+#   gh workflow run analisis.yml
+name: analisis
+
+on:
+  workflow_dispatch:
+
+jobs:
+  analisis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construir contenedor de análisis
+        run: |
+          cp .env.example .env
+          docker compose --profile tools build analysis
+      - name: Resumen de las mejoras avanzadas (A-01, A-03, A-04)
+        run: |
+          docker compose --profile tools run --rm -e RESULTS_DIR=/results/ejemplos analysis python avanzadas.py
+          sudo chown -R "$(id -u):$(id -g)" results
+          cat results/ejemplos/avanzadas.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Publicar
+        uses: actions/upload-artifact@v4
+        with:
+          name: analisis-${{ github.run_id }}
+          path: |
+            results/ejemplos/avanzadas.md
+            results/ejemplos/avanzadas.csv
+          retention-days: 30

@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794933105.411138189,2026-11-17T16:31:45.423Z,artillery_start,"scenario=ratelimit.yml policy=round_robin replicas=3 target=http://lb"
+1794933231.801704900,2026-11-17T16:33:51.805Z,artillery_end,"exit=0 duration_s=128"

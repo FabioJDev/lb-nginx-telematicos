@@ -125,7 +125,10 @@ def a03() -> tuple[str, list[dict]]:
     for run, r in runs("A03"):
         lab = label_of(run, r)
         proto = "https" if "proto-https" in lab else "http"
+        sess = ((load(run / "artillery.json") or {}).get("aggregate", {}).get("summaries", {})
+                .get("vusers.session_length", {}))
         rows.append({
+            "sesion_mediana_ms": sess.get("median"), "sesion_p95_ms": sess.get("p95"),
             "prueba": "A03", "corrida": run.name, "config": proto,
             "lat_media_ms": r.get("art_lat_mean"), "lat_p95_ms": r.get("art_lat_p95"), "lat_p99_ms": r.get("art_lat_p99"),
             "nginx_p99_ms": r.get("ng_lat_p99_ms"),
@@ -145,14 +148,17 @@ def a03() -> tuple[str, list[dict]]:
         return "\n".join(md) + "\n", rows
     df = pd.DataFrame(rows)
     md += ["Misma carga (`constante.yml`, 100 usuarios/s, 3 peticiones por usuario, 180 s) por `http://lb` y "
-           "`https://lb`. Cada usuario virtual abre su propia conexión: con HTTPS cada uno paga un handshake TLS.", "",
-           "| Protocolo | Latencia media | p95 | p99 | CPU media del balanceador | CPU máx. del balanceador | Errores |",
-           "|---|---|---|---|---|---|---|"]
+           "`https://lb`. Cada usuario virtual abre su propia conexión: con HTTPS cada uno paga un handshake TLS. "
+           "El tiempo de respuesta de Artillery empieza con la conexión ya abierta; la duración de la sesión "
+           "(`vusers.session_length`) sí incluye conexión y handshake.", "",
+           "| Protocolo | Respuesta p95 | Respuesta p99 | Sesión completa (mediana) | Sesión completa (p95) | CPU media del balanceador | CPU máx. del balanceador | Errores |",
+           "|---|---|---|---|---|---|---|---|"]
     for proto in ("http", "https"):
         g = df[df["config"] == proto]
         if g.empty:
             continue
-        md.append(f"| {proto} | {pm(g['lat_media_ms'], 1, ' ms')} | {pm(g['lat_p95_ms'], 1, ' ms')} | {pm(g['lat_p99_ms'], 1, ' ms')} "
+        md.append(f"| {proto} | {pm(g['lat_p95_ms'], 1, ' ms')} | {pm(g['lat_p99_ms'], 1, ' ms')} "
+                  f"| {pm(g['sesion_mediana_ms'], 1, ' ms')} | {pm(g['sesion_p95_ms'], 1, ' ms')} "
                   f"| {pm(g['cpu_lb_media'], 1, ' %')} | {pm(g['cpu_lb_max'], 1, ' %')} | {pm(g['error_rate_pct'], 2, ' %')} |")
     md.append("")
     return "\n".join(md), rows
@@ -217,6 +223,7 @@ def a04() -> tuple[str, list[dict]]:
             "peticiones": req, "fallidas": bad,
             "disponibilidad_pct": 100.0 * (1 - bad / req) if req else float("nan"),
             "errores_transporte": r.get("art_transport_errors", 0),
+            "tipos_error": " · ".join(f"{k} {v}" for k, v in sorted((r.get("art_errors") or {}).items())),
             "p99_ms": r.get("art_lat_p99"), "max_ms": r.get("art_lat_max"),
             "cpu_lb": r.get("cpu_mean_lb"), "cpu_lb2": r.get("cpu_mean_lb2"),
             **ps,
@@ -228,10 +235,11 @@ def a04() -> tuple[str, list[dict]]:
           "Carga `constante.yml` contra la VIP `172.31.250.100`; `docker kill` del NGINX activo en t = 60 s y "
           "vuelta en t = 120 s. Sonda propia cada 100 ms (conexión nueva, timeout 1 s) que registra qué NGINX "
           "respondió (`X-LB-Host`).", "",
-          "| Corrida | Peticiones (Artillery) | Fallidas | Disponibilidad | Failover: 1.ª respuesta de lb2 tras el kill | Sondas fallidas en el failover | Sondas fallidas en el failback | Atendía al final |",
-          "|---|---|---|---|---|---|---|---|"]
+          "| Corrida | Peticiones (Artillery) | Fallidas (tipo) | Disponibilidad | p99 / máx. | Failover: 1.ª respuesta de lb2 tras el kill | Sondas fallidas en el failover | Sondas fallidas en el failback | Atendía al final |",
+          "|---|---|---|---|---|---|---|---|---|"]
     for _, x in df.iterrows():
-        md.append(f"| `{x['corrida']}` | {fmt(x['peticiones'], 0)} | {fmt(x['fallidas'], 0)} | {fmt(x['disponibilidad_pct'], 2, ' %')} "
+        md.append(f"| `{x['corrida']}` | {fmt(x['peticiones'], 0)} | {fmt(x['fallidas'], 0)} ({x['tipos_error'] or '—'}) "
+                  f"| {fmt(x['disponibilidad_pct'], 2, ' %')} | {fmt(x['p99_ms'], 0, ' ms')} / {fmt(x['max_ms'], 0, ' ms')} "
                   f"| {fmt((x.get('failover_ms') or float('nan')) / 1000, 2, ' s')} | {fmt(x.get('failover_fallidas'), 0)} "
                   f"| {fmt(x.get('failback_fallidas'), 0)} | {x.get('svc_final', '—') or '—'} |")
     if len(df) > 1:

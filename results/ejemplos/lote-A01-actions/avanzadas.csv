@@ -1,0 +1,7 @@
+prueba,corrida,config,abusivo_total,abusivo_429,normal_total,normal_429,normal_200,abusivo_429_pct,normal_429_pct,backend_reqs,normal_p95_ms,errores_transporte,cpu_lb
+A01,20261117-163143_A01_round_robin_3b_ratelimit-ratelimit_rep1,ratelimit,7155,2557,3645,0,3645,35.737246680642905,0.0,8243,22,0,3.2735483870967745
+A01,20261117-163423_A01_round_robin_3b_ratelimit-none_rep1,none,7286,0,3514,0,3514,0.0,0.0,10800,22,0,3.532916666666667
+A01,20261117-163632_A01_round_robin_3b_ratelimit-ratelimit_rep2,ratelimit,7141,2542,3659,0,3659,35.597255286374455,0.0,8258,22,0,3.4270833333333335
+A01,20261117-163841_A01_round_robin_3b_ratelimit-none_rep2,none,7165,0,3635,0,3635,0.0,0.0,10800,22,0,3.8066666666666666
+A01,20261117-164051_A01_round_robin_3b_ratelimit-ratelimit_rep3,ratelimit,7213,2614,3587,0,3587,36.24012200194094,0.0,8186,22,0,3.9783333333333335
+A01,20261117-164300_A01_round_robin_3b_ratelimit-none_rep3,none,7124,0,3676,0,3676,0.0,0.0,10800,22,0,3.495416666666667

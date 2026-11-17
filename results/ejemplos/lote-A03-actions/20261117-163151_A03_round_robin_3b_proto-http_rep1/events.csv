@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794933113.034192001,2026-11-17T16:31:53.434Z,artillery_start,"scenario=constante.yml policy=round_robin replicas=3 target=http://lb"
+1794933329.189326777,2026-11-17T16:35:29.193Z,artillery_end,"exit=0 duration_s=218"
