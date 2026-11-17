@@ -6,6 +6,13 @@
 
 set -euo pipefail
 
+# Git Bash (MSYS) en Windows convierte los argumentos con forma de ruta Unix al llamar a
+# docker.exe ("/api/info" -> "C:/Program Files/Git/api/info"). Se desactiva esa conversión
+# para que las rutas lleguen intactas a los contenedores. En Linux/WSL no tiene efecto.
+case "$(uname -s 2>/dev/null)" in
+  MINGW*|MSYS*|CYGWIN*) export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*' ;;
+esac
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env"
 RESULTS_DIR="$ROOT_DIR/results"

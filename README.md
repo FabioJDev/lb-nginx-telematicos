@@ -129,6 +129,11 @@ Más diagramas (camino de una petición con reintento, flujo de una corrida) en
   y ejecutar los comandos desde la terminal de WSL. Asignar CPU/RAM suficientes a WSL
   (`%UserProfile%\.wslconfig`) y conectar el portátil a la corriente durante las pruebas.
 - `make` (en WSL: `sudo apt install make`). Todos los objetivos tienen su equivalente sin `make` más abajo.
+- En Docker Desktop: *Settings → Resources → WSL integration* activado para la distribución
+  (sin esto, `docker` no existe dentro de Ubuntu).
+- Alternativa sin WSL: los scripts también funcionan desde **Git Bash** en Windows con el `docker.exe`
+  de Docker Desktop (`scripts/lib.sh` desactiva la conversión de rutas de MSYS). Verificado con
+  `scripts/smoke.sh` y un escenario de Artillery; para mediciones, mejor WSL.
 
 ## 3. Despliegue paso a paso
 
