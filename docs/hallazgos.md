@@ -122,9 +122,21 @@ Al recuperarse la dependencia, las réplicas siguen excluidas hasta que vence el
 deshace la degradación parcial de la aplicación (E-19) y alarga la recuperación (E-18). Por el lado
 bueno, evita una tormenta de reintentos contra la base de datos.
 
-**Corrección propuesta y medida.** No incluir `http_503` en `proxy_next_upstream` cuando el 503 lo
-genera la aplicación por una dependencia (`LB_NEXT_UPSTREAM="error timeout http_502 http_504"`): las
-caídas de proceso siguen detectándose por `error`/`timeout`. Se mide en E-18B y E-19B.
+**Corrección medida y adoptada.** No incluir `http_503` en `proxy_next_upstream`
+(`LB_NEXT_UPSTREAM="error timeout http_502 http_504"`, ahora el valor por defecto): las caídas de
+proceso siguen detectándose por `error`/`timeout`, y el 503 de la aplicación llega al cliente sin que
+NGINX castigue a la réplica. Resultado (`results/ejemplos/lote-E18B-actions/`, `lote-E19B-actions/`):
+
+| | E-18 | E-18B | E-19 | E-19B |
+|---|---|---|---|---|
+| Peticiones respondidas con "no live upstreams" durante la caída | 99,9 % | **0 %** | 27,5 % | **0 %** |
+| Errores del catálogo durante la caída | 100 % | 100 % | 27,8 % | **0 %** |
+| Recuperación tras volver la dependencia | 6,3 s | **1,3 s** | 3,0 s | 2,8 s |
+| Errores en toda la corrida | 23,2 % | **13,4 %** | 8,8 % | **3,3 %** |
+
+Con PostgreSQL caído siguen fallando todas las peticiones (nada puede compensarlo), pero el servicio
+vuelve en 1,3 s en lugar de 6,3 s. Con Redis caído el catálogo sigue funcionando: se conserva la
+degradación parcial que hace la aplicación.
 
 ## H-9 · Los cambios de `.env` a mitad de un lote no llegaban a los scripts hijos
 

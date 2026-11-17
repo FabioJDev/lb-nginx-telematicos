@@ -374,7 +374,24 @@ Fuente: `results/ejemplos/lote-E19-actions/` (`tienda.yml`, sesiones en Redis; R
 
 ## E-18B / E-19B · Las mismas caídas sin contar el 503 como fallo
 
-> Pendiente: en ejecución con `proxy_next_upstream error timeout http_502 http_504`.
+Fuente: `results/ejemplos/lote-E18B-actions/` y `lote-E19B-actions/` (mismo procedimiento que E-18 y
+E-19, con `proxy_next_upstream error timeout http_502 http_504`; los metadatos registran la
+configuración efectiva en `nginx_effective`).
+
+| | E-18 | **E-18B** | E-19 | **E-19B** |
+|---|---|---|---|---|
+| Respuestas "no live upstreams" (502 sin consultar réplicas) durante la caída | 99,9 % | **0 %** | 27,5 % | **0 %** |
+| Errores del catálogo durante la caída | 100 % | 100 % | 27,8 % | **0 %** |
+| Errores durante la caída (todas las rutas) | 100 % | 100 % | 35,2 % | **11,6 %** |
+| Recuperación tras volver la dependencia | 6,3 s | **1,3 s** | 3,0 s | 2,8 s |
+| Errores en toda la corrida | 23,2 % | **13,4 %** | 8,8 % | **3,3 %** |
+| Compras completadas (E-19) | | | 72,8 % | 71,4 % |
+
+Sin `http_503`, NGINX deja pasar el 503 de la aplicación sin marcar la réplica como caída. Con
+PostgreSQL caído todo sigue fallando (inevitable), pero el servicio vuelve en 1,3 s en vez de 6,3 s.
+Con Redis caído, el catálogo funciona al 100 % y solo fallan las operaciones que necesitan sesión.
+**Se adoptó como configuración por defecto** (hallazgo H-8). Las pruebas anteriores registran en su
+`metadata.json` el valor que usaron.
 
 ## A-02 · Microcaché del catálogo frente a la base de datos
 

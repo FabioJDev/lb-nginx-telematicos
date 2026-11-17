@@ -188,7 +188,7 @@ Archivo `.env` (plantilla en [`.env.example`](.env.example)). Las más relevante
 | `LB_UPSTREAM_KEEPALIVE` | `on` | `keepalive 64` hacia los backends (E-12). |
 | `LB_MAX_FAILS` / `LB_FAIL_TIMEOUT` | `3` / `10s` | Detección pasiva: tras 3 fallos en 10 s el backend se marca caído 10 s. |
 | `LB_CONNECT_TIMEOUT` / `LB_SEND_TIMEOUT` / `LB_READ_TIMEOUT` | `2s` / `10s` / `10s` | Timeouts hacia el upstream. |
-| `LB_NEXT_UPSTREAM` | `error timeout http_502 http_503 http_504` | Condiciones de reintento (`off` lo desactiva; E-08 añade `http_500`). |
+| `LB_NEXT_UPSTREAM` | `error timeout http_502 http_504` | Condiciones de reintento y de fallo pasivo (`off` lo desactiva). **Sin `http_503`**: el 503 de la app por una dependencia caída no debe descartar réplicas (hallazgo H-8). |
 | `LB_NEXT_UPSTREAM_TRIES` / `LB_NEXT_UPSTREAM_TIMEOUT` | `3` / `15s` | Límite de reintentos. |
 | `BACKEND_REPLICAS` | `3` | Réplicas al hacer `make up`. |
 | `BACKEND_CPUS` / `BACKEND_MEMORY` | `0.50` / `256M` | Límites por réplica (los backends se saturan antes que el host). |
@@ -452,6 +452,7 @@ Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida
 | A-02 microcaché de 1 s del catálogo | 61,6 % de aciertos; CPU de PostgreSQL **−77 %** (22,6 → 5,1 %); latencia media 1,24 → 0,28 ms |
 | E-18 PostgreSQL caído 30 s | 100 % de errores (inevitable) y **6,3 s** extra de recuperación: NGINX marcó las 3 réplicas como caídas por sus 503 |
 | E-19 Redis caído 30 s | fallaron login y carrito, y también **el catálogo**, que no usa Redis, por el mismo motivo (hallazgo H-8) |
+| E-18B / E-19B sin `http_503` en `proxy_next_upstream` | réplicas sanas descartadas 99,9 % → **0 %**; catálogo con Redis caído 27,8 % → **0 %** de errores; recuperación tras volver PostgreSQL 6,3 → **1,3 s**. Adoptado como valor por defecto |
 
 ![Tienda: sesiones y compras por política](docs/figuras/comparacion_tienda.png)
 

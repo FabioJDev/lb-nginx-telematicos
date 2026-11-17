@@ -1,0 +1,352 @@
+scenario,scenario_title,policy,metric,metric_title,unit,lower_is_better,mean,std,n,test_id,source
+homog,Homogéneo,round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.304246380155966,0.0224967550078865,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.231084494936,0.0966560798994902,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_jain,Índice de Jain (equidad),,False,1.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_max_share,Fracción al backend más cargado,%,True,33.33333333333333,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,0.09523460679096,0.0416022002549377,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.348544065091872,0.0136446298642962,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.22161385214,0.1226409755923666,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_jain,Índice de Jain (equidad),,False,0.9999999628088784,2.8782530856845483e-08,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_max_share,Fracción al backend más cargado,%,True,33.34053700305362,0.004369948772918789,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,0.3675079056933201,0.0152497417637897,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.41140218820625,0.0047838211372195,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.0329878846378,0.3248069871247898,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_jain,Índice de Jain (equidad),,False,0.999999508505984,4.978987360754793e-07,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_max_share,Fracción al backend más cargado,%,True,33.36172067587515,0.015281291125930001,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,0.03113439068166,0.0025900398563662,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,random_two,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.332731399575348,0.020971188044222,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.33333333333333,0.5773502691896263,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.2910903586828,0.0788471828254736,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_jain,Índice de Jain (equidad),,False,0.3333333333333333,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_max_share,Fracción al backend más cargado,%,True,100.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,ip_hash,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,3,M05,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.414707940031285,0.008718106089816,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.1726585333645,0.0468907304790706,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_jain,Índice de Jain (equidad),,False,0.9999500291267704,6.57437908051539e-05,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_max_share,Fracción al backend más cargado,%,True,33.48772384793175,0.13183351157797998,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+homog,Homogéneo,hash_client,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,58.201162021800485,0.0764098789630874,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,171.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,173.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1135.1929459561495,0.3363003835416103,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_jain,Índice de Jain (equidad),,False,0.9999999998658424,3.794677958769882e-11,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_max_share,Fracción al backend más cargado,%,True,25.000457843928697,0.00012950009540791058,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,27.124229096716636,0.0482993529296883,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,23.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,171.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1135.877334138588,0.9331310830324984,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_jain,Índice de Jain (equidad),,False,0.8160032284505967,0.0004012655756045,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_max_share,Fracción al backend más cargado,%,True,31.85922229024521,0.005792015927794033,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,0.164823089883525,0.0207195599204907,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,27.89950064523209,0.092166596695482,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,25.5,2.1213203435596424,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,171.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1136.7987613479868,0.463635894942854,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_jain,Índice de Jain (equidad),,False,0.8233776584701011,0.0005658033661327,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_max_share,Fracción al backend más cargado,%,True,31.71240929552621,0.0007074625524470915,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0054941029961175,0.0025899449900613,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,random_two,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E03,ejemplos/lote-E03-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_lat_mean_ms,Latencia media en NGINX,ms,True,97.80053620603792,109.68315363994056,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,113.5,130.8147545195113,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,133.5,157.6848122046001,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1052.0681679334746,120.46980923868524,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_jain,Índice de Jain (equidad),,False,0.3333333333333333,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_max_share,Fracción al backend más cargado,%,True,100.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,ip_hash,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_lat_mean_ms,Latencia media en NGINX,ms,True,58.30308131773347,0.1950629430160957,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,171.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,173.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1134.8075896781652,4.4283957562877605,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_jain,Índice de Jain (equidad),,False,0.9999846256102144,9.83456328093506e-06,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_max_share,Fracción al backend más cargado,%,True,25.12567507816727,0.04759381413887,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+heter,1 backend lento,hash_client,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E03,ejemplos/lote-E03-hash-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,34.730156440504715,0.0347766601831675,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,300.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,301.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1134.982322276111,0.3710704034363308,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_jain,Índice de Jain (equidad),,False,0.9999999999597516,5.6919776858433553e-11,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_max_share,Fracción al backend más cargado,%,True,33.33351647345384,0.0002589992422366118,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0036630036630036,0.0051802694592421,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,34.83504777994704,0.1611191563440868,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,300.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,301.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1136.69023418228,1.900096332006258,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_jain,Índice de Jain (equidad),,False,0.9999066643879826,0.0001238030814124,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_max_share,Fracción al backend más cargado,%,True,33.64852122504612,0.28913765075695996,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,1.06219324591605,0.145036919443435,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,34.71775054366272,0.1600606413311857,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,300.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,301.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1136.7251596370998,0.7148625508055776,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_jain,Índice de Jain (equidad),,False,0.9999775074810456,7.966886188195652e-06,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_max_share,Fracción al backend más cargado,%,True,33.49425541378056,0.04333799566089,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,0.15017496594606,0.0051838743649284,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+mixto,Costo variable,random_two,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E04,ejemplos/lote-E04-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.378964435035645,0.0338348580757092,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.5,0.7071067811865476,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.5,0.7071067811865476,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.3458830805994,0.2315797235932165,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_jain,Índice de Jain (equidad),,False,0.9999999999865832,1.8974253344701683e-11,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_max_share,Fracción al backend más cargado,%,True,33.333394381605416,8.633529434758639e-05,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,0.08974030255302,0.0181302789945636,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.41410905867572,0.009834417356812,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.2721365483235,0.0066993914251336,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_jain,Índice de Jain (equidad),,False,0.9999998663695744,2.1516617864972338e-08,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_max_share,Fracción al backend más cargado,%,True,33.34871744154954,0.0005180098686778475,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,0.3021867330867001,0.0129501992818312,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.41140218820625,0.0047838211372195,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.0329878846378,0.3248069871247898,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_jain,Índice de Jain (equidad),,False,0.999999508505984,4.978987360754793e-07,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_max_share,Fracción al backend más cargado,%,True,33.36172067587515,0.015281291125930001,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,0.03113439068166,0.0025900398563662,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,random_two,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,ALG,ejemplos/lote-ALG-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.1175290924475,0.0124192866015055,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.3597878199628,0.030154305003825,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_jain,Índice de Jain (equidad),,False,0.3333333333333333,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_max_share,Fracción al backend más cargado,%,True,100.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,ip_hash,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.34346669890004,0.0023906155439373,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,1137.397694389017,0.0167529757819694,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_jain,Índice de Jain (equidad),,False,0.9999616107382518,2.405920246235527e-06,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_max_share,Fracción al backend más cargado,%,True,33.57032185752118,0.06734128292785,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+afin,Afinidad,hash_client,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E05,ejemplos/lote-E05-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.15709237983066,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,299.96933609540457,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_jain,Índice de Jain (equidad),,False,0.7181058926677741,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_max_share,Fracción al backend más cargado,%,True,40.48312184715216,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,1.393333333333333,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,3.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.423787195271007,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,299.9693356186543,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_jain,Índice de Jain (equidad),,False,0.7179159680620196,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_max_share,Fracción al backend más cargado,%,True,40.5231227360608,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,34.64,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,3.0,0.0,1,M03,ejemplos/lote-test-min-reps3-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.8059290206449,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,299.9693356186543,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_jain,Índice de Jain (equidad),,False,0.695964775330695,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_max_share,Fracción al backend más cargado,%,True,40.38089735327452,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,33.42666666666666,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,random_two,ng_retries,Reintentos (proxy_next_upstream),,True,3.0,0.0,1,M03,ejemplos/lote-M03-random_two-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.53797946575403,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,23.0,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,299.9646689448424,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_jain,Índice de Jain (equidad),,False,0.6479914060188751,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_max_share,Fracción al backend más cargado,%,True,59.52931241388506,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_affinity_pct,Clientes fieles a un backend,%,False,99.94666311087406,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,ip_hash,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,1,M03,ejemplos/lote-M03-ip_hash-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_lat_mean_ms,Latencia media en NGINX,ms,True,20.174466666666664,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,21.0,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,22.0,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,299.97200225838884,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_jain,Índice de Jain (equidad),,False,0.695478366052235,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_max_share,Fracción al backend más cargado,%,True,40.62444444444444,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_affinity_pct,Clientes fieles a un backend,%,False,99.94,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+falla,Caída de un backend,hash_client,ng_retries,Reintentos (proxy_next_upstream),,True,3.0,0.0,1,M03,ejemplos/lote-M03-hash_client-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,0.8528438158290703,0.0201088145718112,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,2.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.44816058167852,0.0732020806181872,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_jain,Índice de Jain (equidad),,False,0.9999999886799243,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_max_share,Fracción al backend más cargado,%,True,33.33584110743304,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0749063670411985,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,97.89285714285714,0.2525381361380555,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,t_pedido_ok_pct,Recorridos con pedido completado,%,False,21.964285714285715,1.9697974618768104,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",round_robin,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,2.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,0.8356154077640687,0.0464949839570449,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,2.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.4972656505942,0.0012525138756332,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_jain,Índice de Jain (equidad),,False,0.9999962360941024,3.1937723672028644e-06,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_max_share,Fracción al backend más cargado,%,True,33.403551008125184,0.021279168859050002,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,99.39285714285714,0.0505076272276141,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,t_pedido_ok_pct,Recorridos con pedido completado,%,False,20.5,1.3131983079178715,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",least_conn,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,2.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,0.7993906108937708,0.0067561361127513,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,2.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.4985938890792,0.0006261976173998,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_jain,Índice de Jain (equidad),,False,0.9997875186083744,0.0002228706635148,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_max_share,Fracción al backend más cargado,%,True,33.90385194101715,0.35642607838924,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0749063670411985,0.1059336001777599,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,99.03571428571428,0.454568645048497,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,t_pedido_ok_pct,Recorridos con pedido completado,%,False,18.67857142857143,2.171827970787253,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",random_two,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,2.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_lat_mean_ms,Latencia media en NGINX,ms,True,0.9823195076809436,0.000745739527715,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,2.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,4.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.49274144092207,0.0026407388423906,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_jain,Índice de Jain (equidad),,False,0.3333333333333333,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_max_share,Fracción al backend más cargado,%,True,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",ip_hash,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,4.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.0988940716220283,0.0305888052348982,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,2.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,4.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.4932804563455,0.0043834018795631,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_jain,Índice de Jain (equidad),,False,0.999324335195561,0.0003784691823134,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_max_share,Fracción al backend más cargado,%,True,34.34020463436653,0.29258857181206,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",hash_client,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,4.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.2045591333132712,0.304611302217437,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,2.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,4.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.494166016196,0.0031310311286847,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_jain,Índice de Jain (equidad),,False,0.9973601368723388,0.0025647268395175,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_max_share,Fracción al backend más cargado,%,True,34.98721035209148,0.65433444241607,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_mem,"Tienda, sesiones en memoria",sticky_cookie,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,6.45,3.464823227814083,2,E16,ejemplos/lote-tienda-memory-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.3521291002106532,0.0177149080751671,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,5.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.49726567227964,0.0025048784474366,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_jain,Índice de Jain (equidad),,False,0.9999999886799243,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_max_share,Fracción al backend más cargado,%,True,33.33584110743304,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0374531835205992,0.0529668000888799,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",round_robin,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,5.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.3855093555804348,0.0067890811204407,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,5.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.49185585089592,0.0051454657245768,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_jain,Índice de Jain (equidad),,False,0.9999895285524324,5.378203417631542e-06,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_max_share,Fracción al backend más cargado,%,True,33.46875756874752,0.024819426337019997,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0374531835205992,0.0529668000888799,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",least_conn,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,6.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.4015753902555752,0.1111560036549904,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,5.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.49141298566288,0.0045194582869899,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_jain,Índice de Jain (equidad),,False,0.9999400466394756,6.671292040832954e-05,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_max_share,Fracción al backend más cargado,%,True,33.59290116040185,0.12946695580317,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_affinity_pct,Clientes fieles a un backend,%,False,0.0749063670411985,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",random_two,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,6.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.240294914234126,0.0081924800107378,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,5.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.49549425182968,0.0012523236777629,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_jain,Índice de Jain (equidad),,False,0.3333333333333333,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_max_share,Fracción al backend más cargado,%,True,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",ip_hash,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,5.5,0.7071067811865476,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.352655732771592,0.0678273507382523,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,5.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.4910664830023,0.0012523707508883,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_jain,Índice de Jain (equidad),,False,0.999141237220526,0.0005066540881981,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_max_share,Fracción al backend más cargado,%,True,34.21606981643094,0.31918753288589,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",hash_client,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,6.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_lat_mean_ms,Latencia media en NGINX,ms,True,1.3348254589226602,0.0115439491060398,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_lat_p95_ms,Latencia p95 en NGINX,ms,True,3.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_lat_p99_ms,Latencia p99 en NGINX,ms,True,5.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_goodput_rps,Goodput (respuestas correctas/s),req/s,False,108.4937231798652,0.0037569976698598,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_error_rate,Tasa de error (5xx) en NGINX,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_jain,Índice de Jain (equidad),,False,0.9987174816203144,0.001793279666162,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_max_share,Fracción al backend más cargado,%,True,34.46433945230214,1.4469834824160401,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_affinity_pct,Clientes fieles a un backend,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ng_retries,Reintentos (proxy_next_upstream),,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,t_sesion_perdida_pct,Recorridos con sesión perdida,%,True,0.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,t_pedido_ok_pct,Recorridos con pedido completado,%,False,100.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv
+t_redis,"Tienda, sesiones en Redis",sticky_cookie,ep_p95_pedido,"p95 de la compra (POST /api/orders, Artillery)",ms,True,6.0,0.0,2,E16,ejemplos/lote-tienda-redis-actions/resumen_comparativo.csv

@@ -234,6 +234,7 @@ Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo si
 - **E-18 PostgreSQL caído 30 s:** 100 % de errores (inevitable) y **6,3 s** extra de recuperación.
 - **E-19 Redis caído:** fallaron login y carrito… **y también el catálogo**, que no usa Redis.
 - Causa (H-8): los 503 de la app cuentan como fallo en `proxy_next_upstream` → NGINX descarta las réplicas **sanas**.
+- **Corrección medida (E-18B/E-19B):** sin `http_503` → réplicas descartadas 99,9 % → **0 %**, catálogo con Redis caído **0 %** de errores, recuperación 6,3 → **1,3 s**.
 
 ---
 

@@ -1,0 +1,5 @@
+epoch,iso,event,detail
+1794886031.507705281,2026-11-17T03:27:11.521Z,artillery_start,"scenario=tienda-lectura.yml policy=round_robin replicas=3 target=http://lb"
+1794886121.965871382,2026-11-17T03:28:41.970Z,postgres_stopped,"servicio=postgres"
+1794886151.912426221,2026-11-17T03:29:11.919Z,postgres_started,"servicio=postgres"
+1794886249.302503351,2026-11-17T03:30:49.307Z,artillery_end,"exit=0 duration_s=220"

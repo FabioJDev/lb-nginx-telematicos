@@ -112,7 +112,7 @@ E08() {
   log "===== E-08 matriz timeouts x reintentos bajo 'hang' ====="
   "$S/scale.sh" "$BASE"; "$S/set-policy.sh" round_robin
   for rt in 3s 10s; do
-    for nu in "error timeout http_502 http_503 http_504" "off"; do
+    for nu in "error timeout http_502 http_504" "off"; do
       "$S/set-env.sh" LB_READ_TIMEOUT "$rt"
       "$S/set-env.sh" LB_NEXT_UPSTREAM "$nu" --recreate-lb
       cooldown "$COOLDOWN"
@@ -121,7 +121,7 @@ E08() {
     done
   done
   "$S/set-env.sh" LB_READ_TIMEOUT 10s
-  "$S/set-env.sh" LB_NEXT_UPSTREAM "error timeout http_502 http_503 http_504" --recreate-lb
+  "$S/set-env.sh" LB_NEXT_UPSTREAM "error timeout http_502 http_504" --recreate-lb
 }
 
 E09() {
@@ -225,7 +225,7 @@ E19() {
 # una dependencia NO debe contar como caída del backend. Se repite E-18/E-19 con
 # proxy_next_upstream sin http_503 y se restaura la configuración al terminar.
 with_next_upstream() { # with_next_upstream "<condiciones>" <función>
-  local prev="${LB_NEXT_UPSTREAM:-error timeout http_502 http_503 http_504}"
+  local prev="${LB_NEXT_UPSTREAM:-error timeout http_502 http_504}"
   "$S/set-env.sh" LB_NEXT_UPSTREAM "$1" --recreate-lb
   "$2"
   "$S/set-env.sh" LB_NEXT_UPSTREAM "$prev" --recreate-lb
