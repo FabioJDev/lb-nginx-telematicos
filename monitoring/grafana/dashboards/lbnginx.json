@@ -980,7 +980,7 @@
     {
       "id": 20,
       "type": "timeseries",
-      "title": "Modo de falla por réplica (1 = activo)",
+      "title": "Réplicas con falla inyectada (vacío = ninguna)",
       "description": "",
       "datasource": {
         "type": "prometheus",
@@ -998,7 +998,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "backend_fault_mode == 1",
+          "expr": "backend_fault_mode{mode!=\"none\"} == 1",
           "legendFormat": "{{node}}: {{mode}}",
           "refId": "A",
           "range": true
