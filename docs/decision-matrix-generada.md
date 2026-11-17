@@ -17,7 +17,7 @@ Puntuación 1–5; pesos suman 100; puntaje = Σ(peso × puntuación) / 5 (sobre
 
 | Criterio (peso) | NGINX | HAProxy | Traefik | Apache | LVS |
 |---|---|---|---|---|---|
-| C1 (20) | 5 | 5 | 4 | 3 | 5 |
+| C1 (20) | 5 | 4 | 4 | 3 | 5 |
 | C2 (15) | 4 | 5 | 3 | 4 | 5 |
 | C3 (15) | 3 | 5 | 4 | 4 | 1 |
 | C4 (10) | 2 | 5 | 5 | 3 | 2 |
@@ -25,23 +25,26 @@ Puntuación 1–5; pesos suman 100; puntaje = Σ(peso × puntuación) / 5 (sobre
 | C6 (10) | 4 | 4 | 5 | 2 | 1 |
 | C7 (10) | 5 | 4 | 4 | 4 | 3 |
 | C8 (10) | 5 | 3 | 3 | 4 | 1 |
-| **Puntaje /100** | **81** | **88** | **79** | **68** | **56** |
+| **Puntaje /100** | **81** | **84** | **79** | **68** | **56** |
 
-**Ranking base:** HAProxy (88) > NGINX (81) > Traefik (79) > Apache (68) > LVS (56)
+**Ranking base:** HAProxy (84) > NGINX (81) > Traefik (79) > Apache (68) > LVS (56)
 
-**Análisis de sensibilidad (±5 en cada peso, redistribuido proporcionalmente):** el líder NO cambia en ningún caso; el ranking es estable.
+**Análisis de sensibilidad (±5 en cada peso, redistribuido proporcionalmente):** el líder cambia en: C4 -5 → NGINX
 
-**Umbral de cambio de líder** (peso mínimo del criterio para que otra alternativa pase al primer lugar):
+**Umbrales de cambio de líder** (peso del criterio, redistribuyendo el resto, a partir del cual otra alternativa pasa al primer lugar):
 
-| Criterio | Peso base | Cambia el líder cuando el peso alcanza | Nuevo líder |
+| Criterio | Peso base | Subiendo el peso | Bajando el peso |
 |---|---|---|---|
-| C1 | 20 | 100 | NGINX |
-| C5 | 10 | 34 | NGINX |
-| C6 | 10 | 38 | Traefik |
-| C7 | 10 | 34 | NGINX |
-| C8 | 10 | 24 | NGINX |
+| C1 | 20 | 31 → NGINX | no cambia |
+| C2 | 15 | no cambia | 2 → Traefik |
+| C3 | 15 | no cambia | 8 → NGINX |
+| C4 | 10 | no cambia | 5 → NGINX |
+| C5 | 10 | 22 → NGINX | no cambia |
+| C6 | 10 | 29 → Traefik | no cambia |
+| C7 | 10 | 22 → NGINX | no cambia |
+| C8 | 10 | 17 → NGINX | no cambia |
 
-NGINX obtiene 81/100 frente a 88/100 de HAProxy. Si HAProxy lidera en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre), se reporta con honestidad: NGINX se selecciona porque (1) es la restricción del proyecto asignado, (2) queda en el grupo líder, (3) aporta funciones L7 completas en un solo componente y (4) sus debilidades se mitigan en el diseño (detección pasiva + reintentos, exporter + logs JSON, `resolve`).
+NGINX obtiene 81/100 frente a 84/100 de HAProxy. Si HAProxy lidera en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre), se reporta con honestidad: NGINX se selecciona porque (1) es la restricción del proyecto asignado, (2) queda en el grupo líder, (3) aporta funciones L7 completas en un solo componente y (4) sus debilidades se mitigan en el diseño (detección pasiva + reintentos, exporter + logs JSON, `resolve`).
 
 ## Matriz 4.2 — algoritmo de balanceo recomendado (con datos medidos)
 

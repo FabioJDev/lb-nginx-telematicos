@@ -43,7 +43,9 @@ ALTERNATIVES_41 = ["NGINX", "HAProxy", "Traefik", "Apache", "LVS"]
 SCORES_41 = {
     #        C1 C2 C3 C4 C5 C6 C7 C8
     "NGINX":   [5, 4, 3, 2, 4, 4, 5, 5],
-    "HAProxy": [5, 5, 5, 5, 3, 4, 4, 3],
+    # C1 HAProxy = 4 con datos de A-05 (results/ejemplos/lote-A05-actions): con la misma carga, p99 +25 %
+    # y el doble de CPU que NGINX, con la configuración usada (sin keepalive hacia los backends).
+    "HAProxy": [4, 5, 5, 5, 3, 4, 4, 3],
     "Traefik": [4, 3, 4, 5, 4, 5, 4, 3],
     "Apache":  [3, 4, 4, 3, 3, 2, 4, 4],
     "LVS":     [5, 5, 1, 2, 2, 1, 3, 1],
@@ -106,9 +108,10 @@ def sensitivity(criteria, scores_by_alt, delta=5):
             if rank[0] != base_rank[0]:
                 changes.append((c[0], sign * delta, rank[0], [round(x, 1) for x in w]))
     # Umbral: ¿cuánto debe pesar cada criterio para que cambie el líder?
+    # Se busca en las dos direcciones desde el peso base: subiendo hasta 100 y bajando hasta 0.
     thresholds = []
     for i, c in enumerate(criteria):
-        for target in range(0, 101, 1):
+        def leader_at(target):
             w = list(base_w)
             diff = target - w[i]
             others = [j for j in range(len(w)) if j != i]
@@ -116,9 +119,11 @@ def sensitivity(criteria, scores_by_alt, delta=5):
             for j in others:
                 w[j] = w[j] - diff * w[j] / tot_others
             w[i] = target
-            if ranking(w, scores_by_alt)[0] != base_rank[0]:
-                thresholds.append((c[0], target, ranking(w, scores_by_alt)[0]))
-                break
+            return ranking(w, scores_by_alt)[0]
+        up = next(((t, leader_at(t)) for t in range(base_w[i] + 1, 101) if leader_at(t) != base_rank[0]), None)
+        down = next(((t, leader_at(t)) for t in range(base_w[i] - 1, -1, -1) if leader_at(t) != base_rank[0]), None)
+        if up or down:
+            thresholds.append((c[0], up, down))
     return base_rank, changes, thresholds
 
 
@@ -233,9 +238,11 @@ def main() -> int:
     out.append("\n**Análisis de sensibilidad (±5 en cada peso, redistribuido proporcionalmente):** "
                + ("el líder NO cambia en ningún caso; el ranking es estable." if not changes else
                   "el líder cambia en: " + "; ".join(f"{c} {d:+d} → {lead}" for c, d, lead, _ in changes)))
-    out.append("\n**Umbral de cambio de líder** (peso mínimo del criterio para que otra alternativa pase al primer lugar):\n")
-    out.append(md_table(["Criterio", "Peso base", "Cambia el líder cuando el peso alcanza", "Nuevo líder"],
-                        [(c, next(cc[2] for cc in CRITERIA_41 if cc[0] == c), t, lead) for c, t, lead in thresholds]) if thresholds else "Ningún criterio, dentro de 0–100, cambia el líder.")
+    out.append("\n**Umbrales de cambio de líder** (peso del criterio, redistribuyendo el resto, a partir del cual otra alternativa pasa al primer lugar):\n")
+    fmt_t = lambda x: f"{x[0]} → {x[1]}" if x else "no cambia"  # noqa: E731
+    out.append(md_table(["Criterio", "Peso base", "Subiendo el peso", "Bajando el peso"],
+                        [(c, next(cc[2] for cc in CRITERIA_41 if cc[0] == c), fmt_t(up), fmt_t(down)) for c, up, down in thresholds])
+               if thresholds else "Ningún criterio, dentro de 0–100, cambia el líder.")
     # Diferencia NGINX vs líder
     leader = base_rank[0]
     out.append(f"\nNGINX obtiene {score(w41, SCORES_41['NGINX']):.0f}/100 frente a {score(w41, SCORES_41[leader]):.0f}/100 de {leader}. "

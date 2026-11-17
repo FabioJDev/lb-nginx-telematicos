@@ -39,7 +39,7 @@ Server (LVS/IPVS)**.
 
 | Criterio (peso) | NGINX | HAProxy | Traefik | Apache | LVS |
 |---|---|---|---|---|---|
-| C1 (20) | 5 | 5 | 4 | 3 | 5 |
+| C1 (20) | 5 | **4** (medido) | 4 | 3 | 5 |
 | C2 (15) | 4 | 5 | 3\* | 4 | 5 |
 | C3 (15) | 3 | 5 | 4 | 4 | 1 |
 | C4 (10) | 2 | 5 | 5 | 3 | 2 |
@@ -47,7 +47,7 @@ Server (LVS/IPVS)**.
 | C6 (10) | 4 | 4 | 5 | 2 | 1 |
 | C7 (10) | 5 | 4 | 4 | 4 | 3 |
 | C8 (10) | 5 | 3 | 3 | 4 | 1 |
-| **Puntaje /100** | **81** | **88** | **79** | **68** | **56** |
+| **Puntaje /100** | **81** | **84** | **79** | **68** | **56** |
 
 \* Verificar en la documentación vigente de Traefik los algoritmos disponibles en la versión instalada.
 
@@ -57,28 +57,57 @@ Plus. C4 = 2 porque `stub_status` es global (no hay métricas por backend sin m�
 mitiga con logs JSON por petición y el exporter. C6 = 4 porque `resolve` (OSS ≥ 1.27.3) re-resuelve
 el DNS de Docker sin recargar. C8 = 5: servidor web, caché, TLS, `limit_req`, reescrituras.
 
+### C1 con datos medidos (A-05)
+
+`results/ejemplos/lote-A05-actions/` (2 repeticiones, `rampa.yml`, mismos 3 backends, misma carga de
+~983 req/s, 0 errores en todas las corridas):
+
+| Balanceador y algoritmo | Media | p95 | p99 | CPU del balanceador |
+|---|---|---|---|---|
+| NGINX `round_robin` | 21,1 ms | 24,3 ms | 32,5 ms | 11,6 % |
+| NGINX `least_conn` | 21,4 ms | 24,8 ms | 34,1 ms | 11,0 % |
+| HAProxy `roundrobin` | 22,9 ms | 30,0 ms | 40,5 ms | 23,5 % |
+| HAProxy `leastconn` | 22,7 ms | 29,7 ms | 38,1 ms | 23,4 % |
+
+NGINX tuvo un p99 ~20 % menor con la mitad de CPU, así que C1 de HAProxy baja de 5 a 4. **Salvedad:** la
+configuración de HAProxy usada (`option http-server-close`) abre una conexión nueva hacia el backend en
+cada petición, mientras NGINX reutiliza conexiones (`keepalive 64`); parte de la diferencia se debe a
+eso y a los *health checks* activos de HAProxy. Una comparación más fina activaría la reutilización de
+conexiones en HAProxy (`http-reuse`).
+
 ### Análisis de sensibilidad
 
 Cada peso se varía ±5 puntos (redistribuyendo proporcionalmente en los demás) y se verifica si
 cambia el orden. Calculado por `decision_matrix.py`:
 
-- **Ranking base:** HAProxy (88) > NGINX (81) > Traefik (79) > Apache (68) > LVS (56).
-- **±5 en cualquier peso: el líder no cambia; el ranking es estable.**
-- Umbral de cambio de líder: NGINX pasaría al primer lugar si C8 (funciones L7) pesara ≥ 24, C5
-  (facilidad) ≥ 34 o C7 (madurez) ≥ 34; Traefik lideraría si C6 (descubrimiento dinámico) pesara ≥ 38.
-  C1, C2, C3 y C4 no cambian el líder dentro de 0–100.
+- **Ranking base:** HAProxy (84) > NGINX (81) > Traefik (79) > Apache (68) > LVS (56).
+- **±5 en los pesos:** el líder cambia en un solo caso: si C4 (observabilidad) baja de 10 a 5, NGINX
+  pasa al primer lugar. La ventaja de HAProxy es pequeña y frágil.
+- **Umbrales** (peso del criterio a partir del cual cambia el líder):
+
+| Criterio | Peso base | Subiendo el peso | Bajando el peso |
+|---|---|---|---|
+| C1 Desempeño | 20 | 31 → NGINX | no cambia |
+| C2 Algoritmos | 15 | no cambia | 2 → Traefik |
+| C3 Detección de fallos | 15 | no cambia | 8 → NGINX |
+| C4 Observabilidad | 10 | no cambia | 5 → NGINX |
+| C5 Facilidad | 10 | 22 → NGINX | no cambia |
+| C6 Docker/descubrimiento | 10 | 29 → Traefik | no cambia |
+| C7 Madurez | 10 | 22 → NGINX | no cambia |
+| C8 Funciones L7 | 10 | 17 → NGINX | no cambia |
 
 ### Reflexión (debe aparecer en el informe)
 
-HAProxy obtiene un puntaje superior a NGINX en criterios puramente de balanceo (checks activos y
+HAProxy obtiene un puntaje superior a NGINX gracias a criterios puramente de balanceo (checks activos y
 métricas por backend en la versión libre). No se oculta: mostrarlo es la "reflexión coherente" que
-pide la rúbrica. La selección de NGINX se justifica por: (1) es la **restricción del proyecto
-asignado** (requisito del cliente); (2) queda en el **grupo líder** de la matriz, a 7 puntos y con
-ranking estable; (3) aporta funciones L7 completas (servidor web, caché, TLS, limitación de tasa) en
-un solo componente; y (4) sus debilidades **se mitigan en el diseño**: detección pasiva + reintentos
-para C3, exporter + logs JSON enriquecidos + `/metrics` por réplica para C4, y `resolve` para C6.
-Si se ejecuta A-05 (`compose.haproxy.yml`), C1 se respalda con datos medidos y la comparación queda
-documentada en `results/`.
+pide la rúbrica. Con los datos de A-05 la distancia se redujo de 7 a **3 puntos**, y basta que la
+observabilidad pese 5 o las funciones L7 pesen 17 para que NGINX quede primero. La selección de NGINX
+se justifica por: (1) es la **restricción del proyecto asignado** (requisito del cliente); (2) queda
+en el **grupo líder**, a 3 puntos, y **midió mejor latencia con la mitad de CPU** en A-05; (3) aporta
+funciones L7 completas (servidor web, caché, TLS, limitación de tasa) en un solo componente, y la
+microcaché redujo un 77 % la CPU de PostgreSQL en A-02; y (4) sus debilidades **se mitigan en el
+diseño**: detección pasiva + reintentos para C3, exporter + logs JSON + `/metrics` por réplica para C4,
+y `resolve` para C6.
 
 ---
 
