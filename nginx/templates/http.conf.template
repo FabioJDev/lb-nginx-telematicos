@@ -30,11 +30,19 @@ map $upstream_addr $lb_retried {
     "~,"    1;
 }
 
-# Clave de afinidad para la política sticky_cookie: la cookie de sesión de la tienda
-# ("sid") o, si aún no existe (antes del login), un valor aleatorio por petición.
-map $cookie_sid $lb_sticky_key {
+# Afinidad por cookie EMITIDA POR EL BALANCEADOR (política sticky_cookie), como el
+# "sticky cookie" de NGINX Plus/HAProxy. En la primera petición de un cliente (sin
+# cookie lbid) se elige el nodo con hash($request_id) y en la respuesta se emite
+# lbid=<ese mismo $request_id>; desde entonces hash($cookie_lbid) da el MISMO nodo.
+# Hacer hash de la cookie de sesión de la aplicación (sid) NO sirve: la sesión se crea
+# en el nodo que atendió el login, que no es el que luego elige hash(sid) (hallazgo H-6).
+map $cookie_lbid $lb_sticky_key {
     ""      $request_id;
-    default $cookie_sid;
+    default $cookie_lbid;
+}
+map $cookie_lbid $lb_sticky_set_cookie {
+    ""      "lbid=$request_id; Path=/; HttpOnly; SameSite=Lax";
+    default "";
 }
 
 # DNS interno de Docker: permite que 'backend' se re-resuelva al escalar réplicas
@@ -92,6 +100,9 @@ server {
         add_header X-Upstream-Addr $upstream_addr always;
         add_header X-LB-Policy     "${LB_POLICY}" always;
         add_header X-Request-Id    $request_id always;
+        # Cookie de afinidad del balanceador (solo la usa la política sticky_cookie;
+        # add_header con valor vacío no envía nada, así que solo se emite una vez)
+        add_header Set-Cookie      $lb_sticky_set_cookie always;
 
         # Función L7 opcional a nivel location (limit_req / proxy_cache)
         include /etc/nginx/extras/features/${LB_FEATURE}/location.conf;
