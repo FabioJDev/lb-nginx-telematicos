@@ -552,7 +552,7 @@ al cliente. Detalle y forma de medir cada criterio en
 | R-03 | Informe IEEE ≤ 7 páginas | Plantilla IEEEtran (6 páginas), compilado por el flujo `documentos.yml` o `make informe` | [`docs/informe/informe.pdf`](docs/informe/informe.pdf) · fuente [`informe.tex`](docs/informe/informe.tex) |
 | R-04 | Diapositivas en el repositorio | Marp (21 diapositivas + 3 de respaldo, para 25 minutos), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
 | R-05 | Repositorio con configuración y aprovisionamiento | Estructura de la sección 12 | este repositorio |
-| R-06 | Presentación ≤ 20 min | Guion cronometrado | [`docs/guion-demo.md`](docs/guion-demo.md) |
+| R-06 | Presentación ≤ 20 min | Guion cronometrado por expositor (ajustado a 25 min por indicación del curso) y guion de la demo con resultados del ensayo | [`docs/guion-exposicion.md`](docs/guion-exposicion.md), [`docs/guion-demo.md`](docs/guion-demo.md) |
 | R-07 | NGINX con `upstream` hacia ≥ 3 backends | `upstream backend_pool` + servicio `backend` con 3 réplicas | [`nginx/templates/http.conf.template`](nginx/templates/http.conf.template), `make smoke` |
 | R-08 | round-robin, least_conn e ip_hash | Un archivo por política, `make policy P=…` | [`nginx/policies/`](nginx/policies/), resultados M-05 |
 | R-09 | `stub_status` | Servidor interno :8080 restringido a redes privadas | [`http.conf.template`](nginx/templates/http.conf.template), `make status` |

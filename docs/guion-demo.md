@@ -1,62 +1,225 @@
-# Guion de presentación y sustentación (máximo 25 minutos)
+# Guion de la demo en vivo (6 minutos)
 
-| Min. | Bloque | Contenido | Diapositivas |
-|---|---|---|---|
-| 0–2 | Apertura | Título, el proyecto en cifras, problema y objetivo | 1–3 |
-| 2–3 | Requisitos | Requisitos del catálogo y pruebas mínimas → evidencia | 4 |
-| 3–5 | Selección | Matriz 4.1 (cómo se mide cada criterio, mediciones), reflexión (HAProxy gana; NGINX es requisito) y matriz 4.3 | 5–6 |
-| 5–7 | Diseño | Arquitectura, configuración, 7 políticas, metodología y observabilidad | 7–8 |
-| 7–10 | Pruebas mínimas | Reparto y capturas (M-00…M-06), resiliencia y 1000 usuarios (M-03, M-04), algoritmos (M-05, E-03) | 9–11 |
-| 10–13 | Pruebas extendidas | Escalabilidad (E-02, E-13), fallas y operación en caliente, matriz 4.2 con datos | 12–14 |
-| 13–15 | Aplicación con estado | TelemaShop y sesiones (E-16), base de datos compartida (E-17, A-02, E-18/19) | 15–16 |
-| 15–17 | Mejoras y hallazgos | A-01 a A-06, hallazgos H-1…H-11 | 17–18 |
-| 17–18 | Conclusiones | Recomendación (`least_conn`; Redis o `sticky_cookie`) y trabajo futuro | 19 |
-| 18–24 | **Demo en vivo** | Ver guion abajo | 20 |
-| 24–25 | Cierre | Preguntas; diapositivas de respaldo 22–24 solo si las piden | 21 |
+Corresponde a la diapositiva 20 de [`slides/presentacion.pdf`](../slides/presentacion.pdf). El guion de
+la exposición está en [`guion-exposicion.md`](guion-exposicion.md).
 
-## Guion de la demo (ensayar y grabar un video de respaldo)
+- **Fabio Jordan C.:** pasos 1–4 (despliegue, reparto, tienda y sesiones) · unos 3 minutos.
+- **Juan David Morales:** pasos 5–8 (afinidad, carga con Grafana, falla y escalado) · unos 3 minutos.
 
-Antes de empezar: `make up && make monitoring-up` ya ejecutados; Grafana abierto en el dashboard;
-una terminal con `make logs-lb` en segundo plano; `.env` con `LB_POLICY=round_robin`.
+Todos los resultados esperados de abajo salen de un ensayo real en el portátil del equipo (Docker
+Desktop + Ubuntu en WSL, 17-nov-2026). Los nombres de los nodos cambian en cada despliegue: lo que
+importa son los conteos.
 
-1. `docker compose ps` → los backends, PostgreSQL y Redis **no** muestran `0.0.0.0:`.
-2. Navegador en <http://localhost:8080/nodo>: recargar 3–4 veces → cambia el nodo y el color (round-robin).
-3. **La tienda** en <http://localhost:8080>: buscar "Router", iniciar sesión (`usuario1` / `clave123`),
-   agregar 2 productos y comprar. El panel "Diagnóstico del balanceo" muestra que cada petición la
-   atendió una réplica distinta y que el carrito se conserva (sesiones en Redis).
-4. **Romper las sesiones a propósito:** `make sesiones S=memory` (round-robin activo) → en la tienda,
-   iniciar sesión y agregar al carrito → aviso "Sesión perdida: la réplica X no conoce tu sesión".
-   `make policy P=sticky_cookie` → recargar, iniciar sesión otra vez → el carrito se conserva porque
-   NGINX fija al cliente con su cookie `lbid`. `make sesiones S=redis` para volver.
-5. `make smoke` → 10/10/10.
-4. Lanzar carga: `scripts/run-test.sh DEMO constante.yml &` → en Grafana se ve la distribución por réplica.
-5. `make policy P=ip_hash` → en Grafana todo el tráfico cae en **un** backend; explicar la `/24`.
-   `make policy P=hash_client` → se reparte de nuevo y cada cliente mantiene su backend.
-6. Durante la carga: `scripts/inject-fault.sh rm 1` → el tráfico se redistribuye; en Grafana la anotación
-   roja y la tasa de error cercana a cero; `make status` muestra 2 réplicas.
-7. `make scale N=5` → las réplicas nuevas aparecen en Grafana **sin reiniciar NGINX** (resolve).
-8. (Si hay tiempo) editar `nginx/policies/round_robin.conf` y mostrar `[watcher] … recargado` en los logs.
+---
 
-Nota: con los pasos 3 y 4 la demo pasa de 5 a ~7 minutos; si falta tiempo, omitir el paso 8.
+## Antes de la sustentación (15 minutos antes)
 
-## Preguntas probables del jurado
+En la terminal de **Ubuntu (WSL)**:
 
-| Pregunta | Respuesta corta |
+```bash
+cd ~/proyectos/lb-nginx-telematicos
+```
+
+```bash
+make up && make monitoring-up
+```
+
+```bash
+make sesiones S=redis && make policy P=round_robin && make scale N=3
+```
+
+```bash
+make smoke
+```
+
+`make smoke` debe terminar con `smoke superado (3 nodos, 0 fallos, política round_robin)`.
+
+```bash
+make test-smoke
+```
+
+Esto deja descargada la imagen de Artillery, para que la carga del paso 6 arranque al instante.
+
+**Ventanas preparadas:**
+1. Dos terminales de Ubuntu en `~/proyectos/lb-nginx-telematicos`, con letra grande.
+2. Navegador, pestaña 1: <http://localhost:8080/nodo>
+3. Navegador, pestaña 2: <http://localhost:8080> (la tienda)
+4. Navegador, pestaña 3: Grafana en <http://localhost:3001> (el puerto es `GRAFANA_PORT` del `.env`;
+   en su máquina es 3001). Usuario `admin`, contraseña `GRAFANA_ADMIN_PASSWORD` del `.env`
+   (`cambiar-esto` si no la cambiaron). Abrir el dashboard **Balanceador NGINX**, rango **Last 5
+   minutes**, actualización **5s**, y bajar hasta la fila **Backends (una serie por réplica)**.
+5. El video de respaldo abierto y en pausa, por si algo falla.
+
+---
+
+## Parte de Fabio
+
+### Paso 1 · Despliegue y redes (0:30)
+
+```bash
+make ps
+```
+
+**Se ve:** `lb` con `0.0.0.0:8080->80/tcp`; los tres `backend`, `postgres` y `redis` solo con su
+puerto interno (`3000/tcp`, `5432/tcp`, `6379/tcp`), sin `0.0.0.0`.
+
+> Todo el sistema son contenedores. Fíjense que solo el balanceador publica un puerto al host; las
+> réplicas, PostgreSQL y Redis están en una red interna y no se pueden alcanzar desde fuera.
+
+### Paso 2 · Reparto (0:40)
+
+```bash
+make smoke
+```
+
+**Se ve:** `10 / 10 / 10` en tres nodos distintos y `smoke superado (3 nodos, 0 fallos, política round_robin)`.
+Ignorar la tabla de contenedores que aparece al final.
+
+Luego, en la pestaña 1 (`/nodo`), recargar tres o cuatro veces.
+
+**Se ve:** cada recarga muestra otro nodo y otro color, y abajo «Balanceador: política=round_robin».
+
+> Treinta peticiones, diez a cada réplica: eso es round-robin. Y en el navegador, cada recarga la
+> atiende otro nodo.
+
+### Paso 3 · La tienda (1:00)
+
+Pestaña 2 (la tienda):
+1. Buscar `Router`.
+2. Iniciar sesión con `usuario1` / `clave123`.
+3. Agregar dos productos al carrito y comprar.
+4. Señalar el panel **Diagnóstico del balanceo**, a la derecha.
+
+**Se ve:** la compra se completa; en el panel, las últimas peticiones las atienden nodos distintos.
+
+> Esta es TelemaShop. Cada petición la atiende una réplica distinta, como muestra el panel, y aun así la
+> sesión y el carrito se conservan, porque las sesiones viven en Redis, compartido por todas.
+
+### Paso 4 · Romper las sesiones a propósito (1:00)
+
+```bash
+make sesiones S=memory
+```
+
+Tarda unos 13 s (recrea las réplicas). Mientras tanto:
+
+> Ahora movemos las sesiones a la memoria de cada réplica, como haría una aplicación sin Redis.
+
+En la tienda: recargar, iniciar sesión otra vez y agregar un producto.
+
+**Se ve:** el aviso **«Sesión perdida»**: la petición cayó en una réplica que no conoce la sesión. En el
+ensayo, de seis consultas seguidas solo dos encontraron la sesión.
+
+> Con sesiones locales y round-robin, la sesión se pierde. La solución es la afinidad: que el
+> balanceador fije cada cliente a una réplica.
+
+```bash
+make policy P=sticky_cookie
+```
+
+Tarda unos 8 s. En la tienda: recargar, iniciar sesión y agregar productos.
+
+**Se ve:** el carrito se conserva en todas las peticiones (en el ensayo, seis de seis).
+
+> NGINX emite su propia cookie y con ella manda siempre al mismo cliente a la misma réplica. Le paso la
+> palabra a Juan David.
+
+---
+
+## Parte de Juan David
+
+### Paso 5 · Afinidad por IP vs por usuario (1:00)
+
+```bash
+make policy P=ip_hash && make smoke
+```
+
+**Se ve:** `30` peticiones en **un solo** nodo (`nodos distintos: 1`).
+
+> Con `ip_hash` todas van a la misma réplica: todas salen de la misma red, y `ip_hash` decide por la
+> red de origen. Detrás de un NAT, todos los usuarios caerían en el mismo servidor.
+
+```bash
+make policy P=hash_client && make smoke
+```
+
+**Se ve:** las 30 peticiones repartidas en los tres nodos (en el ensayo, 14 / 11 / 5).
+
+> Con `hash_client` la afinidad es por usuario, con una cabecera: cada cliente va siempre a la misma
+> réplica, pero los clientes se reparten.
+
+```bash
+make policy P=round_robin
+```
+
+### Paso 6 · Carga constante y Grafana (0:30)
+
+En la segunda terminal:
+
+```bash
+scripts/run-test.sh DEMO constante.yml
+```
+
+Dura 3 minutos: 100 usuarios por segundo, unas 300 peticiones por segundo. Cambiar a Grafana.
+
+**Se ve:** en **Peticiones/s por réplica**, tres líneas que suben y se quedan juntas, a unas 100 req/s cada una.
+
+> Esta es la carga en vivo: las tres réplicas reciben lo mismo.
+
+### Paso 7 · Retirar un backend en caliente (0:45)
+
+En la primera terminal, con la carga corriendo:
+
+```bash
+scripts/inject-fault.sh rm 1
+```
+
+**Se ve:** `OK rm aplicado a lbnginx-backend-1 … en 1.41 s`. En Grafana, una línea cae a cero, las otras
+dos suben a unas 150 req/s; si los scripts llegan a la API de Grafana, aparece además una anotación del evento.
+
+> Acabamos de eliminar una réplica con el sistema bajo carga. El tráfico se redistribuye solo y los
+> usuarios no ven errores: NGINX reintenta en otra réplica.
+
+### Paso 8 · Escalar sin reiniciar NGINX (0:45)
+
+```bash
+make scale N=5
+```
+
+Tarda unos 17 s. **Se ve:** la lista de réplicas con sus IP; en Grafana aparecen líneas nuevas que
+empiezan a recibir tráfico. Para confirmarlo:
+
+```bash
+make smoke
+```
+
+**Se ve:** `nodos distintos: 5 · fallos: 0`.
+
+> Pasamos a cinco réplicas y reciben tráfico sin reiniciar ni recargar NGINX: el balanceador vuelve a
+> preguntar al DNS de Docker cada cinco segundos.
+
+**Cierre de la demo (si la carga ya terminó):** la segunda terminal muestra el resumen de Artillery. En
+el ensayo, con la réplica eliminada y el escalado en medio: **54 000 peticiones, todas con respuesta 200,
+cero errores**.
+
+> Con una réplica menos y dos más en plena carga: 54 000 peticiones y ninguna falló.
+
+---
+
+## Plan B por paso
+
+| Si falla… | Hacer |
 |---|---|
-| ¿Qué pasa con las sesiones de usuario si el balanceador reparte por turnos? | Si viven en la memoria de cada réplica, se pierden (E-16 lo mide); la solución es afinidad (`hash_client`, `sticky_cookie`) o un almacén compartido (Redis), que es lo recomendado. |
-| ¿Por qué no hacer hash de la cookie de sesión de la aplicación? | El login llega sin cookie y cae en un nodo cualquiera; luego `hash(sid)` apunta a otro. La cookie de afinidad debe emitirla el balanceador (hallazgo H-6). |
-| ¿Escalar backends escala la base de datos? | No: todas las réplicas comparten PostgreSQL (E-17); por eso la caché (A-02) y el pool de conexiones importan. |
-| ¿Qué hace el balanceador si cae la base de datos? | Nada puede hacer: todas las réplicas fallan igual; los reintentos de `proxy_next_upstream` multiplican la carga (E-18). |
+| Algo no responde al empezar | `make down && make up`, esperar `make smoke` y seguir. Si no hay tiempo, pasar al video. |
+| El navegador no carga la tienda | Mostrar lo mismo por terminal: `curl -s localhost:8080/api/info` varias veces (cambia `node`). |
+| No aparece «Sesión perdida» al primer intento | Agregar otro producto o recargar: con tres réplicas, una de cada tres peticiones acierta por azar. |
+| Grafana no muestra datos | Revisar el rango (Last 5 minutes) y la actualización (5s); si sigue vacío, mostrar `make status` (stub_status y réplicas activas). |
+| La carga tarda en arrancar | Seguir con el paso 7 igual; Artillery empieza en segundos si se ejecutó `make test-smoke` antes. |
+| `make policy` se demora | Es normal: recrea el balanceador (unos 8 s). No cambiar de política con la carga corriendo: corta conexiones. |
+| Cualquier falla seria | Poner el video de respaldo desde el mismo paso. |
 
-| Pregunta | Respuesta corta |
-|---|---|
-| ¿Por qué ip_hash mandó todo a un solo backend? | Usa los tres primeros octetos IPv4; los clientes de la prueba comparten la `/24` de Docker. Solución L7: hash por cabecera (`hash_client`) o cookie. |
-| ¿NGINX revisa activamente si un backend está vivo? | En la versión libre no (checks activos son de NGINX Plus); usamos detección pasiva `max_fails`/`fail_timeout` + reintentos `proxy_next_upstream`, y healthchecks de Docker. |
-| ¿Por qué round-robin y least_conn dan casi lo mismo? | Con backends y peticiones homogéneos las conexiones activas están balanceadas; la diferencia aparece con heterogeneidad (E-03/E-04). |
-| ¿Se reintenta un POST si falla el backend? | No por defecto: NGINX no reenvía peticiones no idempotentes ya enviadas, para evitar efectos duplicados (`proxy_next_upstream non_idempotent` lo cambiaría). |
-| ¿Qué limita sus resultados? | Un solo host comparte CPU entre generador, balanceador y backends; lo medimos con `docker stats` y lo reportamos. |
-| ¿Cómo garantizan 1000 usuarios concurrentes con Artillery? | Ley de Little: 1000 llegadas en 10 s con sesiones de ~70 s → meseta de ~1000 activos durante más de 60 s (gráfica de usuarios activos). |
-| ¿Y si cae el balanceador? | Con un solo NGINX es un punto único de falla. A-04 lo resuelve con un par activo/pasivo: keepalived (VRRP) mueve la IP flotante al respaldo en ≈ 3,5 s (99,93–99,95 % de disponibilidad al matar el activo bajo carga); con `nopreempt` la vuelta del principal no corta conexiones. `make ha-up` / `make test-ha`. |
-| ¿Por qué `stub_status` no muestra el reparto por backend? | Es global por diseño; el reparto se obtiene del log JSON (`$upstream_addr`, `X-Backend-Node`), de `/metrics` por réplica y de los contadores de Artillery. |
-| ¿Qué pasa con un backend que responde 500? | No se reintenta por defecto (`proxy_next_upstream` solo cubre error/timeout/502/503/504); E-08 muestra el efecto de añadir `http_500`. |
-| ¿Cómo escalan sin recargar NGINX? | `server backend:3000 resolve` + `resolver 127.0.0.11 valid=5s`: NGINX re-resuelve el DNS de Docker, que devuelve todas las IPs de las réplicas. |
+## Después de la demo (dejar todo como estaba)
+
+```bash
+make scale N=3 && make sesiones S=redis && make policy P=round_robin
+```
