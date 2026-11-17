@@ -7,8 +7,8 @@ Todas las cifras provienen de archivos en `results/` (regla del proyecto).
 | **test-min completo (fuente principal)** | **3** | [`results/ejemplos/lote-test-min-reps3-actions/`](../results/ejemplos/lote-test-min-reps3-actions/) | 43958910350 |
 | test-min rápido (validación del lote) | 1 | [`results/ejemplos/lote-test-min-quick-actions/`](../results/ejemplos/lote-test-min-quick-actions/) | 43953413366 |
 
-Ambos dieron resultados coincidentes. Pendiente: repetir en la máquina del equipo (WSL2 + Docker
-Desktop) para el informe final; esas corridas complementarán estas.
+Ambos dieron resultados coincidentes. Opcional: repetirlos en la máquina del equipo (WSL2 + Docker
+Desktop, ya verificada con `make up` y `make smoke`) con `make test-min`; complementarían estas corridas.
 
 ## Entorno
 

@@ -535,7 +535,9 @@ al cliente. Detalle y forma de medir cada criterio en
 4. Con 2 vCPU **el generador de carga es el cuello de botella** con el endpoint de espera; la capacidad se midió con costo de CPU.
 5. **La afinidad no puede basarse en la cookie de sesión de la aplicación**: el login llega sin cookie y cae en otro nodo. La cookie debe emitirla el balanceador (`sticky_cookie`).
 6. **El 503 de una dependencia caída hace que NGINX descarte réplicas sanas** (`proxy_next_upstream … http_503` + `max_fails`): tumba rutas que funcionarían y retrasa la recuperación.
-7. Detalle y otros dos hallazgos de proceso (HAProxy y variables de entorno) en [`docs/hallazgos.md`](docs/hallazgos.md).
+7. **El tiempo de respuesta de Artillery no incluye la conexión**: el handshake TLS y la espera de un failover solo se ven en la duración de la sesión (H-10).
+8. **VRRP con preempción corta dos veces**: al volver el balanceador principal se pierden ≈ 9 conexiones; con `nopreempt`, ninguna (H-11).
+9. Detalle y los hallazgos de proceso (HAProxy, variables de entorno, `.env` a mitad de un lote) en [`docs/hallazgos.md`](docs/hallazgos.md).
 
 ![Escalabilidad E-02](docs/figuras/escalabilidad.png)
 
@@ -547,7 +549,7 @@ al cliente. Detalle y forma de medir cada criterio en
 |---|---|---|---|
 | R-01 | Todo en Docker/Compose, nada en el host | Todos los servicios, incluidos Artillery y el análisis, son contenedores; el Makefile solo invoca `docker` | `make ps`; este README |
 | R-02 | README con instrucciones, diagramas y despliegue paso a paso | Este documento | — |
-| R-03 | Informe IEEE ≤ 7 páginas | Plantilla IEEEtran (5 páginas), compilado por el flujo `documentos.yml` o `make informe` | [`docs/informe/informe.pdf`](docs/informe/informe.pdf) · fuente [`informe.tex`](docs/informe/informe.tex) |
+| R-03 | Informe IEEE ≤ 7 páginas | Plantilla IEEEtran (6 páginas), compilado por el flujo `documentos.yml` o `make informe` | [`docs/informe/informe.pdf`](docs/informe/informe.pdf) · fuente [`informe.tex`](docs/informe/informe.tex) |
 | R-04 | Diapositivas en el repositorio | Marp (22 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
 | R-05 | Repositorio con configuración y aprovisionamiento | Estructura de la sección 12 | este repositorio |
 | R-06 | Presentación ≤ 20 min | Guion cronometrado | [`docs/guion-demo.md`](docs/guion-demo.md) |
