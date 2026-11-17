@@ -1,0 +1,6 @@
+epoch,iso,event,detail
+1794874017.458654271,2026-11-17T00:06:57.467Z,artillery_start,"scenario=constante.yml policy=random_two replicas=3 target=http://lb"
+1794874077.695953117,2026-11-17T00:07:57.701Z,backend_removed,"node=217534a995f3 container=lbnginx-backend-1 accion=rm"
+1794874137.473733094,2026-11-17T00:08:57.478Z,backend_restore_start,"accion=scale N=3 (inicio)"
+1794874144.578672429,2026-11-17T00:09:04.583Z,backend_restored,"accion=scale N=3 (réplica healthy)"
+1794874224.511709084,2026-11-17T00:10:24.514Z,artillery_end,"exit=0 duration_s=209"

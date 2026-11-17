@@ -87,6 +87,26 @@ reintentó en otro (`proxy_next_upstream`) y el cliente no vio ningún error. El
 réplica repuesta recibió tráfico **antes** de que Docker la marcara *healthy* (hallazgo H-3 en
 `docs/hallazgos.md`): `resolve` la incorpora en cuanto el DNS de Docker la resuelve.
 
+### M-03 con las demás políticas
+
+Fuente: `results/ejemplos/lote-M03-<política>-actions/` (ejecuciones 43984878143, 43984891444,
+43984904335); en estas corridas ya se registra el evento `backend_restore_start`, lo que permite medir
+la recuperación (desde que empieza `make scale N=3` hasta la primera respuesta de la réplica nueva).
+
+| Política | Peticiones | Disponibilidad | Errores en 30 s | p99 en 30 s | Reintentos | Recuperación |
+|---|---|---|---|---|---|---|
+| random_two | 54 000 | **100 %** | **0** | 22 ms | 3 | 3,8 s |
+| hash_client | 54 000 | **100 %** | **0** | 22 ms | 3 | 3,9 s |
+| ip_hash | 54 000 | **100 %** | **0** | 22 ms | 0 | 3,6 s |
+
+Con `ip_hash` no hubo reintentos porque toda la carga (la /24 de Artillery) estaba fijada en otro
+backend y el retirado no tenía peticiones en vuelo. Pero la afinidad **no sobrevivió a los cambios de
+membresía**: el tráfico pasó por tres réplicas distintas (9 213, 26 787 y 18 000 peticiones), una vez
+al retirar el nodo y otra al añadir el repuesto, aunque ninguno de esos cambios afectaba al nodo que
+atendía a la /24. Con `resolve`, cada cambio en la lista de réplicas recalcula el hash (mismo fenómeno
+que E-06). Las cinco políticas sobrevivieron a la retirada de un backend sin errores visibles para el
+cliente.
+
 Hipótesis "errores visibles cero o solo peticiones en vuelo; p99 sube brevemente": **confirmada en la
 primera parte, refutada en la segunda** (el p99 no subió porque los backends tenían holgura).
 Criterio (disponibilidad ≥ 99,9 % y redistribución entre los restantes): **cumplido**.
