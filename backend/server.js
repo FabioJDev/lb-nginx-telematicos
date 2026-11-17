@@ -2,7 +2,8 @@
 /**
  * backend/server.js — Backend HTTP instrumentado (Proyecto 2, sección 7.1).
  *
- * Servidor Node.js que usa ÚNICAMENTE el módulo 'http' (sin dependencias).
+ * Servidor Node.js sobre el módulo 'http'. Las únicas dependencias (pg, redis) las usa
+ * la tienda (tienda.js); el servidor de identificación y pruebas no las necesita.
  * Cada réplica identifica el nodo que responde (cabecera X-Backend-Node),
  * simula costo controlado (latencia y CPU), permite inyectar fallos y expone
  * métricas en formato Prometheus. Soporta alta concurrencia porque la latencia

@@ -609,7 +609,7 @@ lb-nginx-telematicos/
 ├── compose.ha.yml                # dos NGINX + keepalived e IP flotante (A-04)
 ├── compose.capturas.yml          # navegador sin interfaz para las capturas de evidencia
 ├── ha/                           # plantilla de keepalived y arranque de VRRP (A-04)
-├── backend/                      # Dockerfile (node:24-alpine) + server.js (sin dependencias)
+├── backend/                      # Dockerfile (node:24-alpine) + server.js y tienda.js (dependencias: pg, redis)
 ├── nginx/
 │   ├── nginx.conf                # montado :ro
 │   ├── templates/                # main, events, http, upstream_servers (envsubst)

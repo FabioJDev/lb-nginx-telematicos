@@ -64,19 +64,19 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 <div class="small">
 
-| Criterio (peso) · cómo se mide → escala | NGINX | HAProxy | Traefik | Apache | LVS |
+| Criterio (peso) · cómo se mide | NGINX | HAProxy | Traefik | Apache | LVS |
 |---|---|---|---|---|---|
-| C1 Desempeño (20) · **medido**: p99 y CPU, misma carga → 5·(½·p99 mín/p99 + ½·CPU mín/CPU) | 5 | 5 | 3 | 4 | 5† |
-| C2 Algoritmos (15) · conteo en docs libres → 5 ≥ 8, 4 = 5–7, 3 = 3–4 | 4 | 5 | 3 | 3 | 5 |
-| C3 Fallos (15) · activos, pasivos, reintentos → 5 los tres, 3 pasivos+reintentos | 3 | 5 | 5 | 5 | 1 |
-| C4 Observabilidad (10) · métricas por servidor → 5 Prometheus, 2 globales | 2 | 5 | 4 | 3 | 4 |
-| C5 Facilidad (10) · **medido**: líneas del caso base funcionando → 4 = 11–20, 3 = 21–30 | 4 | 4 | 3 | 3 | 2 |
-| C6 Descubrimiento (10) · réplica nueva → 5 API Docker, 4 DNS, 3 recarga | 4 | 4 | 5 | 3 | 1 |
-| C7 Madurez (10) · años y versiones recientes → 5 ≥ 15 años | 5 | 5 | 4 | 5 | 4 |
-| C8 Funciones L7 (10) · de 6 funciones libres → 5 = 6, 4 = 5 | 5 | 4 | 3 | 4 | 1 |
+| C1 Desempeño (20) · **medido**: p99 y CPU | 5 | 5 | 3 | 4 | 5† |
+| C2 Algoritmos (15) · nº en docs libres | 4 | 5 | 3 | 3 | 5 |
+| C3 Fallos (15) · activos, pasivos, reintentos | 3 | 5 | 5 | 5 | 1 |
+| C4 Observabilidad (10) · métricas por servidor | 2 | 5 | 4 | 3 | 4 |
+| C5 Facilidad (10) · **medido**: líneas del caso base | 4 | 4 | 3 | 3 | 2 |
+| C6 Descubrimiento (10) · cómo entra una réplica | 4 | 4 | 5 | 3 | 1 |
+| C7 Madurez (10) · años y versiones | 5 | 5 | 4 | 5 | 4 |
+| C8 L7 (10) · de 6 funciones libres | 5 | 4 | 3 | 4 | 1 |
 | **Puntaje /100** | **81** | **94** | **74** | **76** | **62** |
 
-† LVS no medible en contenedores (IPVS en el kernel del host): 5 por diseño, declarado.
+Cada criterio tiene escala 1–5 con umbrales fijados antes de puntuar (p. ej. C2: 5 ≥ 8 algoritmos; C5: 4 = 11–20 líneas). † LVS no medible en contenedores: 5 por diseño, declarado.
 
 </div>
 
@@ -84,12 +84,10 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 ## Sensibilidad y reflexión
 
-- **Medido (A05B, 3 rep.):** p99 / CPU · NGINX 35,7 ms / 9,9 % · HAProxy 36,0 / 10,9 · Apache 38,0 / 19,6 · Traefik 41,2 / 28,1. Caso base: HAProxy 18 líneas, NGINX 20, Apache 23, Traefik 27.
-- Con reutilización de conexiones **NGINX y HAProxy empatan** en desempeño (la ventaja de NGINX en A-05 era por `http-server-close`).
-- **La matriz no elige NGINX: HAProxy gana por 13 puntos** (checks activos y pasivos, algoritmos, métricas por servidor). Estable con ±5 en cualquier peso; solo C6 ≥ 56 (Traefik) o C8 ≥ 46 (NGINX) cambian el líder.
-- Al medir, la ventaja de HAProxy creció de 3 a 13: las puntuaciones iniciales favorecían a NGINX sin evidencia. Lo decimos.
-- NGINX es **requisito del cliente**: la matriz valida la elección y expone su costo. Empata en desempeño, es la más completa en L7 (microcaché **−77 %** CPU de la base de datos) y sus debilidades se mitigan en el diseño (C3, C4, C6). Sin esa restricción: HAProxy.
-- Matriz 4.3 (descubrimiento): DNS con `resolve` 78 > regenerar+reload 58 > estáticos 56.
+- **Medido (A05B, 3 rep.):** p99 / CPU · NGINX 35,7 ms / 9,9 % · HAProxy 36,0 / 10,9 · Apache 38,0 / 19,6 · Traefik 41,2 / 28,1. NGINX y HAProxy **empatan** (en A-05 HAProxy no reutilizaba conexiones).
+- **La matriz no elige NGINX: HAProxy gana por 13** y es estable con ±5; solo C6 ≥ 56 o C8 ≥ 46 cambian el líder. Al medir, la ventaja creció de 3 a 13. Lo decimos.
+- NGINX es **requisito del cliente**: la matriz valida la elección y expone su costo. Empata en desempeño, es la más completa en L7 (microcaché **−77 %** CPU de la BD) y sus debilidades se mitigan en el diseño. Sin esa restricción: HAProxy.
+- Matriz 4.3 (descubrimiento): `resolve` 78 > regenerar + reload 58 > estáticos 56.
 
 ---
 

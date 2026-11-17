@@ -174,7 +174,7 @@ table { font-size: 20px; }
 <table>
 <thead>
 <tr>
-<th>Criterio (peso) · cómo se mide</th>
+<th>Criterio (peso) · cómo se mide → escala</th>
 <th>NGINX</th>
 <th>HAProxy</th>
 <th>Traefik</th>
@@ -184,65 +184,65 @@ table { font-size: 20px; }
 </thead>
 <tbody>
 <tr>
-<td>C1 Desempeño (20) · <strong>medido en A-05</strong> (p99, CPU del balanceador)</td>
+<td>C1 Desempeño (20) · <strong>medido</strong>: p99 y CPU, misma carga → 5·(½·p99 mín/p99 + ½·CPU mín/CPU)</td>
 <td>5</td>
-<td><strong>4</strong></td>
+<td>5</td>
+<td>3</td>
 <td>4</td>
+<td>5†</td>
+</tr>
+<tr>
+<td>C2 Algoritmos (15) · conteo en docs libres → 5 ≥ 8, 4 = 5–7, 3 = 3–4</td>
+<td>4</td>
+<td>5</td>
+<td>3</td>
 <td>3</td>
 <td>5</td>
 </tr>
 <tr>
-<td>C2 Algoritmos (15) · conteo en docs versión libre</td>
-<td>4</td>
-<td>5</td>
-<td>3</td>
-<td>4</td>
-<td>5</td>
-</tr>
-<tr>
-<td>C3 Detección de fallos (15) · activos+reintentos=5, pasivos=3</td>
+<td>C3 Fallos (15) · activos, pasivos, reintentos → 5 los tres, 3 pasivos+reintentos</td>
 <td>3</td>
 <td>5</td>
-<td>4</td>
-<td>4</td>
+<td>5</td>
+<td>5</td>
 <td>1</td>
 </tr>
 <tr>
-<td>C4 Observabilidad (10) · métricas por backend sin pago</td>
+<td>C4 Observabilidad (10) · métricas por servidor → 5 Prometheus, 2 globales</td>
 <td>2</td>
 <td>5</td>
-<td>5</td>
+<td>4</td>
+<td>3</td>
+<td>4</td>
+</tr>
+<tr>
+<td>C5 Facilidad (10) · <strong>medido</strong>: líneas del caso base funcionando → 4 = 11–20, 3 = 21–30</td>
+<td>4</td>
+<td>4</td>
+<td>3</td>
 <td>3</td>
 <td>2</td>
 </tr>
 <tr>
-<td>C5 Facilidad (10) · líneas de config + encuesta</td>
-<td>4</td>
-<td>3</td>
-<td>4</td>
-<td>3</td>
-<td>2</td>
-</tr>
-<tr>
-<td>C6 Docker/descubrimiento (10) · réplicas nuevas sin reinicio</td>
+<td>C6 Descubrimiento (10) · réplica nueva → 5 API Docker, 4 DNS, 3 recarga</td>
 <td>4</td>
 <td>4</td>
 <td>5</td>
-<td>2</td>
+<td>3</td>
 <td>1</td>
 </tr>
 <tr>
-<td>C7 Madurez (10) · años, releases, docs</td>
+<td>C7 Madurez (10) · años y versiones recientes → 5 ≥ 15 años</td>
+<td>5</td>
 <td>5</td>
 <td>4</td>
+<td>5</td>
 <td>4</td>
-<td>4</td>
-<td>3</td>
 </tr>
 <tr>
-<td>C8 Funciones L7 (10) · estáticos, caché, TLS, rate limit</td>
+<td>C8 Funciones L7 (10) · de 6 funciones libres → 5 = 6, 4 = 5</td>
 <td>5</td>
-<td>3</td>
+<td>4</td>
 <td>3</td>
 <td>4</td>
 <td>1</td>
@@ -250,13 +250,14 @@ table { font-size: 20px; }
 <tr>
 <td><strong>Puntaje /100</strong></td>
 <td><strong>81</strong></td>
-<td><strong>84</strong></td>
-<td><strong>79</strong></td>
-<td><strong>68</strong></td>
-<td><strong>56</strong></td>
+<td><strong>94</strong></td>
+<td><strong>74</strong></td>
+<td><strong>76</strong></td>
+<td><strong>62</strong></td>
 </tr>
 </tbody>
 </table>
+<p>† LVS no medible en contenedores (IPVS en el kernel del host): 5 por diseño, declarado.</p>
 </div>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
@@ -276,18 +277,12 @@ table { font-size: 20px; }
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="sensibilidad-y-reflexi%C3%B3n">Sensibilidad y reflexión</h2>
 <ul>
-<li><strong>A-05 medido:</strong> misma carga, NGINX p99 32,5 ms con 11,6 % de CPU vs HAProxy 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) → C1 de HAProxy 5 → 4.</li>
-<li>Ventaja de HAProxy <strong>pequeña y frágil</strong> (84 vs 81): NGINX lidera si C4 baja a 5, o si C8 ≥ 17, C5/C7 ≥ 22, C1 ≥ 31.</li>
-<li><strong>HAProxy supera a NGINX</strong> en balanceo puro (checks activos, métricas por backend). Lo decimos.</li>
-<li>NGINX se selecciona porque:
-<ol>
-<li>es la restricción del proyecto asignado (requisito del cliente);</li>
-<li>queda a 3 puntos y <strong>midió mejor latencia con la mitad de CPU</strong>;</li>
-<li>funciones L7 completas en un solo componente (la microcaché bajó <strong>77 %</strong> la CPU de la base de datos);</li>
-<li>las debilidades se <strong>mitigan en el diseño</strong>: detección pasiva + reintentos (C3), exporter + logs JSON + <code>/metrics</code> por réplica (C4), <code>resolve</code> (C6).</li>
-</ol>
-</li>
-<li>Matriz 4.3 (descubrimiento): DNS con <code>resolve</code> 78 &gt; regenerar+reload 64 &gt; estáticos 60.</li>
+<li><strong>Medido (A05B, 3 rep.):</strong> p99 / CPU · NGINX 35,7 ms / 9,9 % · HAProxy 36,0 / 10,9 · Apache 38,0 / 19,6 · Traefik 41,2 / 28,1. Caso base: HAProxy 18 líneas, NGINX 20, Apache 23, Traefik 27.</li>
+<li>Con reutilización de conexiones <strong>NGINX y HAProxy empatan</strong> en desempeño (la ventaja de NGINX en A-05 era por <code>http-server-close</code>).</li>
+<li><strong>La matriz no elige NGINX: HAProxy gana por 13 puntos</strong> (checks activos y pasivos, algoritmos, métricas por servidor). Estable con ±5 en cualquier peso; solo C6 ≥ 56 (Traefik) o C8 ≥ 46 (NGINX) cambian el líder.</li>
+<li>Al medir, la ventaja de HAProxy creció de 3 a 13: las puntuaciones iniciales favorecían a NGINX sin evidencia. Lo decimos.</li>
+<li>NGINX es <strong>requisito del cliente</strong>: la matriz valida la elección y expone su costo. Empata en desempeño, es la más completa en L7 (microcaché <strong>−77 %</strong> CPU de la base de datos) y sus debilidades se mitigan en el diseño (C3, C4, C6). Sin esa restricción: HAProxy.</li>
+<li>Matriz 4.3 (descubrimiento): DNS con <code>resolve</code> 78 &gt; regenerar+reload 58 &gt; estáticos 56.</li>
 </ul>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
@@ -774,7 +769,7 @@ table { font-size: 20px; }
 <li><strong>El tiempo de respuesta de Artillery no ve la conexión</strong> (ni el handshake TLS ni la espera del failover): hay que mirar la duración de la sesión.</li>
 <li><strong>VRRP con preempción corta dos veces</strong>: <code>nopreempt</code> elimina el segundo corte.</li>
 </ol>
-<div class="small">→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</div>
+<div class="small">→ Matriz 4.3: si la afinidad estable pesara ≥ 20/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</div>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="21" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-theme="default" data-style="section { font-size: 26px; }
@@ -793,7 +788,7 @@ table { font-size: 20px; }
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="matriz-42-y-conclusiones">Matriz 4.2 y conclusiones</h2>
 <ul>
-<li><strong>Algoritmo recomendado (matriz 4.2, todos los criterios medidos): <code>least_conn</code> (92,0)</strong> &gt; random_two (87,5) &gt; hash_client (76,0) &gt; round_robin (71,6) &gt; ip_hash (67,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 26/100.</li>
+<li><strong>Algoritmo recomendado (matriz 4.2, todos los criterios medidos): <code>least_conn</code> (92,0)</strong> &gt; random_two (87,5) &gt; hash_client (74,0) &gt; round_robin (71,6) &gt; ip_hash (69,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 27/100.</li>
 <li>Homogéneos: no importa el algoritmo. Heterogéneos en <strong>capacidad</strong>: <code>least_conn</code> (p95 171 → 23 ms).</li>
 <li>Con estado: <strong>sesiones en Redis + <code>least_conn</code></strong>; si la sesión no puede salir de la réplica, <code>sticky_cookie</code>.</li>
 <li>Base de datos: escalar backends no la alivia; la <strong>microcaché</strong> sí (−77 % CPU).</li>
