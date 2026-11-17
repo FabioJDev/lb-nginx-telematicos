@@ -113,6 +113,13 @@ jobs:
           scripts/set-env.sh SESSION_STORE redis --recreate-backend
           scripts/set-policy.sh round_robin
 
+      - name: HAProxy arranca y balancea los mismos backends (A-05)
+        run: |
+          docker compose -f docker-compose.yml -f compose.haproxy.yml up -d --no-deps haproxy
+          scripts/wait-healthy.sh haproxy 1 60 || { docker compose -f docker-compose.yml -f compose.haproxy.yml logs haproxy; exit 1; }
+          for i in 1 2 3 4 5 6; do docker compose exec -T lb wget -qO- http://haproxy/api/info | grep -o '"node":"[^"]*"'; done
+          docker compose -f docker-compose.yml -f compose.haproxy.yml stop haproxy
+
       - name: Escenario smoke de Artillery con el ejecutor completo
         run: scripts/run-test.sh CI smoke.yml
 

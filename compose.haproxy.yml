@@ -21,6 +21,9 @@ services:
       HAPROXY_BALANCE: ${HAPROXY_BALANCE:-roundrobin}
     volumes:
       - ./nginx/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    # Usuario sin privilegios escuchando en el puerto 80 dentro del contenedor
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
     networks:
       - frontend
       - backend
