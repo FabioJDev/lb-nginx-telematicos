@@ -2,11 +2,13 @@
 """
 analysis/decision_matrix.py — matrices de decisión multicriterio (sección 4).
 
-  Matriz 4.1  tecnología de balanceo: puntuaciones propuestas + ANÁLISIS DE
-              SENSIBILIDAD (cada peso ±5 redistribuido proporcionalmente en los
-              demás; se reporta si cambia el orden).
+  Matriz 4.1  tecnología de balanceo: cada criterio tiene una ESCALA 1–5 explícita y
+              cada celda su evidencia. C1 (desempeño) y C5 (facilidad) se calculan con
+              datos medidos (corridas A05B y alternativas_c5.csv de
+              scripts/test-alternativas.sh); el resto, con la documentación oficial.
+              Incluye ANÁLISIS DE SENSIBILIDAD (cada peso ±5 y umbrales de cambio).
   Matriz 4.2  algoritmo recomendado: se llena SOLO con datos medidos que estén en
-              results/resumen_comparativo.csv (generado por analyze.py). Si no hay
+              results/resumen_comparativo.csv (o COMPARATIVO_CSV). Si no hay
               datos, la matriz queda marcada como pendiente.
   Matriz 4.3  estrategia de descubrimiento de backends (decisión de diseño).
 
@@ -29,40 +31,192 @@ DOCS_DIR = Path(os.environ.get("DOCS_DIR", "/docs"))
 # ---------------------------------------------------------------------------
 # Matriz 4.1 — tecnología de balanceo
 # ---------------------------------------------------------------------------
+COMPARATIVO_CSV = os.environ.get("COMPARATIVO_CSV", "")
+
+# (id, nombre, peso, cómo se mide, escala 1–5)
 CRITERIA_41 = [
-    ("C1", "Desempeño y eficiencia", 20, "Throughput y p99 en el mismo escenario/hardware (A-05) o benchmarks publicados; CPU/RAM con docker stats"),
-    ("C2", "Algoritmos de balanceo disponibles", 15, "Conteo en la documentación de la versión libre (RR, ponderado, least-conn, hash, afinidad…)"),
-    ("C3", "Detección de fallos y tolerancia (versión libre)", 15, "5 = checks activos + reintentos; 3 = solo pasivos + reintentos; 1 = sin reintentos"),
-    ("C4", "Observabilidad", 10, "Métricas por backend sin módulos de pago; endpoint Prometheus nativo o vía exporter"),
-    ("C5", "Facilidad de configuración", 10, "Líneas de configuración del caso base + curva de aprendizaje (encuesta interna 1-5)"),
-    ("C6", "Integración con Docker / descubrimiento dinámico", 10, "¿Detecta réplicas nuevas sin reiniciar? (DNS re-resolvable, etiquetas, API)"),
-    ("C7", "Madurez, comunidad y documentación", 10, "Años en producción, frecuencia de versiones, calidad de la documentación oficial"),
-    ("C8", "Funciones L7 adicionales", 10, "Estáticos, caché, TLS, limitación de tasa, reescrituras en la versión libre"),
+    ("C1", "Desempeño y eficiencia", 20,
+     "Medido: misma carga (rampa.yml) contra el caso base mínimo de cada alternativa sobre las mismas 3 réplicas "
+     "(corridas A05B, scripts/test-alternativas.sh); p99 de Artillery y CPU media del contenedor del balanceador",
+     "5·(½·p99_mejor/p99 + ½·CPU_mejor/CPU), redondeado, mínimo 1"),
+    ("C2", "Algoritmos de balanceo disponibles", 15,
+     "Conteo de métodos en la documentación oficial de la versión libre",
+     "5 ≥ 8 · 4 = 5–7 · 3 = 3–4 · 2 = 2 · 1 = 1"),
+    ("C3", "Detección de fallos y tolerancia (versión libre)", 15,
+     "Documentación oficial: checks activos, detección pasiva y reintentos en otro servidor",
+     "5 = activos + pasivos + reintentos · 4 = dos de los tres · 3 = pasivos + reintentos · 2 = solo uno · 1 = ninguno"),
+    ("C4", "Observabilidad", 10,
+     "Documentación oficial: métricas por servidor de backend en la versión libre",
+     "5 = por servidor en Prometheus nativo · 4 = por servidor parcial o vía exportador estándar · "
+     "3 = por servidor solo en página/consola · 2 = solo globales · 1 = ninguna"),
+    ("C5", "Facilidad de configuración", 10,
+     "Medido: líneas útiles (sin comentarios ni blancos) del caso base mínimo equivalente (alternativas/), "
+     "comprobado funcionando: 30 peticiones, 3 nodos, 0 fallos (alternativas_c5.csv)",
+     "5 ≤ 10 · 4 = 11–20 · 3 = 21–30 · 2 = 31–40 · 1 > 40 líneas"),
+    ("C6", "Integración con Docker / descubrimiento dinámico", 10,
+     "Qué hay que hacer para que una réplica nueva reciba tráfico (en este proyecto: E-02/E-10 con `resolve`)",
+     "5 = automático por la API/etiquetas de Docker · 4 = re-resolución DNS sin recargar · "
+     "3 = lista estática + recarga sin cortar conexiones · 2 = lista estática + reinicio · 1 = alta manual con comandos"),
+    ("C7", "Madurez, comunidad y documentación", 10,
+     "Años desde la primera versión estable y versiones publicadas en los últimos 12 meses",
+     "5 = ≥ 15 años y versiones recientes · 4 = ≥ 10 años, o ≥ 15 sin versiones recientes de la herramienta de usuario · "
+     "3 = 5–9 años · 2 = < 5 años · 1 = sin mantenimiento"),
+    ("C8", "Funciones L7 adicionales", 10,
+     "Cuántas de 6 funciones trae la versión libre: servir estáticos, caché, TLS, limitación de tasa, "
+     "reescritura/redirección, compresión",
+     "5 = 6 · 4 = 5 · 3 = 4 · 2 = 2–3 · 1 = 0–1"),
 ]
 ALTERNATIVES_41 = ["NGINX", "HAProxy", "Traefik", "Apache", "LVS"]
-SCORES_41 = {
-    #        C1 C2 C3 C4 C5 C6 C7 C8
-    "NGINX":   [5, 4, 3, 2, 4, 4, 5, 5],
-    # C1 HAProxy = 4 con datos de A-05 (results/ejemplos/lote-A05-actions): con la misma carga, p99 +25 %
-    # y el doble de CPU que NGINX, con la configuración usada (sin keepalive hacia los backends).
-    "HAProxy": [4, 5, 5, 5, 3, 4, 4, 3],
-    "Traefik": [4, 3, 4, 5, 4, 5, 4, 3],
-    "Apache":  [3, 4, 4, 3, 3, 2, 4, 4],
-    "LVS":     [5, 5, 1, 2, 2, 1, 3, 1],
+ALT_SERVICE = {"NGINX": "alt-nginx", "HAProxy": "alt-haproxy", "Traefik": "alt-traefik", "Apache": "alt-apache"}
+
+# Puntuación y evidencia de los criterios que salen de la documentación (C2, C3, C4, C6, C7, C8).
+# Fuentes: nginx.org ngx_http_upstream_module; docs.haproxy.org 3.2 (balance, check, observe);
+# doc.traefik.io (load-balancing service, retry, metrics); httpd.apache.org 2.4 (mod_proxy_balancer,
+# mod_proxy_hcheck, mod_proxy); ipvsadm(8).
+EVIDENCE_41 = {
+    "C2": {
+        "NGINX": (4, "7: round-robin, least_conn, ip_hash, hash, hash consistent, random, random two (least_time es libre solo desde 1.31)"),
+        "HAProxy": (5, "13: roundrobin, static-rr, leastconn, first, hash, source, uri, url_param, hdr, random, rdp-cookie, log-hash, sticky"),
+        "Traefik": (3, "4: wrr, p2c, hrw, leasttime"),
+        "Apache": (3, "4: byrequests, bytraffic, bybusyness, heartbeat"),
+        "LVS": (5, "10: rr, wrr, lc, wlc, lblc, lblcr, dh, sh, sed, nq"),
+    },
+    "C3": {
+        "NGINX": (3, "pasiva (max_fails/fail_timeout) + reintentos (proxy_next_upstream); checks activos solo en NGINX Plus"),
+        "HAProxy": (5, "activos (check), pasivos (observe) y reintentos (retries + redispatch)"),
+        "Traefik": (5, "activos (healthCheck), pasivos (passiveHealthCheck) y middleware retry"),
+        "Apache": (5, "activos (mod_proxy_hcheck, ≥ 2.4.21), pasivos (worker en estado de error, retry) y maxattempts"),
+        "LVS": (1, "ninguno propio: requiere keepalived o ldirectord"),
+    },
+    "C4": {
+        "NGINX": (2, "stub_status es global; por servidor solo en logs (exporter oficial, métricas globales)"),
+        "HAProxy": (5, "exportador Prometheus integrado con métricas por servidor"),
+        "Traefik": (4, "Prometheus nativo; por servidor solo traefik_service_server_up (estado)"),
+        "Apache": (3, "por miembro solo en balancer-manager (página HTML)"),
+        "LVS": (4, "contadores por servidor real (ipvsadm --stats) y colector ipvs de node_exporter"),
+    },
+    "C6": {
+        "NGINX": (4, "`resolve` (libre desde 1.27.3) re-resuelve el DNS de Docker sin recargar (medido en E-02/E-10)"),
+        "HAProxy": (4, "server-template + resolvers re-resuelven el DNS"),
+        "Traefik": (5, "proveedor Docker: descubre contenedores por etiquetas"),
+        "Apache": (3, "BalancerMember estáticos; apachectl graceful recarga sin cortar"),
+        "LVS": (1, "ipvsadm -a por cada servidor real"),
+    },
+    "C7": {
+        "NGINX": (5, "desde 2004; versión estable 1.30 en 2026"),
+        "HAProxy": (5, "desde 2001; 3.2 LTS con versiones en 2026"),
+        "Traefik": (4, "desde 2015 (11 años); v3.7 en 2026"),
+        "Apache": (5, "httpd desde 1995, mod_proxy_balancer desde 2.2 (2005); 2.4.6x en 2026"),
+        "LVS": (4, "IPVS en el kernel desde 1998; ipvsadm sin versiones recientes"),
+    },
+    "C8": {
+        "NGINX": (5, "6/6"),
+        "HAProxy": (4, "5/6: no sirve archivos estáticos"),
+        "Traefik": (3, "4/6: sin estáticos ni caché en la versión libre"),
+        "Apache": (4, "5/6: sin limitación de tasa de peticiones nativa (mod_ratelimit limita ancho de banda)"),
+        "LVS": (1, "0/6: balanceo de capa 4"),
+    },
 }
+# Valores de respaldo si no hay mediciones (C1 y C5 de la versión anterior de la matriz)
+FALLBACK_41 = {"C1": {"NGINX": 5, "HAProxy": 4, "Traefik": 4, "Apache": 3, "LVS": 5},
+               "C5": {"NGINX": 4, "HAProxy": 3, "Traefik": 4, "Apache": 3, "LVS": 2}}
+# LVS no se puede medir en contenedores (módulo ip_vs del kernel del host): C1 por diseño
+LVS_C1 = (5, "no medido (IPVS vive en el kernel del host); 5 por diseño: reenvío en el kernel, sin proxy en espacio de usuario")
+
+
+def c5_points(lines: int) -> int:
+    return 5 if lines <= 10 else 4 if lines <= 20 else 3 if lines <= 30 else 2 if lines <= 40 else 1
+
+
+def load_alt_measurements():
+    """C1 y C5 medidos: corridas A05B (resumen.json) y alternativas_c5.csv bajo RESULTS_DIR."""
+    import json
+    perf = {}
+    for meta in sorted(RESULTS_DIR.rglob("metadata.json")):
+        run = meta.parent
+        if "_A05B_" not in run.name or not (run / "resumen.json").exists():
+            continue
+        r = json.loads((run / "resumen.json").read_text(encoding="utf-8"))
+        svc = r.get("policy", "")
+        p99, cpu = to_float(r.get("art_lat_p99")), to_float(r.get(f"cpu_mean_{svc}"))
+        if not math.isnan(p99) and not math.isnan(cpu) and cpu > 0:
+            perf.setdefault(svc, []).append((p99, cpu, to_float(r.get("art_error_rate"))))
+    c5 = {}
+    csvs = sorted(RESULTS_DIR.rglob("alternativas_c5.csv"))
+    if csvs:
+        with open(csvs[-1], encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                c5[row["alternativa"]] = row
+    return perf, c5
+
+
+def build_scores_41():
+    """Devuelve (scores por alternativa, evidencia por criterio y alternativa, notas)."""
+    perf, c5 = load_alt_measurements()
+    ev = {c[0]: {} for c in CRITERIA_41}
+    notes = []
+    # C1
+    means = {}
+    for alt, svc in ALT_SERVICE.items():
+        vals = perf.get(svc, [])
+        if vals:
+            means[alt] = (sum(v[0] for v in vals) / len(vals), sum(v[1] for v in vals) / len(vals),
+                          sum(v[2] for v in vals if not math.isnan(v[2])) / len(vals), len(vals))
+    if len(means) == len(ALT_SERVICE):
+        best_p99 = min(m[0] for m in means.values())
+        best_cpu = min(m[1] for m in means.values())
+        for alt, (p99, cpu, err, n) in means.items():
+            pts = max(1, min(5, math.floor(5 * (0.5 * best_p99 / p99 + 0.5 * best_cpu / cpu) + 0.5)))
+            ev["C1"][alt] = (pts, f"p99 {p99:.1f} ms · CPU {cpu:.1f} % · errores {100 * err:.2f} % (n = {n})")
+        notes.append("C1 medido en las corridas A05B (scripts/test-alternativas.sh).")
+    else:
+        for alt in ALT_SERVICE:
+            ev["C1"][alt] = (FALLBACK_41["C1"][alt], "sin corridas A05B: valor de respaldo")
+        notes.append("C1 SIN mediciones A05B: se usan valores de respaldo.")
+    ev["C1"]["LVS"] = LVS_C1
+    # C5
+    for alt in ALTERNATIVES_41:
+        row = c5.get(alt)
+        if row and row.get("lineas"):
+            lines = int(row["lineas"])
+            ver = row.get("verificado", "")
+            how = "funciona: 3 nodos, 0 fallos" if ver == "sí" else ver
+            ev["C5"][alt] = (c5_points(lines), f"{lines} líneas ({row['archivos']}); {how}")
+        else:
+            ev["C5"][alt] = (FALLBACK_41["C5"][alt], "sin alternativas_c5.csv: valor de respaldo")
+    for cid, by_alt in EVIDENCE_41.items():
+        ev[cid] = dict(by_alt)
+    scores = {a: [ev[c[0]][a][0] for c in CRITERIA_41] for a in ALTERNATIVES_41}
+    return scores, ev, notes
+
+
+SCORES_41, EVIDENCE_TABLE_41, NOTES_41 = None, None, []
 
 # ---------------------------------------------------------------------------
 # Matriz 4.3 — descubrimiento de backends
 # ---------------------------------------------------------------------------
+# (nombre, peso, cómo se mide, escala)
 CRITERIA_43 = [
-    ("Escalar sin tocar la config", 30), ("Pesos/backup por servidor", 20),
-    ("Simplicidad", 20), ("Robustez ante cambios", 30),
+    ("Escalar sin tocar la config", 30,
+     "Pasos manuales para pasar de 3 a 5 réplicas (medido con `make scale N=5` en la CI y en E-10)",
+     "5 = ninguno · 3 = un script automatizable + recarga · 1 = editar la configuración y recargar a mano"),
+    ("Pesos/backup por servidor", 20,
+     "¿Se puede dar `weight` o `backup` a una réplica concreta?",
+     "5 = sí, por réplica · 2 = solo el mismo valor para todas · 1 = no"),
+    ("Simplicidad", 20,
+     "Piezas que hay que mantener además de la plantilla de NGINX",
+     "5 = ninguna y no cambia al escalar · 4 = 1–3 directivas extra fijas · 3 = la lista se edita en cada cambio · "
+     "2 = un componente externo (script o generador) · 1 = varios componentes"),
+    ("Robustez ante cambios", 30,
+     "Qué pasa si una réplica desaparece o un nombre no resuelve al arrancar",
+     "5 = arranca y se adapta sola · 4 = arranca y se adapta, con limitaciones conocidas (H-1, H-3) · "
+     "3 = no arranca si un nombre no resuelve (`host not found in upstream`) · 2 = depende de un proceso externo · 1 = requiere intervención"),
 ]
 ALTERNATIVES_43 = ["Servidores estáticos con nombre", "DNS con resolve (elegida)", "Regenerar config + reload"]
 SCORES_43 = {
-    "Servidores estáticos con nombre": [1, 5, 4, 3],
+    "Servidores estáticos con nombre": [1, 5, 3, 3],
     "DNS con resolve (elegida)":       [5, 2, 4, 4],
-    "Regenerar config + reload":       [3, 5, 2, 3],
+    "Regenerar config + reload":       [3, 5, 2, 2],
 }
 
 # ---------------------------------------------------------------------------
@@ -75,9 +229,13 @@ CRITERIA_42 = [
     ("Equidad de la distribución", 15, "Índice de Jain J sobre peticiones por backend (M-06). 5·J"),
     ("Errores durante fallo de backend", 20, "% de respuestas no-2xx en la ventana de 30 s tras la falla (M-03/E-07). 5 si 0 %; 5·(1 − min(err,5 %)/5 %), mín. 1"),
     ("Afinidad de sesión", 10, "% de clientes que siempre caen en el mismo backend (log NGINX, client_id). 5·(%/100), mín. 1"),
-    ("Simplicidad operativa", 10, "Cualitativo (juicio del equipo): directivas extra y requisitos del cliente"),
+    ("Simplicidad operativa", 10, "Líneas del archivo de la política (nginx/policies/, sin comentarios) y requisitos al cliente: "
+     "5 = 0–1 directiva sin parámetros · 4 = 1 directiva con parámetros · 3 = necesita mapas o variables extra · "
+     "2 = exige algo al cliente (cabecera propia) · 1 = componentes externos"),
 ]
-SIMPLICITY_42 = {"round_robin": 5, "least_conn": 5, "ip_hash": 4, "hash_client": 3, "hash_remote_addr": 4, "random_two": 4}
+# round_robin: 0 líneas · least_conn / ip_hash: 1 directiva sin parámetros · random_two: `random two least_conn;`
+# hash_remote_addr: `hash $remote_addr;` · hash_client: `hash $http_x_client_id;` + el cliente debe enviar X-Client-Id
+SIMPLICITY_42 = {"round_robin": 5, "least_conn": 5, "ip_hash": 5, "hash_client": 2, "hash_remote_addr": 4, "random_two": 4}
 POLICIES_42 = ["round_robin", "least_conn", "ip_hash", "hash_client", "random_two"]
 
 
@@ -149,7 +307,7 @@ def to_float(v):
 
 # ---------------------------------------------------------------------------
 def load_comparativo():
-    p = RESULTS_DIR / "resumen_comparativo.csv"
+    p = Path(COMPARATIVO_CSV) if COMPARATIVO_CSV else RESULTS_DIR / "resumen_comparativo.csv"
     if not p.exists():
         return []
     with open(p, encoding="utf-8") as f:
@@ -224,9 +382,17 @@ def main() -> int:
     out.append("Puntuación 1–5; pesos suman 100; puntaje = Σ(peso × puntuación) / 5 (sobre 100).\n")
 
     # 4.1
+    global SCORES_41, EVIDENCE_TABLE_41, NOTES_41
+    SCORES_41, EVIDENCE_TABLE_41, NOTES_41 = build_scores_41()
     w41 = [c[2] for c in CRITERIA_41]
     out.append("## Matriz 4.1 — tecnología de balanceo\n")
-    out.append(md_table(["ID", "Criterio", "Peso", "Cómo se mide / justifica"], [(c[0], c[1], c[2], c[3]) for c in CRITERIA_41]))
+    out.append(md_table(["ID", "Criterio", "Peso", "Cómo se mide", "Escala 1–5"], [(c[0], c[1], c[2], c[3], c[4]) for c in CRITERIA_41]))
+    out.append("\n**Evidencia de cada puntuación** (puntos: evidencia)\n")
+    out.append(md_table(["Criterio"] + ALTERNATIVES_41,
+                        [[c[0]] + [f"**{EVIDENCE_TABLE_41[c[0]][a][0]}** · {EVIDENCE_TABLE_41[c[0]][a][1]}" for a in ALTERNATIVES_41]
+                         for c in CRITERIA_41]))
+    if NOTES_41:
+        out.append("\n" + " ".join(NOTES_41))
     out.append("")
     rows = []
     for i, c in enumerate(CRITERIA_41):
@@ -245,11 +411,17 @@ def main() -> int:
                if thresholds else "Ningún criterio, dentro de 0–100, cambia el líder.")
     # Diferencia NGINX vs líder
     leader = base_rank[0]
-    out.append(f"\nNGINX obtiene {score(w41, SCORES_41['NGINX']):.0f}/100 frente a {score(w41, SCORES_41[leader]):.0f}/100 de {leader}. "
-               "Si HAProxy lidera en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre), "
-               "se reporta con honestidad: NGINX se selecciona porque (1) es la restricción del proyecto asignado, "
-               "(2) queda en el grupo líder, (3) aporta funciones L7 completas en un solo componente y (4) sus debilidades se mitigan "
-               "en el diseño (detección pasiva + reintentos, exporter + logs JSON, `resolve`).\n")
+    pos = base_rank.index("NGINX") + 1
+    gap = score(w41, SCORES_41[leader]) - score(w41, SCORES_41["NGINX"])
+    if leader == "NGINX":
+        out.append(f"\nNGINX lidera con {score(w41, SCORES_41['NGINX']):.0f}/100.\n")
+    else:
+        out.append(f"\nNGINX obtiene {score(w41, SCORES_41['NGINX']):.0f}/100 ({pos}.º lugar, a {gap:.0f} puntos de {leader}). "
+                   f"{leader} gana por criterios puramente de balanceo (checks activos y métricas por servidor en la versión libre) "
+                   "y se reporta tal cual. NGINX se usa porque (1) es la tecnología asignada al proyecto, por lo que la matriz "
+                   "valida la elección en lugar de hacerla; (2) es la mejor alternativa en funciones L7 y desempeño medido; "
+                   "y (3) sus debilidades se mitigan en el diseño: detección pasiva + reintentos (C3), exporter + logs JSON + "
+                   "/metrics por réplica (C4) y `resolve` (C6).\n")
 
     # 4.2
     out.append("## Matriz 4.2 — algoritmo de balanceo recomendado (con datos medidos)\n")
@@ -279,6 +451,8 @@ def main() -> int:
 
     # 4.3
     out.append("## Matriz 4.3 — estrategia de descubrimiento de backends (decisión de diseño)\n")
+    out.append(md_table(["Criterio", "Peso", "Cómo se mide", "Escala 1–5"], [(c[0], c[1], c[2], c[3]) for c in CRITERIA_43]))
+    out.append("")
     w43 = [c[1] for c in CRITERIA_43]
     rows = []
     for i, c in enumerate(CRITERIA_43):

@@ -1,6 +1,6 @@
 # .github/workflows/analisis.yml — vuelve a analizar los resultados versionados
 # (results/ejemplos/) en el contenedor analysis, sin ejecutar pruebas nuevas.
-# Publica avanzadas.md (A-01/A-03/A-04), comparación consolidada y matrices.
+# Publica avanzadas.md (A-01/A-03/A-04) y las matrices de decisión regeneradas.
 #   gh workflow run analisis.yml
 name: analisis
 
@@ -22,6 +22,12 @@ jobs:
           docker compose --profile tools run --rm -e RESULTS_DIR=/results/ejemplos analysis python avanzadas.py
           sudo chown -R "$(id -u):$(id -g)" results
           cat results/ejemplos/avanzadas.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Matrices de decisión (4.1 con C1/C5 medidos, 4.2 con datos, 4.3)
+        run: |
+          docker compose --profile tools run --rm -e RESULTS_DIR=/results/ejemplos             -e COMPARATIVO_CSV=/results/ejemplos/matriz-4.2/resumen_comparativo_combinado.csv             analysis python decision_matrix.py > /dev/null
+          sudo chown -R "$(id -u):$(id -g)" docs
+          sed -n '/Matriz 4.1/,/Matriz 4.2/p' docs/decision-matrix-generada.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publicar
         uses: actions/upload-artifact@v4
         with:
@@ -29,4 +35,5 @@ jobs:
           path: |
             results/ejemplos/avanzadas.md
             results/ejemplos/avanzadas.csv
+            docs/decision-matrix-generada.md
           retention-days: 30
