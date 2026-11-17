@@ -437,6 +437,28 @@ Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida
 | E-07 modos de falla | stop / kill / crash: **0 errores**; pause / hang: 9 errores y p99 10 s (timeout); **error 500: 33 % de errores sin reintento** |
 | E-09 falla total | 0 errores con 2 y 1 réplicas; página de mantenimiento sin réplicas; recuperación en **0,84 s** |
 | E-10 / E-11 / E-14 | escalar 3 → 6, recargar la configuración y un pico × 16 de la tasa: **0 errores**; 6 → 2: 1 error en 54 000 |
+| E-12 keepalive on/off | no distinguibles (p99 22 ms en ambos): en la misma red Docker abrir conexiones es casi gratis |
+| E-15 resistencia 15 min | 360 000 peticiones, **0 errores**, p99 21,8 ms al inicio y al final, sin crecimiento de memoria |
+| A-05 NGINX vs HAProxy | misma carga: NGINX p99 32,5 ms con 11,6 % de CPU; HAProxy p99 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) |
+
+### La tienda: sesiones y base de datos (E-16 a E-19, A-02)
+
+| Prueba | Resultado medido |
+|---|---|
+| E-16 sesiones en **memoria** + round_robin / least_conn / random_two | **98–99 %** de los recorridos pierden la sesión; solo ~20 % de las compras se completan |
+| E-16 sesiones en memoria + ip_hash / hash_client / sticky_cookie | **100 %** de compras completas (ip_hash, con todo el tráfico en una réplica) |
+| E-16 sesiones en **Redis** + cualquier política | **100 %** de compras completas con las 6 políticas |
+| E-17 escalar de 1 a 5 réplicas | la CPU por réplica baja de 21 % a 9 %, pero la de PostgreSQL sigue en ~23 %: la base de datos no escala con los backends |
+| A-02 microcaché de 1 s del catálogo | 61,6 % de aciertos; CPU de PostgreSQL **−77 %** (22,6 → 5,1 %); latencia media 1,24 → 0,28 ms |
+| E-18 PostgreSQL caído 30 s | 100 % de errores (inevitable) y **6,3 s** extra de recuperación: NGINX marcó las 3 réplicas como caídas por sus 503 |
+| E-19 Redis caído 30 s | fallaron login y carrito, y también **el catálogo**, que no usa Redis, por el mismo motivo (hallazgo H-8) |
+
+![Tienda: sesiones y compras por política](docs/figuras/comparacion_tienda.png)
+
+Comparación consolidada de **todas las políticas en todos los escenarios** (tablas por métrica, ganador
+por escenario y mapa normalizado): [`docs/comparacion-algoritmos.md`](docs/comparacion-algoritmos.md).
+
+![Comparación normalizada de políticas](docs/figuras/comparacion_mapa.png)
 
 ### Algoritmo recomendado (matriz 4.2 con datos medidos)
 
@@ -458,6 +480,9 @@ si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada cr
 2. **Errores 500 y lentitud son invisibles** para la detección pasiva de NGINX OSS con la configuración por defecto.
 3. **`resolve` envía tráfico a una réplica nueva antes de que su healthcheck la declare sana.**
 4. Con 2 vCPU **el generador de carga es el cuello de botella** con el endpoint de espera; la capacidad se midió con costo de CPU.
+5. **La afinidad no puede basarse en la cookie de sesión de la aplicación**: el login llega sin cookie y cae en otro nodo. La cookie debe emitirla el balanceador (`sticky_cookie`).
+6. **El 503 de una dependencia caída hace que NGINX descarte réplicas sanas** (`proxy_next_upstream … http_503` + `max_fails`): tumba rutas que funcionarían y retrasa la recuperación.
+7. Detalle y otros dos hallazgos de proceso (HAProxy y variables de entorno) en [`docs/hallazgos.md`](docs/hallazgos.md).
 
 ![Escalabilidad E-02](docs/figuras/escalabilidad.png)
 

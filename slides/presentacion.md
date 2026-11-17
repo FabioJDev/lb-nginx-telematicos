@@ -66,7 +66,7 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 | Criterio (peso) · cómo se mide | NGINX | HAProxy | Traefik | Apache | LVS |
 |---|---|---|---|---|---|
-| C1 Desempeño (20) · throughput/p99 mismo escenario, `docker stats` | 5 | 5 | 4 | 3 | 5 |
+| C1 Desempeño (20) · **medido en A-05** (p99, CPU del balanceador) | 5 | **4** | 4 | 3 | 5 |
 | C2 Algoritmos (15) · conteo en docs versión libre | 4 | 5 | 3 | 4 | 5 |
 | C3 Detección de fallos (15) · activos+reintentos=5, pasivos=3 | 3 | 5 | 4 | 4 | 1 |
 | C4 Observabilidad (10) · métricas por backend sin pago | 2 | 5 | 5 | 3 | 2 |
@@ -74,7 +74,7 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 | C6 Docker/descubrimiento (10) · réplicas nuevas sin reinicio | 4 | 4 | 5 | 2 | 1 |
 | C7 Madurez (10) · años, releases, docs | 5 | 4 | 4 | 4 | 3 |
 | C8 Funciones L7 (10) · estáticos, caché, TLS, rate limit | 5 | 3 | 3 | 4 | 1 |
-| **Puntaje /100** | **81** | **88** | **79** | **68** | **56** |
+| **Puntaje /100** | **81** | **84** | **79** | **68** | **56** |
 
 </div>
 
@@ -82,12 +82,13 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 ## Sensibilidad y reflexión
 
-- ±5 en cualquier peso: **el ranking no cambia**. NGINX lideraría solo si C8 ≥ 24, C5 ≥ 34 o C7 ≥ 34; Traefik si C6 ≥ 38.
+- **A-05 medido:** misma carga, NGINX p99 32,5 ms con 11,6 % de CPU vs HAProxy 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) → C1 de HAProxy 5 → 4.
+- Ventaja de HAProxy **pequeña y frágil** (84 vs 81): NGINX lidera si C4 baja a 5, o si C8 ≥ 17, C5/C7 ≥ 22, C1 ≥ 31.
 - **HAProxy supera a NGINX** en balanceo puro (checks activos, métricas por backend). Lo decimos.
 - NGINX se selecciona porque:
   1. es la restricción del proyecto asignado (requisito del cliente);
-  2. queda en el grupo líder (−7 puntos, ranking estable);
-  3. funciones L7 completas en un solo componente;
+  2. queda a 3 puntos y **midió mejor latencia con la mitad de CPU**;
+  3. funciones L7 completas en un solo componente (la microcaché bajó **77 %** la CPU de la base de datos);
   4. las debilidades se **mitigan en el diseño**: detección pasiva + reintentos (C3), exporter + logs JSON + `/metrics` por réplica (C4), `resolve` (C6).
 - Matriz 4.3 (descubrimiento): DNS con `resolve` 78 > regenerar+reload 64 > estáticos 60.
 
@@ -95,7 +96,7 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 ## Arquitectura
 
-![h:420](../docs/diagramas/arquitectura.png)
+![h:400](../docs/diagramas/arquitectura.png)
 
 <div class="small">Dos redes con nombre: <code>lbnginx_frontend</code> (publica :8080) y <code>lbnginx_backend</code> (<code>internal: true</code>). Config NGINX 100 % externa (volúmenes :ro + envsubst). Política = un archivo. Backend instrumentado (X-Backend-Node, fallos, /metrics).</div>
 
@@ -118,14 +119,15 @@ Más allá: 6 políticas, inyección de 7 modos de falla, escalado en caliente s
 
 ---
 
-## Demo en vivo (5 min)
+## Demo en vivo (7 min)
 
-1. `docker compose ps` → backends sin `0.0.0.0:`
-2. Navegador `localhost:8080`: recargar → cambia nodo y color
-3. Carga constante + Grafana: distribución por réplica en vivo
-4. `make policy P=ip_hash` → todo a un backend (la /24) · `P=hash_client` → se reparte
-5. `scripts/inject-fault.sh rm 1` → redistribución, error ≈ 0
-6. `make scale N=5` → réplicas nuevas **sin reiniciar NGINX**
+1. `docker compose ps` → backends, PostgreSQL y Redis sin `0.0.0.0:`
+2. **La tienda** en `localhost:8080`: buscar, login, carrito, compra; panel de diagnóstico muestra qué réplica atiende
+3. `make sesiones S=memory` → "Sesión perdida" · `make policy P=sticky_cookie` → el carrito se conserva
+4. Carga constante + Grafana: distribución por réplica en vivo
+5. `make policy P=ip_hash` → todo a un backend (la /24) · `P=hash_client` → se reparte
+6. `scripts/inject-fault.sh rm 1` → redistribución, error ≈ 0
+7. `make scale N=5` → réplicas nuevas **sin reiniciar NGINX**
 
 ---
 
@@ -196,12 +198,52 @@ Endpoint con 3 ms de CPU: goodput **170 → 271 → 472 → 783 req/s** para N =
 
 ---
 
+## Una aplicación con estado: TelemaShop
+
+Recomendación del profesor: probar con **funcionalidades y base de datos**, no solo una página.
+
+- Catálogo y búsqueda, login, carrito y **compra transaccional** sobre **PostgreSQL 17** (compartido por todas las réplicas)
+- Sesiones en **Redis** (compartidas) o en la **memoria** de cada réplica (`SESSION_STORE`)
+- Nueva política **`sticky_cookie`**: NGINX emite la cookie `lbid` y hace hash de ella
+- Recorrido de compra en Artillery: portada → catálogo → búsqueda → detalle → login → 2 × carrito → compra
+- Métricas en Grafana: sesiones perdidas, pedidos por réplica, pool de PostgreSQL
+
+---
+
+## Resultados: ¿sobrevive la sesión al balanceo? (E-16)
+
+![h:230](../docs/figuras/comparacion_tienda.png)
+
+<div class="small">
+
+| | Memoria: sesión perdida | Memoria: compras OK | Redis: compras OK |
+|---|---|---|---|
+| round_robin / least_conn / random_two | **98–99 %** | ~20 % | **100 %** |
+| ip_hash / hash_client / sticky_cookie | 0 % | **100 %** | **100 %** |
+
+Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo sirve.
+
+</div>
+
+---
+
+## Resultados: la base de datos compartida (E-17, A-02, E-18/19)
+
+- **E-17:** de 1 a 5 réplicas, la CPU por réplica baja de 21 % a 9 %… pero **PostgreSQL sigue en ~23 %**: escalar backends no escala la base de datos.
+- **A-02 microcaché de 1 s** (solo catálogo público): 61,6 % de aciertos, CPU de PostgreSQL **−77 %**, latencia media 1,24 → 0,28 ms.
+- **E-18 PostgreSQL caído 30 s:** 100 % de errores (inevitable) y **6,3 s** extra de recuperación.
+- **E-19 Redis caído:** fallaron login y carrito… **y también el catálogo**, que no usa Redis.
+- Causa (H-8): los 503 de la app cuentan como fallo en `proxy_next_upstream` → NGINX descarta las réplicas **sanas**.
+
+---
+
 ## Hallazgos (lo que no estaba en el enunciado)
 
 1. **`hash … consistent` + `resolve` no da afinidad** en NGINX 1.30.6 (0 % de clientes fieles). Hash simple: 100 %, pero al pasar de 5 a 4 réplicas **remapea al 84 %** de los clientes (E-06).
 2. **Errores 500 y lentitud son invisibles** para la detección pasiva de NGINX OSS.
 3. **`resolve` envía tráfico antes del healthcheck** de Docker.
-4. `server.maxConnections = 0` en Node 24 = **cero** conexiones (lo detectó la CI).
+4. **La afinidad no puede basarse en la cookie de la app:** el login llega sin cookie y cae en otro nodo (4 de 5 compras perdidas). La cookie la debe emitir el balanceador.
+5. **El 503 de una dependencia caída tumba réplicas sanas** en la detección pasiva.
 
 → Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de `resolve`.
 
@@ -211,7 +253,8 @@ Endpoint con 3 ms de CPU: goodput **170 → 271 → 472 → 783 req/s** para N =
 
 - **Algoritmo recomendado (matriz 4.2, todos los criterios medidos): `least_conn` (92,0)** > random_two (87,5) > hash_client (76,0) > round_robin (71,6) > ip_hash (67,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 26/100.
 - Homogéneos: no importa el algoritmo. Heterogéneos en **capacidad**: `least_conn` (p95 171 → 23 ms).
-- Afinidad: en L7 con `hash $http_x_client_id`, sabiendo que escalar remapea la mayoría de las sesiones.
+- Con estado: **sesiones en Redis + `least_conn`**; si la sesión no puede salir de la réplica, `sticky_cookie`.
+- Base de datos: escalar backends no la alivia; la **microcaché** sí (−77 % CPU).
 - Resiliencia: caídas sin errores; cuelgues cuestan el timeout; 500 requiere `proxy_next_upstream http_500`.
 - Limitación: 2 vCPU → generador como cuello de botella; capacidad medida con costo de CPU.
 - Trabajo futuro: HA del balanceador (keepalived/VRRP), health checks activos, TLS/HTTP2, Kubernetes.

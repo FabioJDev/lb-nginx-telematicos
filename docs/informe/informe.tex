@@ -36,7 +36,7 @@
 \maketitle
 
 \begin{abstract}
-Una aplicación web servida por un único servidor tiene un punto único de falla y un techo de capacidad. Este trabajo diseña, implementa y evalúa un clúster web con balanceo de carga de capa~7 basado en NGINX, totalmente contenedorizado con Docker Compose: $N$ backends escalables descubiertos por DNS, seis políticas de balanceo intercambiables, detección pasiva de fallos con reintentos y observabilidad con \texttt{stub\_status}, Prometheus y Grafana. Con una metodología reproducible basada en Artillery (más de 70 corridas automatizadas) se midió que: al eliminar un backend bajo 300~req/s la disponibilidad observada fue del 100\,\% (0 errores, 3 reintentos); 1000 usuarios concurrentes se sostuvieron 60\,s sin fallos; con un endpoint que consume CPU el goodput creció de 170 a 783~req/s al pasar de 1 a 5 réplicas (eficiencia 0,92); y con un backend lento \texttt{least\_conn} redujo el p95 de 171 a 23~ms frente a round-robin. Se documenta además que \texttt{hash~consistent} no mantiene la afinidad cuando el \emph{upstream} usa \texttt{resolve}. La selección de tecnología, algoritmo y estrategia de descubrimiento se estructura con matrices multicriterio con análisis de sensibilidad.
+Una aplicación web servida por un único servidor tiene un punto único de falla y un techo de capacidad. Este trabajo diseña, implementa y evalúa un clúster web con balanceo de carga de capa~7 basado en NGINX, totalmente contenedorizado con Docker Compose: $N$ backends escalables descubiertos por DNS, seis políticas de balanceo intercambiables, detección pasiva de fallos con reintentos y observabilidad con \texttt{stub\_status}, Prometheus y Grafana. Con una metodología reproducible basada en Artillery (más de 70 corridas automatizadas) se midió que: al eliminar un backend bajo 300~req/s la disponibilidad observada fue del 100\,\% (0 errores, 3 reintentos); 1000 usuarios concurrentes se sostuvieron 60\,s sin fallos; con un endpoint que consume CPU el goodput creció de 170 a 783~req/s al pasar de 1 a 5 réplicas (eficiencia 0,92); y con un backend lento \texttt{least\_conn} redujo el p95 de 171 a 23~ms frente a round-robin. Con una tienda web real detrás del balanceador (PostgreSQL y sesiones en Redis o en memoria), las políticas sin afinidad perdieron la sesión en el 98--99\,\% de los recorridos con sesiones locales, mientras que con Redis todas completaron el 100\,\% de las compras, y una microcaché de 1\,s redujo un 77\,\% la CPU de la base de datos. Se documentan además hallazgos de la versión libre de NGINX: \texttt{hash~consistent} no mantiene la afinidad con \texttt{resolve} y el 503 de una dependencia caída hace descartar réplicas sanas. La selección de tecnología, algoritmo y estrategia de descubrimiento se estructura con matrices multicriterio con análisis de sensibilidad.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -61,7 +61,7 @@ Se evaluaron NGINX, HAProxy, Traefik, Apache \texttt{mod\_proxy\_balancer} y LVS
 \toprule
 Criterio (peso) & NGINX & HAProxy & Traefik & Apache & LVS\\
 \midrule
-C1 Desempeño (20) & 5 & 5 & 4 & 3 & 5\\
+C1 Desempeño (20) & 5 & 4$^\dagger$ & 4 & 3 & 5\\
 C2 Algoritmos (15) & 4 & 5 & 3 & 4 & 5\\
 C3 Detección de fallos (15) & 3 & 5 & 4 & 4 & 1\\
 C4 Observabilidad (10) & 2 & 5 & 5 & 3 & 2\\
@@ -70,12 +70,12 @@ C6 Docker/descubrimiento (10) & 4 & 4 & 5 & 2 & 1\\
 C7 Madurez (10) & 5 & 4 & 4 & 4 & 3\\
 C8 Funciones L7 (10) & 5 & 3 & 3 & 4 & 1\\
 \midrule
-\textbf{Puntaje /100} & \textbf{81} & \textbf{88} & \textbf{79} & \textbf{68} & \textbf{56}\\
+\textbf{Puntaje /100} & \textbf{81} & \textbf{84} & \textbf{79} & \textbf{68} & \textbf{56}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\emph{Sensibilidad.} Variando cada peso $\pm5$ puntos (redistribuidos proporcionalmente) el ranking no cambia; NGINX pasaría al primer lugar solo si C8 pesara $\geq 24$, C5 $\geq 34$ o C7 $\geq 34$, y Traefik si C6 $\geq 38$. \emph{Reflexión.} HAProxy supera a NGINX en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre). NGINX se selecciona porque es la restricción del proyecto asignado, queda en el grupo líder con ranking estable, aporta funciones L7 completas en un componente y sus debilidades se mitigan en el diseño: detección pasiva más reintentos (C3), exportador Prometheus, logs JSON por petición y \texttt{/metrics} por réplica (C4) y re-resolución DNS con \texttt{resolve} (C6).
+$^\dagger$C1 de HAProxy se midió (A-05): con la misma carga, NGINX tuvo un p99 de 32,5\,ms con 11,6\,\% de CPU y HAProxy 40,5\,ms con 23,5\,\%; parte de la diferencia se debe a que la configuración de HAProxy no reutilizaba conexiones con los backends. \emph{Sensibilidad.} La ventaja de HAProxy es pequeña: con $\pm5$ en los pesos el líder cambia en un caso (si C4 baja a 5, lidera NGINX), y NGINX también pasa al primer lugar si C8 pesa $\geq 17$, C5 o C7 $\geq 22$ o C1 $\geq 31$. \emph{Reflexión.} HAProxy supera a NGINX en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre). NGINX se selecciona porque es la restricción del proyecto asignado, queda a 3 puntos con mejor desempeño medido, aporta funciones L7 completas en un componente (su microcaché redujo un 77\,\% la CPU de la base de datos en A-02) y sus debilidades se mitigan en el diseño: detección pasiva más reintentos (C3), exportador Prometheus, logs JSON y \texttt{/metrics} por réplica (C4) y \texttt{resolve} (C6).
 
 \subsection{Algoritmo recomendado (matriz 4.2)}
 Se llena exclusivamente con datos medidos (Sección~\ref{sec:pruebas}): p99 con backends homogéneos (20), p95 con un backend lento (25), índice de Jain (15), errores en los 30\,s tras la caída de un backend (20), afinidad de sesión (10) y simplicidad operativa (10, juicio del equipo). Normalización a 1--5: menor es mejor $5\cdot\text{mejor}/\text{valor}$; Jain $5J$; errores $5(1-\min(e,5\%)/5\%)$. Dos ajustes se hicieron al ver los datos y se declaran: el criterio heterogéneo usa p95 porque el p99 lo fija el propio nodo lento (171--173\,ms con todas las políticas), y solo compiten políticas con al menos 70/100 de peso medido. La Tabla~\ref{tab:m42} muestra el resultado con las cinco políticas medidas en todos los criterios: se recomienda \texttt{least\_conn} (92,0), seguido de \texttt{random\_two} (87,5). Con $\pm5$ en cualquier peso el líder no cambia; \texttt{hash\_client} solo ganaría si la afinidad de sesión pesara 26/100 o más.
@@ -129,7 +129,7 @@ location / {
   proxy_next_upstream_tries 3; proxy_next_upstream_timeout 15s;
 }
 \end{lstlisting}
-El \texttt{docker-compose.yml} define \texttt{lb}, \texttt{backend} (3 réplicas, límites de 0,5 CPU y 256\,MB, \emph{healthcheck}), \texttt{artillery} (\emph{profile loadtest}) y, en \emph{profiles} aparte, el exportador, Prometheus, Pushgateway, Grafana y el contenedor de análisis. El \texttt{docker-compose.override.yml} añade un \emph{watcher} que detecta cambios por \emph{checksum}, regenera plantillas, valida con \texttt{nginx -t} y recarga con \texttt{nginx -s reload} sin reiniciar el contenedor. Un \texttt{Makefile} orquesta las tareas (\texttt{up}, \texttt{smoke}, \texttt{policy P=}, \texttt{scale N=}, \texttt{test-*}, \texttt{analyze}) y \texttt{scripts/run-test.sh} deja cada corrida en \texttt{results/} con metadatos, JSON de Artillery, la porción exacta del log de NGINX, sondeo de \texttt{stub\_status}, \texttt{docker stats} y eventos con marca de tiempo. Un flujo de integración continua valida la composición, construye el backend, ejecuta el \emph{smoke test}, cambia de política, escala en caliente y verifica la afinidad por política; un segundo flujo ejecuta los lotes de pruebas bajo demanda y publica los resultados.
+El \texttt{docker-compose.yml} define \texttt{lb}, \texttt{backend} (3 réplicas, límites de 0,5 CPU y 256\,MB, \emph{healthcheck}), \texttt{artillery} (\emph{profile loadtest}) y, en \emph{profiles} aparte, el exportador, Prometheus, Pushgateway, Grafana y el contenedor de análisis. El \texttt{docker-compose.override.yml} añade un \emph{watcher} que detecta cambios por \emph{checksum}, regenera plantillas, valida con \texttt{nginx -t} y recarga con \texttt{nginx -s reload} sin reiniciar el contenedor. Un \texttt{Makefile} orquesta las tareas (\texttt{up}, \texttt{smoke}, \texttt{policy P=}, \texttt{scale N=}, \texttt{test-*}, \texttt{analyze}) y \texttt{scripts/run-test.sh} deja cada corrida en \texttt{results/} con metadatos, JSON de Artillery, la porción exacta del log de NGINX, sondeo de \texttt{stub\_status}, \texttt{docker stats} y eventos con marca de tiempo. Detrás del balanceador corre además una tienda web (catálogo, búsqueda, login, carrito y compra transaccional) sobre PostgreSQL~17, compartido por todas las réplicas, con las sesiones en Redis o en la memoria de cada réplica según \texttt{SESSION\_STORE}; así se prueba el balanceo con estado real y no solo con una página estática. Se añadió la política \texttt{sticky\_cookie}: NGINX emite en la primera respuesta una cookie \texttt{lbid} igual al valor que usó para elegir el nodo y después hace \emph{hash} de ella. Un flujo de integración continua valida la composición, construye el backend, ejecuta el \emph{smoke test}, cambia de política, escala en caliente y verifica la afinidad por política; un segundo flujo ejecuta los lotes de pruebas bajo demanda y publica los resultados.
 
 \section{Pruebas}\label{sec:pruebas}
 \subsection{Metodología}
@@ -203,15 +203,45 @@ lento (+2\,s) & 0 & 2\,022\,ms & 0\\
 \end{tabular}
 \end{table}
 
+\subsection{Aplicación con estado: la tienda}
+\textbf{E-16} (Tabla~\ref{tab:tienda}, Fig.~\ref{fig:tienda}): cada usuario virtual recorre portada, catálogo, búsqueda, detalle, login, dos altas al carrito, revisión del carrito y compra (1\,400 recorridos por corrida, $n=2$). Con sesiones en la memoria de cada réplica, las políticas sin afinidad perdieron la sesión en el 98--99\,\% de los recorridos y solo completaron $\sim$20\,\% de las compras; con afinidad o con sesiones en Redis se completó el 100\,\%. \textbf{E-17}: al pasar de 1 a 5 réplicas con solo lecturas del catálogo, la CPU por réplica bajó de 21 a 9\,\%, pero la de PostgreSQL se mantuvo en $\sim$23\,\%. \textbf{A-02}: una microcaché de 1\,s en NGINX para el catálogo público tuvo 61,6\,\% de aciertos, redujo la CPU de PostgreSQL de 22,6 a 5,1\,\% ($-77$\,\%) y la latencia media de 1,24 a 0,28\,ms. \textbf{E-18/E-19}: con PostgreSQL detenido 30\,s fallaron todas las peticiones y la recuperación tardó 6,3\,s más; con Redis detenido fallaron login y carrito, y también el catálogo, que no usa Redis. \todo{E-18B/E-19B: mismas caídas con \texttt{proxy\_next\_upstream} sin \texttt{http\_503}.}
+
+\begin{table}[t]
+\caption{E-16: compra completa por política y almacén de sesiones ($n=2$).}
+\label{tab:tienda}
+\centering\scriptsize
+\begin{tabular}{lccc}
+\toprule
+ & \multicolumn{2}{c}{Sesiones en memoria} & Redis\\
+Política & Sesión perdida & Compras OK & Compras OK\\
+\midrule
+round\_robin & 97,9\,\% & 22,0\,\% & 100\,\%\\
+least\_conn & 99,4\,\% & 20,5\,\% & 100\,\%\\
+random\_two & 99,0\,\% & 18,7\,\% & 100\,\%\\
+ip\_hash$^\ast$ & 0\,\% & 100\,\% & 100\,\%\\
+hash\_client & 0\,\% & 100\,\% & 100\,\%\\
+sticky\_cookie & 0\,\% & 100\,\% & 100\,\%\\
+\bottomrule
+\multicolumn{4}{l}{$^\ast$ todo el tráfico en una réplica (Jain 0,333).}
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]\centering
+\figura{comparacion_tienda.png}
+\caption{E-16: recorridos con sesión perdida y con compra completada por política.}\label{fig:tienda}
+\end{figure}
+
 \section{Discusión de las pruebas}\label{sec:discusion}
 \emph{Algoritmos.} Con backends homogéneos y peticiones baratas round-robin y \texttt{least\_conn} son indistinguibles (hipótesis confirmada). La diferencia aparece con heterogeneidad de \emph{capacidad} (E-03): \texttt{least\_conn} y \texttt{random\_two} detectan que el nodo lento acumula conexiones y le envían 4,5--4,9\,\% del tráfico, lo que reduce la media a la mitad y el p95 de 171 a 23\,ms; round-robin ponderado ayuda pero exige conocer la capacidad de antemano. Con heterogeneidad de \emph{espera} (E-04) no hay diferencia: un temporizador no ocupa CPU y no forma cola (hipótesis refutada). \emph{Afinidad.} \texttt{ip\_hash} usa los tres primeros octetos IPv4 y concentra en un nodo a todos los clientes de una red /24; la afinidad debe hacerse en L7. Además, con \texttt{resolve} el método \texttt{hash~consistent} repartió como round-robin (0\,\% de afinidad): su anillo se calcula al cargar la configuración, antes de que el DNS aporte las direcciones. Se adoptó hash simple, que pierde la propiedad de remapear solo $1/N$ de los clientes al cambiar $N$.
 
 \emph{Resiliencia.} Las caídas (conexión rechazada) se resuelven con detección pasiva y reintentos sin errores visibles. Los cuelgues son el caso caro: cada petición afectada paga el \texttt{proxy\_read\_timeout} completo. Los errores 500 y la lentitud son invisibles para la detección pasiva de NGINX OSS con la configuración por defecto: un nodo que responde 500 causó un 33\,\% de errores sin ningún reintento. Las mitigaciones son añadir \texttt{http\_500} a \texttt{proxy\_next\_upstream} (solo para peticiones idempotentes), ajustar los \emph{timeouts}, usar \texttt{least\_conn} frente a la lentitud y, en producción, \emph{health checks} activos. También se observó que \texttt{resolve} envía tráfico a una réplica nueva antes de que su \emph{healthcheck} la declare sana.
 
+\emph{Estado.} Con estado de sesión en la réplica, la afinidad deja de ser una optimización y pasa a ser un requisito: sin ella la tienda no funciona. La clave de afinidad debe existir desde la primera petición: la primera versión de \texttt{sticky\_cookie} hacía \emph{hash} de la cookie de sesión de la aplicación y perdió la sesión en 4 de 5 compras, porque el login llega sin cookie y se atiende en otro nodo; por eso la cookie la emite el balanceador. La alternativa recomendada es externalizar la sesión (Redis), que permite volver a \texttt{least\_conn}. \emph{Dependencias compartidas.} Escalar backends no escala la base de datos (E-17), y su caída no la puede compensar el balanceador (E-18). Peor aún, con \texttt{http\_503} en \texttt{proxy\_next\_upstream} los 503 de la aplicación por una dependencia caída hacen que NGINX marque todas las réplicas como caídas: falla también lo que funcionaría (catálogo en E-19) y la recuperación espera el \texttt{fail\_timeout}. \todo{Resultado de E-18B/E-19B.}
+
 \emph{Limitaciones.} Con 2~vCPU el generador limita las pruebas con el endpoint de espera; por eso la capacidad se midió con costo de CPU. $N=3$ mostró alta variación (error $41\pm19\%$) por estar en el borde de la saturación. Las corridas se repetirán en el equipo del grupo.
 
 \section{Conclusiones}
-Se implementó un balanceador NGINX reproducible con un comando, que cumple los 25 requisitos del enunciado y los supera con seis políticas, inyección de siete modos de falla, escalado sin recarga, observabilidad completa y análisis automático. Los datos muestran que el balanceo aporta disponibilidad (0 errores al perder un backend) y capacidad casi lineal (goodput $\times4{,}6$ de 1 a 5 réplicas), y que el algoritmo importa cuando los backends son heterogéneos en capacidad, donde \texttt{least\_conn} es la mejor opción. La matriz 4.2 recomienda \texttt{least\_conn} (92/100): iguala a las demás con backends homogéneos y es la única, junto con \texttt{random\_two}, que protege la latencia cuando un backend se degrada; si el servicio necesitara afinidad de sesión (peso $\ge 26$), convendría \texttt{hash\_client}, aceptando que escalar remapea la mayoría de las sesiones. Trabajo futuro: alta disponibilidad del propio balanceador con keepalived/VRRP, \emph{health checks} activos, TLS/HTTP2 y orquestación con Kubernetes.
+Se implementó un balanceador NGINX reproducible con un comando, que cumple los 25 requisitos del enunciado y los supera con seis políticas, inyección de siete modos de falla, escalado sin recarga, observabilidad completa y análisis automático. Los datos muestran que el balanceo aporta disponibilidad (0 errores al perder un backend) y capacidad casi lineal (goodput $\times4{,}6$ de 1 a 5 réplicas), y que el algoritmo importa cuando los backends son heterogéneos en capacidad, donde \texttt{least\_conn} es la mejor opción. La matriz 4.2 recomienda \texttt{least\_conn} (92/100): iguala a las demás con backends homogéneos y es la única, junto con \texttt{random\_two}, que protege la latencia cuando un backend se degrada; si el servicio necesitara afinidad de sesión (peso $\ge 26$), convendría \texttt{hash\_client}, aceptando que escalar remapea la mayoría de las sesiones. Con una aplicación con estado, el algoritmo importa menos que dónde vive la sesión: con sesiones en Redis las seis políticas completaron el 100\,\% de las compras, y con sesiones locales solo las políticas con afinidad funcionaron. La microcaché de NGINX fue la medida más efectiva para la base de datos ($-77$\,\% de CPU). Trabajo futuro: alta disponibilidad del propio balanceador con keepalived/VRRP, \emph{health checks} activos, TLS/HTTP2 y orquestación con Kubernetes.
 
 \bibliographystyle{IEEEtran}
 \bibliography{referencias}
