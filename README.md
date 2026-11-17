@@ -495,18 +495,36 @@ por escenario y mapa normalizado): [`docs/comparacion-algoritmos.md`](docs/compa
 
 ![Comparación normalizada de políticas](docs/figuras/comparacion_mapa.png)
 
+### Tecnología de balanceo (matriz 4.1 con C1 y C5 medidos)
+
+Cada criterio tiene forma de medir y escala 1–5. C1 (desempeño) y C5 (facilidad) se midieron con el caso
+base mínimo de cada alternativa (`alternativas/`, `make test-alternativas`, corridas A05B, 3 repeticiones):
+
+| Alternativa | p99 | CPU del balanceador | Líneas del caso base | Puntaje 4.1 |
+|---|---|---|---|---|
+| **HAProxy 3.2** | 36,0 ms | 10,9 % | 18 | **94** |
+| NGINX 1.30 | 35,7 ms | 9,9 % | 20 | 81 |
+| Apache 2.4.68 | 38,0 ms | 19,6 % | 23 | 76 |
+| Traefik 3.7.16 | 41,2 ms | 28,1 % | 27 | 74 |
+| LVS (keepalived) | no medible en contenedores | — | 33 | 62 |
+
+La matriz no elige NGINX: HAProxy gana por 13 puntos en criterios de balanceo puro. NGINX es requisito
+del proyecto; empata en desempeño, es la más completa en funciones L7 y sus debilidades se mitigan en el
+diseño. Reflexión completa en [`docs/decision-matrix.md`](docs/decision-matrix.md).
+
 ### Algoritmo recomendado (matriz 4.2 con datos medidos)
 
 | Política | p99 homogéneos (20) | p95 un backend lento (25) | Jain (15) | Errores al caer un backend (20) | Afinidad (10) | Simplicidad (10) | **Puntaje /100** |
 |---|---|---|---|---|---|---|---|
 | **least_conn** | 22 ms | **23 ms** | 1,00 | 0 % | 0 % | 5 | **92,0** |
 | random_two | 22 ms | 26 ms | 1,00 | 0 % | 0 % | 4 | 87,5 |
-| hash_client | 22 ms | 171 ms | 1,00 | 0 % | **100 %** | 3 | 76,0 |
+| hash_client | 22 ms | 171 ms | 1,00 | 0 % | **100 %** | 2 | 74,0 |
 | round_robin | 23 ms | 171 ms | 1,00 | 0 % | 0 % | 5 | 71,6 |
-| ip_hash | 23 ms | 114 ms | 0,33 | 0 % | 100 % | 4 | 67,2 |
+| ip_hash | 23 ms | 114 ms | 0,33 | 0 % | 100 % | 5 | 69,2 |
 
 Recomendación: **`least_conn`**. Con ±5 en cualquier peso el líder no cambia; `hash_client` solo ganaría
-si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada criterio en
+si la afinidad de sesión pesara 27/100 o más. La simplicidad se mide en líneas de la política y requisitos
+al cliente. Detalle y forma de medir cada criterio en
 [`docs/decision-matrix.md`](docs/decision-matrix.md).
 
 ### Hallazgos

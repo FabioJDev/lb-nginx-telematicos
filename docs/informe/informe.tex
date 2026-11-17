@@ -51,7 +51,7 @@ Un único servidor concentra la disponibilidad y la capacidad del servicio. Un b
 
 \section{Alternativas de solución}
 \subsection{Tecnología de balanceo (matriz 4.1)}
-Se evaluaron NGINX, HAProxy, Traefik, Apache \texttt{mod\_proxy\_balancer} y LVS/IPVS con ocho criterios (Tabla~\ref{tab:m41}). Cada criterio define cómo se mide: C1 por throughput y p99 en el mismo escenario y hardware (comparativa A-05 con HAProxy) o benchmarks publicados y CPU con \texttt{docker stats}; C2 por conteo de algoritmos en la documentación de la versión libre; C3 con escala 5 = checks activos + reintentos, 3 = solo pasivos + reintentos; C4 por métricas por backend sin módulos de pago; C5 por líneas de configuración y encuesta interna; C6 por descubrimiento de réplicas sin reinicio; C7 por madurez y documentación; C8 por funciones L7 en la versión libre.
+Se evaluaron NGINX, HAProxy, Traefik, Apache \texttt{mod\_proxy\_balancer} y LVS/IPVS con ocho criterios (Tabla~\ref{tab:m41}), cada uno con forma de medir y escala 1--5 fijadas antes de puntuar. Dos se \emph{midieron} con un caso base mínimo equivalente de cada alternativa (proxy a las mismas 3 réplicas con round-robin, detección de fallos y reintentos): C1 con la misma carga (\texttt{rampa.yml}, 3 repeticiones) como $5\,(\tfrac12\,\mathrm{p99}_{\min}/\mathrm{p99}+\tfrac12\,\mathrm{CPU}_{\min}/\mathrm{CPU})$, y C5 por las líneas útiles de configuración del caso base, comprobado funcionando (5 si $\le$10 líneas; 4, 11--20; 3, 21--30; 2, 31--40). Los demás salen de la documentación oficial con umbrales explícitos: C2, número de algoritmos libres (5 si $\ge$8; 4, 5--7; 3, 3--4); C3, checks activos, pasivos y reintentos (5 los tres, 3 pasivos + reintentos, 1 ninguno); C4, métricas por servidor (5 en Prometheus nativo, 2 solo globales); C6, cómo se incorpora una réplica nueva (5 por API de Docker, 4 por re-resolución DNS, 3 lista estática con recarga); C7, años y versiones recientes; C8, cuántas de seis funciones L7 trae la versión libre.
 
 \begin{table}[t]
 \caption{Matriz 4.1: tecnología de balanceo (puntuación 1--5; puntaje $=\sum p_i s_i/5$).}
@@ -61,24 +61,24 @@ Se evaluaron NGINX, HAProxy, Traefik, Apache \texttt{mod\_proxy\_balancer} y LVS
 \toprule
 Criterio (peso) & NGINX & HAProxy & Traefik & Apache & LVS\\
 \midrule
-C1 Desempeño (20) & 5 & 4$^\dagger$ & 4 & 3 & 5\\
-C2 Algoritmos (15) & 4 & 5 & 3 & 4 & 5\\
-C3 Detección de fallos (15) & 3 & 5 & 4 & 4 & 1\\
-C4 Observabilidad (10) & 2 & 5 & 5 & 3 & 2\\
-C5 Facilidad (10) & 4 & 3 & 4 & 3 & 2\\
-C6 Docker/descubrimiento (10) & 4 & 4 & 5 & 2 & 1\\
-C7 Madurez (10) & 5 & 4 & 4 & 4 & 3\\
-C8 Funciones L7 (10) & 5 & 3 & 3 & 4 & 1\\
+C1 Desempeño (20) & 5 & 5 & 3 & 4 & 5$^\dagger$\\
+C2 Algoritmos (15) & 4 & 5 & 3 & 3 & 5\\
+C3 Detección de fallos (15) & 3 & 5 & 5 & 5 & 1\\
+C4 Observabilidad (10) & 2 & 5 & 4 & 3 & 4\\
+C5 Facilidad (10) & 4 & 4 & 3 & 3 & 2\\
+C6 Docker/descubrimiento (10) & 4 & 4 & 5 & 3 & 1\\
+C7 Madurez (10) & 5 & 5 & 4 & 5 & 4\\
+C8 Funciones L7 (10) & 5 & 4 & 3 & 4 & 1\\
 \midrule
-\textbf{Puntaje /100} & \textbf{81} & \textbf{84} & \textbf{79} & \textbf{68} & \textbf{56}\\
+\textbf{Puntaje /100} & \textbf{81} & \textbf{94} & \textbf{74} & \textbf{76} & \textbf{62}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-$^\dagger$C1 de HAProxy se midió (A-05): con la misma carga, NGINX tuvo un p99 de 32,5\,ms con 11,6\,\% de CPU y HAProxy 40,5\,ms con 23,5\,\%; parte de la diferencia se debe a que la configuración de HAProxy no reutilizaba conexiones con los backends. \emph{Sensibilidad.} La ventaja de HAProxy es pequeña: con $\pm5$ en los pesos el líder cambia en un caso (si C4 baja a 5, lidera NGINX), y NGINX también pasa al primer lugar si C8 pesa $\geq 17$, C5 o C7 $\geq 22$ o C1 $\geq 31$. \emph{Reflexión.} HAProxy supera a NGINX en criterios puramente de balanceo (checks activos y métricas por backend en la versión libre). NGINX se selecciona porque es la restricción del proyecto asignado, queda a 3 puntos con mejor desempeño medido, aporta funciones L7 completas en un componente (su microcaché redujo un 77\,\% la CPU de la base de datos en A-02) y sus debilidades se mitigan en el diseño: detección pasiva más reintentos (C3), exportador Prometheus, logs JSON y \texttt{/metrics} por réplica (C4) y \texttt{resolve} (C6).
+\emph{Mediciones.} p99 y CPU del balanceador: NGINX 35,7\,ms y 9,9\,\%; HAProxy 36,0\,ms y 10,9\,\%; Apache 38,0\,ms y 19,6\,\%; Traefik 41,2\,ms y 28,1\,\%, sin errores. Líneas del caso base: HAProxy 18, NGINX 20, Apache 23, Traefik 27 y LVS con keepalived 33. $^\dagger$LVS no se pudo medir: IPVS vive en el kernel del host; C1 = 5 por diseño, declarado como no medido. Con reutilización de conexiones en todas, NGINX y HAProxy empatan en desempeño; la ventaja de NGINX en A-05 se debía a que aquella configuración de HAProxy no reutilizaba conexiones. \emph{Sensibilidad.} Con $\pm5$ en cualquier peso el líder no cambia; Traefik lideraría si C6 pesara $\geq 56$ y NGINX si C8 pesara $\geq 46$. \emph{Reflexión.} Aplicada con criterios medibles, la matriz no elige NGINX: HAProxy gana por 13 puntos (checks activos y pasivos, más algoritmos y métricas por servidor en la versión libre), y la ventaja creció respecto a las primeras puntuaciones (3 puntos) porque estas favorecían a NGINX sin evidencia. Como el enunciado asigna NGINX, la matriz no decide sino que valida la elección y expone su costo: NGINX empata en desempeño, es la más completa en funciones L7 (su microcaché redujo un 77\,\% la CPU de la base de datos en A-02) y sus debilidades se mitigan en el diseño: detección pasiva más reintentos (C3), exportador, logs JSON y \texttt{/metrics} por réplica (C4) y \texttt{resolve} (C6). Sin esa restricción, la recomendación sería HAProxy.
 
 \subsection{Algoritmo recomendado (matriz 4.2)}
-Se llena exclusivamente con datos medidos (Sección~\ref{sec:pruebas}): p99 con backends homogéneos (20), p95 con un backend lento (25), índice de Jain (15), errores en los 30\,s tras la caída de un backend (20), afinidad de sesión (10) y simplicidad operativa (10, juicio del equipo). Normalización a 1--5: menor es mejor $5\cdot\text{mejor}/\text{valor}$; Jain $5J$; errores $5(1-\min(e,5\%)/5\%)$. Dos ajustes se hicieron al ver los datos y se declaran: el criterio heterogéneo usa p95 porque el p99 lo fija el propio nodo lento (171--173\,ms con todas las políticas), y solo compiten políticas con al menos 70/100 de peso medido. La Tabla~\ref{tab:m42} muestra el resultado con las cinco políticas medidas en todos los criterios: se recomienda \texttt{least\_conn} (92,0), seguido de \texttt{random\_two} (87,5). Con $\pm5$ en cualquier peso el líder no cambia; \texttt{hash\_client} solo ganaría si la afinidad de sesión pesara 26/100 o más.
+Se llena exclusivamente con datos medidos (Sección~\ref{sec:pruebas}): p99 con backends homogéneos (20), p95 con un backend lento (25), índice de Jain (15), errores en los 30\,s tras la caída de un backend (20), afinidad de sesión (10) y simplicidad operativa (10: líneas de la política y requisitos al cliente; 5 = una directiva sin parámetros, 4 = con parámetros, 2 = exige una cabecera al cliente). Normalización a 1--5: menor es mejor $5\cdot\text{mejor}/\text{valor}$; Jain $5J$; errores $5(1-\min(e,5\%)/5\%)$. Dos ajustes se hicieron al ver los datos y se declaran: el criterio heterogéneo usa p95 porque el p99 lo fija el propio nodo lento (171--173\,ms con todas las políticas), y solo compiten políticas con al menos 70/100 de peso medido. La Tabla~\ref{tab:m42} muestra el resultado con las cinco políticas medidas en todos los criterios: se recomienda \texttt{least\_conn} (92,0), seguido de \texttt{random\_two} (87,5). Con $\pm5$ en cualquier peso el líder no cambia; \texttt{hash\_client} solo ganaría si la afinidad de sesión pesara 27/100 o más.
 
 \begin{table}[t]
 \caption{Matriz 4.2 con datos medidos (puntuación 1--5; valor medido entre paréntesis).}
@@ -92,15 +92,15 @@ Política & p99 hom. & p95 het. & Jain & Err. falla & Afin. & Simpl. & /100\\
 \midrule
 least\_conn & 5 (22) & 5 (23) & 5 (1,0) & 5 (0\%) & 1 (0\%) & 5 & \textbf{92,0}\\
 random\_two & 5 (22) & 4,5 (26) & 5 (1,0) & 5 (0\%) & 1 (0\%) & 4 & 87,5\\
-hash\_client & 5 (22) & 1 (171) & 5 (1,0) & 5 (0\%) & 5 (100\%) & 3 & 76,0\\
+hash\_client & 5 (22) & 1 (171) & 5 (1,0) & 5 (0\%) & 5 (100\%) & 2 & 74,0\\
 round\_robin & 4,9 (23) & 1 (171) & 5 (1,0) & 5 (0\%) & 1 (0\%) & 5 & 71,6\\
-ip\_hash & 4,8 (23) & 1 (114) & 1,7 (0,33) & 5 (0\%) & 5 (100\%) & 4 & 67,2\\
+ip\_hash & 4,8 (23) & 1 (114) & 1,7 (0,33) & 5 (0\%) & 5 (100\%) & 5 & 69,2\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Descubrimiento de backends (matriz 4.3)}
-Servidores estáticos (60), DNS con \texttt{resolve} (78) y regenerar configuración + \emph{reload} (64), con criterios de escalar sin tocar la configuración (30), pesos por servidor (20), simplicidad (20) y robustez (30). Se eligió DNS con \texttt{resolve}~\cite{nginx_changes}. Las pruebas revelaron un costo no previsto (Sección~\ref{sec:discusion}): con \texttt{resolve} el hash consistente no funciona. Al añadir ese criterio, la decisión se invierte si pesa 15/100 o más; como ningún requisito exige afinidad de sesión, se mantuvo \texttt{resolve}.
+Servidores estáticos (56), DNS con \texttt{resolve} (78) y regenerar configuración + \emph{reload} (58), con criterios de escalar sin tocar la configuración (30; pasos manuales para pasar de 3 a 5 réplicas), pesos por servidor (20; si admite \texttt{weight}/\texttt{backup} por réplica), simplicidad (20; piezas que mantener además de la plantilla) y robustez (30; si arranca y se adapta cuando un nombre no resuelve). Se eligió DNS con \texttt{resolve}~\cite{nginx_changes}. Las pruebas revelaron un costo no previsto (Sección~\ref{sec:discusion}): con \texttt{resolve} el hash consistente no funciona. Al añadir ese criterio, la decisión se invierte si pesa 20/100 o más; como ningún requisito exige afinidad de sesión, se mantuvo \texttt{resolve}.
 
 \section{Diseño de la solución}
 La Fig.~\ref{fig:arq} muestra la arquitectura. NGINX (\texttt{lb}) está en dos redes Docker con nombre: \texttt{lbnginx\_frontend}, desde la que se publica el puerto, y \texttt{lbnginx\_backend} (\texttt{internal: true}), donde viven las réplicas sin salida al host ni a Internet. Un único servicio \texttt{backend} se escala con \texttt{--scale backend=N}; el \texttt{upstream} declara \texttt{server backend:3000 resolve} con \texttt{zone} y \texttt{resolver 127.0.0.11 valid=5s}, por lo que NGINX re-resuelve el nombre y las réplicas nuevas reciben tráfico sin recarga. La configuración es 100\,\% externa: \texttt{nginx.conf}, plantillas, políticas y extras se montan en solo lectura; las plantillas se procesan con el \texttt{envsubst} del \emph{entrypoint} oficial~\cite{docker_nginx} y la política es un \texttt{include} de un archivo por algoritmo. El backend (Node.js sin dependencias) identifica el nodo con la cabecera \texttt{X-Backend-Node}, simula latencia y CPU, admite inyección de fallos (\texttt{error500}, \texttt{slow}, \texttt{hang}, \texttt{unhealthy}, \texttt{crash}) y expone \texttt{/metrics}. La observabilidad se compone de \texttt{stub\_status}~\cite{nginx_stub} (global), un log JSON con \texttt{\$upstream\_addr} y el nodo por petición, Prometheus/Grafana~\cite{nginx_exporter} y los contadores por backend de Artillery.

@@ -64,17 +64,19 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 <div class="small">
 
-| Criterio (peso) · cómo se mide | NGINX | HAProxy | Traefik | Apache | LVS |
+| Criterio (peso) · cómo se mide → escala | NGINX | HAProxy | Traefik | Apache | LVS |
 |---|---|---|---|---|---|
-| C1 Desempeño (20) · **medido en A-05** (p99, CPU del balanceador) | 5 | **4** | 4 | 3 | 5 |
-| C2 Algoritmos (15) · conteo en docs versión libre | 4 | 5 | 3 | 4 | 5 |
-| C3 Detección de fallos (15) · activos+reintentos=5, pasivos=3 | 3 | 5 | 4 | 4 | 1 |
-| C4 Observabilidad (10) · métricas por backend sin pago | 2 | 5 | 5 | 3 | 2 |
-| C5 Facilidad (10) · líneas de config + encuesta | 4 | 3 | 4 | 3 | 2 |
-| C6 Docker/descubrimiento (10) · réplicas nuevas sin reinicio | 4 | 4 | 5 | 2 | 1 |
-| C7 Madurez (10) · años, releases, docs | 5 | 4 | 4 | 4 | 3 |
-| C8 Funciones L7 (10) · estáticos, caché, TLS, rate limit | 5 | 3 | 3 | 4 | 1 |
-| **Puntaje /100** | **81** | **84** | **79** | **68** | **56** |
+| C1 Desempeño (20) · **medido**: p99 y CPU, misma carga → 5·(½·p99 mín/p99 + ½·CPU mín/CPU) | 5 | 5 | 3 | 4 | 5† |
+| C2 Algoritmos (15) · conteo en docs libres → 5 ≥ 8, 4 = 5–7, 3 = 3–4 | 4 | 5 | 3 | 3 | 5 |
+| C3 Fallos (15) · activos, pasivos, reintentos → 5 los tres, 3 pasivos+reintentos | 3 | 5 | 5 | 5 | 1 |
+| C4 Observabilidad (10) · métricas por servidor → 5 Prometheus, 2 globales | 2 | 5 | 4 | 3 | 4 |
+| C5 Facilidad (10) · **medido**: líneas del caso base funcionando → 4 = 11–20, 3 = 21–30 | 4 | 4 | 3 | 3 | 2 |
+| C6 Descubrimiento (10) · réplica nueva → 5 API Docker, 4 DNS, 3 recarga | 4 | 4 | 5 | 3 | 1 |
+| C7 Madurez (10) · años y versiones recientes → 5 ≥ 15 años | 5 | 5 | 4 | 5 | 4 |
+| C8 Funciones L7 (10) · de 6 funciones libres → 5 = 6, 4 = 5 | 5 | 4 | 3 | 4 | 1 |
+| **Puntaje /100** | **81** | **94** | **74** | **76** | **62** |
+
+† LVS no medible en contenedores (IPVS en el kernel del host): 5 por diseño, declarado.
 
 </div>
 
@@ -82,15 +84,12 @@ Servicios Telemáticos 2026-02 · Proyecto final 2 · Grupo 3 (Lista 1)
 
 ## Sensibilidad y reflexión
 
-- **A-05 medido:** misma carga, NGINX p99 32,5 ms con 11,6 % de CPU vs HAProxy 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) → C1 de HAProxy 5 → 4.
-- Ventaja de HAProxy **pequeña y frágil** (84 vs 81): NGINX lidera si C4 baja a 5, o si C8 ≥ 17, C5/C7 ≥ 22, C1 ≥ 31.
-- **HAProxy supera a NGINX** en balanceo puro (checks activos, métricas por backend). Lo decimos.
-- NGINX se selecciona porque:
-  1. es la restricción del proyecto asignado (requisito del cliente);
-  2. queda a 3 puntos y **midió mejor latencia con la mitad de CPU**;
-  3. funciones L7 completas en un solo componente (la microcaché bajó **77 %** la CPU de la base de datos);
-  4. las debilidades se **mitigan en el diseño**: detección pasiva + reintentos (C3), exporter + logs JSON + `/metrics` por réplica (C4), `resolve` (C6).
-- Matriz 4.3 (descubrimiento): DNS con `resolve` 78 > regenerar+reload 64 > estáticos 60.
+- **Medido (A05B, 3 rep.):** p99 / CPU · NGINX 35,7 ms / 9,9 % · HAProxy 36,0 / 10,9 · Apache 38,0 / 19,6 · Traefik 41,2 / 28,1. Caso base: HAProxy 18 líneas, NGINX 20, Apache 23, Traefik 27.
+- Con reutilización de conexiones **NGINX y HAProxy empatan** en desempeño (la ventaja de NGINX en A-05 era por `http-server-close`).
+- **La matriz no elige NGINX: HAProxy gana por 13 puntos** (checks activos y pasivos, algoritmos, métricas por servidor). Estable con ±5 en cualquier peso; solo C6 ≥ 56 (Traefik) o C8 ≥ 46 (NGINX) cambian el líder.
+- Al medir, la ventaja de HAProxy creció de 3 a 13: las puntuaciones iniciales favorecían a NGINX sin evidencia. Lo decimos.
+- NGINX es **requisito del cliente**: la matriz valida la elección y expone su costo. Empata en desempeño, es la más completa en L7 (microcaché **−77 %** CPU de la base de datos) y sus debilidades se mitigan en el diseño (C3, C4, C6). Sin esa restricción: HAProxy.
+- Matriz 4.3 (descubrimiento): DNS con `resolve` 78 > regenerar+reload 58 > estáticos 56.
 
 ---
 
@@ -272,13 +271,13 @@ Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo si
 6. **El tiempo de respuesta de Artillery no ve la conexión** (ni el handshake TLS ni la espera del failover): hay que mirar la duración de la sesión.
 7. **VRRP con preempción corta dos veces**: `nopreempt` elimina el segundo corte.
 
-<div class="small">→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</div>
+<div class="small">→ Matriz 4.3: si la afinidad estable pesara ≥ 20/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</div>
 
 ---
 
 ## Matriz 4.2 y conclusiones
 
-- **Algoritmo recomendado (matriz 4.2, todos los criterios medidos): `least_conn` (92,0)** > random_two (87,5) > hash_client (76,0) > round_robin (71,6) > ip_hash (67,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 26/100.
+- **Algoritmo recomendado (matriz 4.2, todos los criterios medidos): `least_conn` (92,0)** > random_two (87,5) > hash_client (74,0) > round_robin (71,6) > ip_hash (69,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 27/100.
 - Homogéneos: no importa el algoritmo. Heterogéneos en **capacidad**: `least_conn` (p95 171 → 23 ms).
 - Con estado: **sesiones en Redis + `least_conn`**; si la sesión no puede salir de la réplica, `sticky_cookie`.
 - Base de datos: escalar backends no la alivia; la **microcaché** sí (−77 % CPU).

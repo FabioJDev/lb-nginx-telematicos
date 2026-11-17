@@ -425,6 +425,21 @@ aleatorio). Detalle y salvedad de configuración en [`decision-matrix.md`](decis
 | HAProxy `roundrobin` | 22,9 ms | 30,0 ms | 40,5 ms | 23,5 % |
 | HAProxy `leastconn` | 22,7 ms | 29,7 ms | 38,1 ms | 23,4 % |
 
+**A-05B · comparación ampliada y corregida** (`results/ejemplos/lote-A05B-actions/`, 3 repeticiones).
+Aquella configuración de HAProxy usaba `http-server-close` y abría una conexión nueva por petición. Se
+repitió con un caso base mínimo equivalente para cuatro alternativas, todas reutilizando conexiones
+(`alternativas/`, `scripts/test-alternativas.sh`):
+
+| Alternativa | p99 | CPU del balanceador | Errores | Líneas del caso base |
+|---|---|---|---|---|
+| NGINX 1.30 | 35,7 ms | 9,9 % | 0 | 20 |
+| HAProxy 3.2 | 36,0 ms | 10,9 % | 0 | 18 |
+| Apache 2.4.68 | 38,0 ms | 19,6 % | 0 | 23 |
+| Traefik 3.7.16 | 41,2 ms | 28,1 % | 0 | 27 |
+
+Con la misma reutilización de conexiones, **NGINX y HAProxy empatan**: la ventaja de NGINX en A-05 se
+debía a la configuración de HAProxy, no al producto. Estas mediciones alimentan C1 y C5 de la matriz 4.1.
+
 ## E-08 · Timeouts × reintentos ante un backend colgado
 
 Fuente: `results/ejemplos/lote-E08-actions/` (`constante.yml`, 300 req/s; `/admin/fault hang` en 1 de 3

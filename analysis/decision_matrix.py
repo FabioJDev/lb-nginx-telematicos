@@ -247,6 +247,13 @@ def ranking(weights, scores_by_alt):
     return sorted(scores_by_alt, key=lambda a: -score(weights, scores_by_alt[a]))
 
 
+def overtaker(weights, scores_by_alt, leader):
+    """Alternativa que SUPERA estrictamente al líder con estos pesos (un empate no cambia el líder)."""
+    base = score(weights, scores_by_alt[leader])
+    best = max((a for a in scores_by_alt if a != leader), key=lambda a: score(weights, scores_by_alt[a]))
+    return best if score(weights, scores_by_alt[best]) > base + 1e-9 else leader
+
+
 def sensitivity(criteria, scores_by_alt, delta=5):
     """Varía cada peso ±delta redistribuyendo proporcionalmente; devuelve los casos que cambian el orden."""
     base_w = [c[2] for c in criteria]
@@ -262,9 +269,9 @@ def sensitivity(criteria, scores_by_alt, delta=5):
             for j in others:
                 w[j] = w[j] - diff * w[j] / tot_others
             w[i] = new
-            rank = ranking(w, scores_by_alt)
-            if rank[0] != base_rank[0]:
-                changes.append((c[0], sign * delta, rank[0], [round(x, 1) for x in w]))
+            new_leader = overtaker(w, scores_by_alt, base_rank[0])
+            if new_leader != base_rank[0]:
+                changes.append((c[0], sign * delta, new_leader, [round(x, 1) for x in w]))
     # Umbral: ¿cuánto debe pesar cada criterio para que cambie el líder?
     # Se busca en las dos direcciones desde el peso base: subiendo hasta 100 y bajando hasta 0.
     thresholds = []
@@ -277,7 +284,7 @@ def sensitivity(criteria, scores_by_alt, delta=5):
             for j in others:
                 w[j] = w[j] - diff * w[j] / tot_others
             w[i] = target
-            return ranking(w, scores_by_alt)[0]
+            return overtaker(w, scores_by_alt, base_rank[0])
         up = next(((t, leader_at(t)) for t in range(base_w[i] + 1, 101) if leader_at(t) != base_rank[0]), None)
         down = next(((t, leader_at(t)) for t in range(base_w[i] - 1, -1, -1) if leader_at(t) != base_rank[0]), None)
         if up or down:
@@ -419,7 +426,7 @@ def main() -> int:
         out.append(f"\nNGINX obtiene {score(w41, SCORES_41['NGINX']):.0f}/100 ({pos}.º lugar, a {gap:.0f} puntos de {leader}). "
                    f"{leader} gana por criterios puramente de balanceo (checks activos y métricas por servidor en la versión libre) "
                    "y se reporta tal cual. NGINX se usa porque (1) es la tecnología asignada al proyecto, por lo que la matriz "
-                   "valida la elección en lugar de hacerla; (2) es la mejor alternativa en funciones L7 y desempeño medido; "
+                   "valida la elección en lugar de hacerla; (2) empata con HAProxy en el desempeño medido (p99 y CPU, las mejores de las cuatro medidas) y es la más completa en funciones L7; "
                    "y (3) sus debilidades se mitigan en el diseño: detección pasiva + reintentos (C3), exporter + logs JSON + "
                    "/metrics por réplica (C4) y `resolve` (C6).\n")
 
