@@ -55,7 +55,30 @@ Fuente: `stub_status.csv` de cada corrida M-05 (sondeo cada 1 s durante `rampa.y
 `stub_status` es **global**: muestra actividad del balanceador, no reparto por backend, y por eso las
 tres políticas se ven casi idénticas. `accepts − handled = 0` confirma que NGINX no rechazó ninguna
 conexión (no se agotaron `worker_connections` ni descriptores). El reparto por backend sale del log JSON
-y de los contadores de Artillery (M-06). Las capturas de pantalla se toman en la demo local.
+y de los contadores de Artillery (M-06).
+
+### Capturas de pantalla por algoritmo
+
+Fuente: `docs/capturas/` (lote `capturas` de GitHub Actions, ejecución 44114761892; índice en
+[`capturas/README.md`](capturas/README.md)). Cada política atendió 75 s de `constante.yml`
+(100 VU/s, 3 peticiones por VU, 22 500 respuestas); `stub_status` se capturó a los 50 s y Grafana al
+terminar la carga.
+
+| Política | Respuestas por backend (mayor → menor) | accepts − handled | Capturas |
+|---|---|---|---|
+| `round_robin` | 7 500 / 7 500 / 7 500 | 0 | [stub_status](capturas/stub_status_round_robin.png) · [Grafana](capturas/grafana_round_robin.png) |
+| `least_conn` | 7 501 / 7 500 / 7 499 | 0 | [stub_status](capturas/stub_status_least_conn.png) · [Grafana](capturas/grafana_least_conn.png) |
+| `random_two` | 7 513 / 7 509 / 7 478 | 0 | [stub_status](capturas/stub_status_random_two.png) · [Grafana](capturas/grafana_random_two.png) |
+| `hash_client` | 7 599 / 7 575 / 7 326 | 0 | [stub_status](capturas/stub_status_hash_client.png) · [Grafana](capturas/grafana_hash_client.png) |
+| `sticky_cookie` | 7 545 / 7 482 / 7 473 | 0 | [stub_status](capturas/stub_status_sticky_cookie.png) · [Grafana](capturas/grafana_sticky_cookie.png) |
+| `ip_hash` | 22 500 / 0 / 0 | 0 | [stub_status](capturas/stub_status_ip_hash.png) · [Grafana](capturas/grafana_ip_hash.png) |
+| `hash_remote_addr` | 22 500 / 0 / 0 | 0 | [stub_status](capturas/stub_status_hash_remote_addr.png) · [Grafana](capturas/grafana_hash_remote_addr.png) |
+
+`ip_hash` y `hash_remote_addr` envían todo a una sola réplica porque la carga sale de **un único**
+contenedor de Artillery: todas las peticiones tienen la misma IP de origen. Es el comportamiento
+esperado de una afinidad por IP, y la razón por la que la tienda usa `sticky_cookie` o `hash_client`
+cuando los clientes comparten NAT. La captura de M-00 (`capturas/nodo_1.png` a `nodo_3.png`) muestra
+la página `/nodo` cambiando de nodo y de color en tres visitas seguidas con `round_robin`.
 
 ## M-02 · Reparto equitativo con round-robin (1000 peticiones secuenciales)
 
@@ -169,7 +192,7 @@ no un error: la afinidad por cliente debe hacerse en L7 (`hash $http_x_client_id
 | Prueba | Criterio | Resultado |
 |---|---|---|
 | M-00 | 3 nodos, reparto 10/10/10, 0 errores | cumplido |
-| M-01 | captura de `stub_status` por algoritmo | `stub_status.csv` por corrida; capturas de pantalla en la demo |
+| M-01 | captura de `stub_status` por algoritmo | `stub_status.csv` por corrida y capturas de las 7 políticas en `docs/capturas/` |
 | M-02 | Jain > 0,99 y diferencia < 2 % | 1,000 y 0,3 % |
 | M-03 | disponibilidad ≥ 99,9 % | 100 %, 0 errores, 3 reintentos |
 | M-04 | 1000 concurrentes 60 s, `vusers.failed = 0`, p99 < 2 s | 3/3 repeticiones: meseta de 1000 durante 60 s, 0 fallidos, p99 ≤ 76 ms |

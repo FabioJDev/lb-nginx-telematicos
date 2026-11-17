@@ -499,7 +499,7 @@ si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada cr
 | R-01 | Todo en Docker/Compose, nada en el host | Todos los servicios, incluidos Artillery y el análisis, son contenedores; el Makefile solo invoca `docker` | `make ps`; este README |
 | R-02 | README con instrucciones, diagramas y despliegue paso a paso | Este documento | — |
 | R-03 | Informe IEEE ≤ 7 páginas | Plantilla IEEEtran (5 páginas), compilado por el flujo `documentos.yml` o `make informe` | [`docs/informe/informe.pdf`](docs/informe/informe.pdf) · fuente [`informe.tex`](docs/informe/informe.tex) |
-| R-04 | Diapositivas en el repositorio | Marp (20 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
+| R-04 | Diapositivas en el repositorio | Marp (21 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
 | R-05 | Repositorio con configuración y aprovisionamiento | Estructura de la sección 12 | este repositorio |
 | R-06 | Presentación ≤ 20 min | Guion cronometrado | [`docs/guion-demo.md`](docs/guion-demo.md) |
 | R-07 | NGINX con `upstream` hacia ≥ 3 backends | `upstream backend_pool` + servicio `backend` con 3 réplicas | [`nginx/templates/http.conf.template`](nginx/templates/http.conf.template), `make smoke` |
@@ -513,10 +513,10 @@ si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada cr
 | R-15 | `nginx.conf` como volumen, no en la imagen | Bind mounts `:ro`; imagen oficial sin Dockerfile | `docker inspect lbnginx-lb-1 --format '{{json .Mounts}}'` |
 | R-16 | Red con nombre; backends sin puertos | `lbnginx_frontend`, `lbnginx_backend` (`internal: true`); solo `expose` | `docker network inspect lbnginx_backend`, `make ps` |
 | R-17 | `.env` para workers, puerto y política | `NGINX_WORKER_PROCESSES`, `LB_PUBLIC_PORT`, `LB_POLICY` (+ timeouts, réplicas…) | [`.env.example`](.env.example) |
-| R-18 | Prometheus + exporter (valorado) | Profile `monitoring` con exporter, Prometheus, Pushgateway, Grafana | [`monitoring/`](monitoring/), `docs/capturas/` |
+| R-18 | Prometheus + exporter (valorado) | Profile `monitoring` con exporter, Prometheus, Pushgateway, Grafana | [`monitoring/`](monitoring/), [`docs/capturas/grafana_<política>.png`](docs/capturas/README.md) |
 | R-19 | Override con recarga en caliente | Watcher por checksum → `nginx -t && nginx -s reload` | [`docker-compose.override.yml`](docker-compose.override.yml), [`nginx/dev/40-config-watcher.sh`](nginx/dev/40-config-watcher.sh) |
 | R-20 | README con diagrama, comandos y resultados esperados | Secciones 1, 3, 8 | — |
-| R-21 | Cada algoritmo con capturas de `stub_status` | M-01 (stub_status.csv por corrida + capturas) | `docs/capturas/stub_status_<política>.png` |
+| R-21 | Cada algoritmo con capturas de `stub_status` | M-01 (stub_status.csv por corrida + capturas reales de las 7 políticas, `make capturas`) | [`docs/capturas/stub_status_<política>.png`](docs/capturas/README.md) |
 | R-22 | Resiliencia al eliminar un backend en caliente | M-03 (`make test-resiliencia`): 100 % de disponibilidad | `docs/figuras/resiliencia_M03_*.png` |
 | R-23 | 1000 usuarios concurrentes 60 s | M-04 (`p04-1000-usuarios.yml`, ley de Little): meseta de 1000 durante 60 s, 0 fallidos | `docs/figuras/usuarios_activos_M04.png` |
 | R-24 | Latencia media y p99 por algoritmo | M-05 (media ± desviación, 3 repeticiones) | `docs/figuras/algoritmos_latencia_M05.png` |

@@ -1,0 +1,4 @@
+# Respuestas por backend con sticky_cookie (Artillery, 75 s a 100 VU/s, 3 peticiones por VU)
+backend.0fbb842fa05e:   7545
+backend.dfdcce4d809c:   7482
+backend.ec5cfb137132:   7473

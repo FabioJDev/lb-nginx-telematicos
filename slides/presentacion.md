@@ -154,6 +154,17 @@ Más allá: 6 políticas, inyección de 7 modos de falla, escalado en caliente s
 
 ---
 
+## Evidencia en Grafana: reparto por réplica (M-01 / R-18)
+
+<div class="small">round_robin: las tres réplicas reciben 100 req/s cada una (7 500 / 7 500 / 7 500 respuestas)</div>
+<div style="height:230px;overflow:hidden"><img src="../docs/capturas/grafana_round_robin.png" style="width:1100px;margin-top:-619px"></div>
+<div class="small">ip_hash: una réplica recibe las 300 req/s (22 500 / 0 / 0): toda la carga sale de una sola IP</div>
+<div style="height:230px;overflow:hidden"><img src="../docs/capturas/grafana_ip_hash.png" style="width:1100px;margin-top:-619px"></div>
+
+<div class="small">Fuente: docs/capturas/ (lote capturas, GitHub Actions) · capturas reales de las 7 políticas, más stub_status y /nodo.</div>
+
+---
+
 ## Resultados: backends heterogéneos (E-03)
 
 3 réplicas rápidas + 1 lenta (150 ms, 0,25 CPU):

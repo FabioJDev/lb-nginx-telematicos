@@ -1,0 +1,4 @@
+# Respuestas por backend con least_conn (Artillery, 75 s a 100 VU/s, 3 peticiones por VU)
+backend.0fbb842fa05e:   7500
+backend.dfdcce4d809c:   7499
+backend.ec5cfb137132:   7501

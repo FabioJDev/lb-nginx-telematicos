@@ -1,0 +1,2 @@
+# Respuestas por backend con hash_remote_addr (Artillery, 75 s a 100 VU/s, 3 peticiones por VU)
+backend.ec5cfb137132:   22500
