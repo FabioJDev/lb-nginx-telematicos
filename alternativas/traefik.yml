@@ -1,0 +1,7 @@
+# alternativas/traefik.yml — configuración estática del caso base (matriz 4.1)
+entryPoints:
+  web:
+    address: ":80"
+providers:
+  file:
+    filename: /etc/traefik/traefik-dinamica.yml

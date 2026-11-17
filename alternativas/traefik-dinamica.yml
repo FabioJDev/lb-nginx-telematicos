@@ -1,0 +1,23 @@
+# alternativas/traefik-dinamica.yml — rutas y servicio del caso base: round-robin (wrr),
+# health check activo y middleware de reintentos.
+http:
+  routers:
+    app:
+      rule: "PathPrefix(`/`)"
+      entryPoints: [web]
+      middlewares: [reintentos]
+      service: app
+  middlewares:
+    reintentos:
+      retry:
+        attempts: 3
+  services:
+    app:
+      loadBalancer:
+        healthCheck:
+          path: /health
+          interval: 2s
+        servers:
+          - url: "http://lbnginx-backend-1:3000"
+          - url: "http://lbnginx-backend-2:3000"
+          - url: "http://lbnginx-backend-3:3000"

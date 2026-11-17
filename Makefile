@@ -19,7 +19,7 @@ F              ?= none
 REPS           ?= 3
 
 .PHONY: help env up up-clean down down-v ps logs logs-lb logs-backend build compare sesiones db-shell db-reset \
-        test-tienda test-cache test-haproxy capturas test-ratelimit test-tls test-ha ha-up ha-down tls-up \
+        test-tienda test-cache test-haproxy capturas test-ratelimit test-tls test-ha ha-up ha-down tls-up test-alternativas \
         smoke nginx-test reload status config policy feature keepalive scale \
         monitoring-up monitoring-down cadvisor-up weighted-up weighted-down \
         haproxy-up haproxy-down \
@@ -187,6 +187,9 @@ ha-down: ## A-04: quita lb2 y keepalived y vuelve al stack normal
 
 test-ha: ## A-04: kill del NGINX activo bajo carga; mide failover y failback
 	REPS=$(REPS) $(SCRIPTS)/test-ha.sh
+
+test-alternativas: ## Matriz 4.1: NGINX, HAProxy, Traefik y Apache con config mínima (C5 líneas, C1 carga)
+	REPS=$(REPS) $(SCRIPTS)/test-alternativas.sh
 
 sesiones: ## Cambia dónde viven las sesiones y recrea los backends: make sesiones S=memory|redis
 	$(SCRIPTS)/set-env.sh SESSION_STORE $(S) --recreate-backend

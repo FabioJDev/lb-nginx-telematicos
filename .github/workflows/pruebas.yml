@@ -18,7 +18,7 @@ on:
         type: choice
         required: true
         default: test-min
-        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy, capturas, test-ratelimit, test-tls, test-ha]
+        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy, capturas, test-ratelimit, test-tls, test-ha, test-alternativas]
       reps:
         description: "Repeticiones por configuración (REPS)"
         type: string
@@ -108,6 +108,7 @@ jobs:
             test-ratelimit)    scripts/test-ratelimit.sh ;;
             test-tls)          scripts/test-tls.sh ;;
             test-ha)           scripts/test-ha.sh ;;
+            test-alternativas) scripts/test-alternativas.sh ;;
           esac
 
       - name: Análisis y matrices
@@ -159,4 +160,4 @@ jobs:
 
       - name: Bajar stack
         if: always()
-        run: docker compose -f docker-compose.yml -f compose.capturas.yml -f compose.ha.yml -f compose.tls.yml --profile tools --profile loadtest --profile monitoring --profile capturas down -v --remove-orphans
+        run: docker compose -f docker-compose.yml -f compose.capturas.yml -f compose.ha.yml -f compose.tls.yml -f compose.alternativas.yml --profile tools --profile loadtest --profile monitoring --profile capturas down -v --remove-orphans

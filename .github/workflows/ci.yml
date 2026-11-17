@@ -31,6 +31,7 @@ jobs:
           docker compose -f docker-compose.yml -f compose.tls.yml config -q
           docker compose -f docker-compose.yml -f compose.ha.yml config -q
           docker compose -f docker-compose.yml -f compose.capturas.yml config -q
+          docker compose -f docker-compose.yml -f compose.alternativas.yml config -q
 
       - name: shellcheck
         run: make shellcheck
