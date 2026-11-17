@@ -153,3 +153,32 @@ respeta los fijados explícitamente; la función `compose` relee el `.env` antes
 `metadata.json` registra ahora la configuración **efectiva** leída de NGINX (`nginx_effective`). Se
 verificó que E-12, A-02 y E-16 no estaban afectadas: sus metadatos muestran la configuración aplicada
 (`keepalive`, `feature`, `SESSION_STORE`). E-08, E-18B y E-19B se repitieron.
+
+## H-10 · El tiempo de respuesta de Artillery no incluye la conexión
+
+**Síntoma.** En A-03, HTTP y HTTPS dieron el mismo p95 (22 ms) aunque HTTPS hace un handshake TLS por
+cada usuario. En A-04, el p99 apenas subió durante el failover, aunque la sonda propia dejó de recibir
+respuestas durante ≈ 3,5 s.
+
+**Causa.** `http.response_time` empieza cuando la conexión ya está abierta: no incluye DNS, TCP ni TLS.
+Lo que pasa antes (el handshake, o los reintentos de SYN mientras la IP flotante cambia de dueño) solo
+aparece en `vusers.session_length`, que mide toda la sesión del usuario virtual.
+
+**Consecuencia.** `analysis/avanzadas.py` reporta la duración de la sesión junto al tiempo de respuesta
+(A-03: +1,3 ms en la mediana con HTTPS; A-04: sesiones de hasta ≈ 4 s durante el failover) y la sonda
+de A-04 usa una conexión nueva por petición. Al comparar protocolos o medir conmutaciones no basta con el
+tiempo de respuesta.
+
+## H-11 · Con preempción, la vuelta del balanceador principal provoca un segundo corte
+
+**Síntoma.** En A-04, al volver `lb` después del kill, Artillery registró 8–11 errores `ECONNRESET`,
+aunque los dos balanceadores estaban sanos.
+
+**Causa.** VRRP por defecto es *preemptivo*: el nodo de más prioridad recupera la IP flotante en cuanto
+vuelve. Las conexiones que estaban abiertas con `lb2` a través de la VIP llegan entonces a `lb`, que no las
+conoce, y se cortan.
+
+**Corrección medida y adoptada.** `nopreempt` en keepalived (`HA_PREEMPT=off`): la VIP se queda en `lb2` y
+`lb` vuelve como respaldo. Resultado (`results/ejemplos/lote-A04-actions/`): errores al volver
+9 ± 2 → **0**, con el mismo tiempo de failover (3,71 ± 0,12 s frente a 3,50 ± 0,11 s). Es el valor por
+defecto de `compose.ha.yml`; `scripts/test-ha.sh` mide ambas variantes.

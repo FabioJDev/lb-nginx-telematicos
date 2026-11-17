@@ -79,7 +79,8 @@ Comandos: `make test-tienda`, `make test-ext E=E17|E18|E19`, `make test-cache`. 
 ## Seguridad y limitaciones (declaradas)
 
 - Contraseñas con SHA-256 + sal: suficiente para datos de prueba; en producción, scrypt/argon2.
-- Cookies `HttpOnly; SameSite=Lax`; sin TLS en este entorno (A-03, trabajo futuro).
+- Cookies `HttpOnly; SameSite=Lax`. TLS opcional en el balanceador (A-03, `make tls-up`); con HTTPS
+  habría que añadir `Secure` a las cookies.
 - La microcaché solo almacena el catálogo público (`GET /api/products`, `/api/categories`): la clave
   de caché no incluye la cookie, así que cachear carrito o sesión filtraría datos entre usuarios.
 - El stock es muy alto a propósito para que las pruebas no lo agoten.

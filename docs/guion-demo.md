@@ -53,7 +53,7 @@ Nota: con los pasos 3 y 4 la demo pasa de 5 a ~7 minutos; si falta tiempo, omiti
 | ¿Se reintenta un POST si falla el backend? | No por defecto: NGINX no reenvía peticiones no idempotentes ya enviadas, para evitar efectos duplicados (`proxy_next_upstream non_idempotent` lo cambiaría). |
 | ¿Qué limita sus resultados? | Un solo host comparte CPU entre generador, balanceador y backends; lo medimos con `docker stats` y lo reportamos. |
 | ¿Cómo garantizan 1000 usuarios concurrentes con Artillery? | Ley de Little: 1000 llegadas en 10 s con sesiones de ~70 s → meseta de ~1000 activos durante más de 60 s (gráfica de usuarios activos). |
-| ¿Y si cae el balanceador? | Es un punto único de falla; la solución es un par activo/pasivo con IP flotante (keepalived/VRRP), trabajo futuro (A-04). |
+| ¿Y si cae el balanceador? | Con un solo NGINX es un punto único de falla. A-04 lo resuelve con un par activo/pasivo: keepalived (VRRP) mueve la IP flotante al respaldo en ≈ 3,5 s (99,93–99,95 % de disponibilidad al matar el activo bajo carga); con `nopreempt` la vuelta del principal no corta conexiones. `make ha-up` / `make test-ha`. |
 | ¿Por qué `stub_status` no muestra el reparto por backend? | Es global por diseño; el reparto se obtiene del log JSON (`$upstream_addr`, `X-Backend-Node`), de `/metrics` por réplica y de los contadores de Artillery. |
 | ¿Qué pasa con un backend que responde 500? | No se reintenta por defecto (`proxy_next_upstream` solo cubre error/timeout/502/503/504); E-08 muestra el efecto de añadir `http_500`. |
 | ¿Cómo escalan sin recargar NGINX? | `server backend:3000 resolve` + `resolver 127.0.0.11 valid=5s`: NGINX re-resuelve el DNS de Docker, que devuelve todas las IPs de las réplicas. |

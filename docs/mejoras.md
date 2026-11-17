@@ -10,6 +10,10 @@
 | **Dependencias compartidas como punto único de falla** (E-17, E-18, E-19) | El balanceador reparte réplicas, pero la base de datos y Redis siguen siendo únicas | `scripts/test-extendidas.sh` |
 | **Microcaché segura** (A-02) | Cachea solo el catálogo público durante 1 s; nunca carrito ni sesión | `nginx/extras/features/microcache/` |
 | **Comparativa con HAProxy** (A-05) | Datos medidos para el criterio de desempeño de la matriz 4.1 | `scripts/test-haproxy.sh` |
+| **Limitación de tasa por cliente** (A-01) | Corta en el balanceador el exceso de un cliente abusivo sin afectar a los demás (35,9 % de 429 al abusivo, 0 a los normales) | `nginx/extras/features/ratelimit/`, `scripts/test-ratelimit.sh` |
+| **TLS 1.3 + HTTP/2** (A-03) | Terminación TLS en NGINX con certificado generado en contenedor; costo medido en CPU | `compose.tls.yml`, `scripts/test-tls.sh` |
+| **Alta disponibilidad del balanceador** (A-04) | Dos NGINX con keepalived e IP flotante; failover de 3,5 s y `nopreempt` para no cortar dos veces (H-11) | `compose.ha.yml`, `ha/`, `scripts/test-ha.sh` |
+| **Capturas de evidencia automáticas** | `stub_status`, Grafana y `/nodo` capturados con un navegador sin interfaz bajo carga | `compose.capturas.yml`, `scripts/capturas.sh` |
 | **Comparación consolidada** de todas las políticas en todos los escenarios | Una tabla por métrica, ganador por escenario y mapa de calor | `analysis/compare_all.py`, [`comparacion-algoritmos.md`](comparacion-algoritmos.md) |
 | **Readiness** (`/ready`) separado de liveness (`/health`) | Distingue "el proceso vive" de "puede atender" (base de datos y sesiones) | `backend/server.js` |
 | **Métricas de la aplicación** en Prometheus/Grafana | Sesiones perdidas, pedidos por réplica, pool de conexiones y tiempo de consulta | `tienda_*` en `/metrics`, dashboard |

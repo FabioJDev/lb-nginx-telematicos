@@ -468,6 +468,9 @@ Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida
 | E-09 falla total | 0 errores con 2 y 1 réplicas; página de mantenimiento sin réplicas; recuperación en **0,84 s** |
 | E-10 / E-11 / E-14 | escalar 3 → 6, recargar la configuración y un pico × 16 de la tasa: **0 errores**; 6 → 2: 1 error en 54 000 |
 | E-08 cuelgue: timeout × reintentos | con `proxy_read_timeout` 3 s y reintentos: **0 errores** y p99 3 s; con 10 s, p99 10 s y el nodo colgado nunca se marca caído (199 reintentos); sin reintentos ~200 errores |
+| A-01 limitación de tasa | cliente abusivo a ≈ 80 req/s: **35,9 % de 429** (2 571, lo que predice el límite 50 r/s + ráfaga 100); clientes normales **0 rechazos** y mismo p95; backends −24 % de peticiones |
+| A-03 TLS 1.3 + HTTP/2 | negocia h2 por ALPN; latencia igual (p95 22 ms, sesión +1,3 ms) y CPU del balanceador 6,0 → **8,1 %** |
+| A-04 keepalived + IP flotante | kill del NGINX activo: failover en **3,5–3,7 s**, disponibilidad **99,93–99,95 %**; con preempción la vuelta corta ≈ 9 conexiones, con `nopreempt` **0** (H-11) |
 | E-12 keepalive on/off | no distinguibles (p99 22 ms en ambos): en la misma red Docker abrir conexiones es casi gratis |
 | E-15 resistencia 15 min | 360 000 peticiones, **0 errores**, p99 21,8 ms al inicio y al final, sin crecimiento de memoria |
 | A-05 NGINX vs HAProxy | misma carga: NGINX p99 32,5 ms con 11,6 % de CPU; HAProxy p99 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) |
@@ -527,7 +530,7 @@ si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada cr
 | R-01 | Todo en Docker/Compose, nada en el host | Todos los servicios, incluidos Artillery y el análisis, son contenedores; el Makefile solo invoca `docker` | `make ps`; este README |
 | R-02 | README con instrucciones, diagramas y despliegue paso a paso | Este documento | — |
 | R-03 | Informe IEEE ≤ 7 páginas | Plantilla IEEEtran (5 páginas), compilado por el flujo `documentos.yml` o `make informe` | [`docs/informe/informe.pdf`](docs/informe/informe.pdf) · fuente [`informe.tex`](docs/informe/informe.tex) |
-| R-04 | Diapositivas en el repositorio | Marp (21 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
+| R-04 | Diapositivas en el repositorio | Marp (22 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
 | R-05 | Repositorio con configuración y aprovisionamiento | Estructura de la sección 12 | este repositorio |
 | R-06 | Presentación ≤ 20 min | Guion cronometrado | [`docs/guion-demo.md`](docs/guion-demo.md) |
 | R-07 | NGINX con `upstream` hacia ≥ 3 backends | `upstream backend_pool` + servicio `backend` con 3 réplicas | [`nginx/templates/http.conf.template`](nginx/templates/http.conf.template), `make smoke` |

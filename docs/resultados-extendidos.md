@@ -450,7 +450,74 @@ Lectura:
 - **Recomendación**: `proxy_read_timeout` de 3 s (mayor que el endpoint legítimo más lento de esta
   aplicación) con reintentos activados; o subir `fail_timeout` si el servicio necesita timeouts largos.
 
-## Pruebas no ejecutadas
+## A-01 · Limitación de tasa por cliente
 
-- **A-01** (limitación de tasa): disponible con `make feature F=ratelimit`.
-- **A-03** (TLS) y **A-04** (alta disponibilidad del balanceador): trabajo futuro (`docs/mejoras.md`).
+Fuente: `results/ejemplos/lote-A01-actions/` y `results/ejemplos/avanzadas.md` (3 repeticiones por
+configuración, orden aleatorio). Escenario `ratelimit.yml`: 120 llegadas/s durante 90 s; ≈ 2/3 del mismo
+cliente (`X-Client-Id: cliente-abusivo`, ≈ 80 req/s) y ≈ 1/3 de clientes distintos. Límite configurado:
+50 req/s por cliente con ráfaga de 100 (`limit_req ... nodelay`, respuesta 429).
+
+| Configuración | Peticiones del abusivo | 429 al abusivo | Peticiones normales | 429 a normales | p95 de los normales | Peticiones que llegan a los backends |
+|---|---|---|---|---|---|---|
+| sin límite | 7 192 ± 84 | 0 | 3 608 ± 84 | 0 | 22,0 ms | 10 800 |
+| `LB_FEATURE=ratelimit` | 7 170 ± 38 | **2 571 ± 38 (35,9 %)** | 3 630 ± 38 | **0** | 22,0 ms | **8 229 ± 38** |
+
+- El resultado coincide con la teoría del límite: en 90 s el abusivo envía ≈ 7 200 peticiones y NGINX le
+  admite 50 × 90 + 100 = 4 600, así que deberían rechazarse ≈ 2 600; se rechazaron 2 571.
+- Los clientes normales no lo notan (0 rechazos, mismo p95) y los backends reciben un 24 % menos de
+  peticiones: el exceso se corta en el balanceador, antes de consumir CPU de las réplicas.
+- La clave es `X-Client-Id`. Por IP (`$binary_remote_addr`) este escenario bloquearía a todos, porque la
+  carga sale de un solo contenedor: el mismo efecto de NAT que se vio con `ip_hash`. En producción la clave
+  debe ser un identificador que el cliente no pueda rotar (usuario autenticado o token firmado).
+
+## A-03 · TLS + HTTP/2 en el balanceador
+
+Fuente: `results/ejemplos/lote-A03-actions/` (3 repeticiones por protocolo) y `A03_tls_http2.txt`.
+Certificado autofirmado generado en un contenedor (`scripts/gen-cert.sh`); `compose.tls.yml` lo monta en
+solo lectura y `LB_TLS=on` añade `listen 443 ssl` y `http2 on`. La negociación comprobada con curl fue
+**TLS 1.3** (`TLS_AES_256_GCM_SHA384`, x25519) con **ALPN h2** (`HTTP/2 200`).
+
+Misma carga (`constante.yml`, 100 usuarios/s, 3 peticiones por usuario, 180 s); cada usuario abre su
+propia conexión, así que con HTTPS cada uno paga un handshake TLS.
+
+| Protocolo | Respuesta p95 | Respuesta p99 | Sesión completa (mediana) | Sesión completa (p95) | CPU media del balanceador | Errores |
+|---|---|---|---|---|---|---|
+| http | 22,0 ms | 23,2 ± 0,5 ms | 63,4 ms | 67,8 ± 0,8 ms | 6,0 ± 0,7 % | 0 |
+| https | 22,0 ms | 23,8 ms | 64,7 ms | 68,7 ms | **8,1 ± 0,2 %** | 0 |
+
+- **El costo de TLS es CPU, no latencia**: la CPU media del balanceador sube de 6,0 a 8,1 % (+35 %
+  relativo, diferencia mayor que la desviación), mientras que la latencia apenas cambia.
+- El tiempo de respuesta de Artillery empieza con la conexión ya abierta, por lo que no ve el handshake
+  (hallazgo H-10). La duración de la sesión sí lo incluye: +1,3 ms en la mediana con 3 peticiones por
+  conexión, casi nada dentro de la misma red Docker.
+- Se mantiene el puerto 80 en HTTP (el smoke de la CI pasa con TLS activo); en producción se redirigiría
+  80 → 443 y se usaría un certificado de una CA.
+
+## A-04 · Alta disponibilidad del balanceador (keepalived + IP flotante)
+
+Fuente: `results/ejemplos/lote-A04-actions/` (3 repeticiones por configuración) y
+`results/ejemplos/avanzadas.md`. `compose.ha.yml` añade un segundo NGINX (`lb2`) y un keepalived por
+balanceador, que comparte el espacio de red de su NGINX y anuncia por VRRP unicast la IP flotante
+`172.31.250.100`; un script de salud consulta `/lb-health` cada segundo. Carga `constante.yml` contra la
+VIP, `docker kill` del NGINX activo en t = 60 s y vuelta en t = 120 s; una sonda propia pide `/api/info`
+cada 100 ms con conexión nueva y registra qué NGINX respondió (`X-LB-Host`).
+
+| Configuración de keepalived | Disponibilidad | Failover (1.ª respuesta de lb2 tras el kill) | Errores en el failover | Sesión más larga en el failover | Errores al volver lb | Atendía al final |
+|---|---|---|---|---|---|---|
+| con preempción (defecto de VRRP) | 99,93 ± 0,02 % | 3,71 ± 0,12 s | 31 ± 8 | 4,23 s | **9 ± 2** | lb |
+| `nopreempt` | 99,95 % | 3,50 ± 0,11 s | 28 ± 3 | 3,85 ± 0,31 s | **0** | lb2 |
+
+- **Sin keepalived, matar el único NGINX corta el servicio** hasta que alguien lo reinicia. Con el par
+  activo/pasivo, el BACKUP toma la VIP en ≈ 3,5 s (3 anuncios VRRP perdidos de 1 s más el sesgo por
+  prioridad) y el servicio sigue con 99,93–99,95 % de disponibilidad.
+- Durante esos ≈ 3,5 s las conexiones nuevas esperan: Artillery reintenta el SYN y la sesión más larga
+  dura ≈ 4 s, pero casi ninguna falla. Los ≈ 30 errores son conexiones abiertas en el NGINX que murió
+  (`ECONNRESET`) y conexiones que llegaron justo en el cambio (`ECONNREFUSED`).
+- **La vuelta del nodo principal también cuesta** si hay preempción: al recuperar la VIP corta otra vez las
+  conexiones abiertas en `lb2` (≈ 9 errores). Con `nopreempt` la VIP se queda donde está y la vuelta no
+  produce ningún error (hallazgo H-11). Se adoptó `nopreempt` como valor por defecto de `compose.ha.yml`.
+- Limitación: la VIP solo existe dentro de la red Docker; en Docker Desktop/WSL2 no se alcanza desde el
+  host. En un despliegue real estaría en la red física, que es donde VRRP tiene sentido.
+
+Con A-01, A-02, A-03, A-04 y A-05 medidos y A-06 en la CI, todas las mejoras avanzadas de la sección 9.3
+de la especificación están implementadas y evaluadas.

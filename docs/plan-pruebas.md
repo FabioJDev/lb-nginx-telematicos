@@ -52,11 +52,12 @@ orden aleatorio; 20 s de enfriamiento; `lb` recreado al cambiar de política; si
 
 | ID | Mejora | Cómo probarla |
 |---|---|---|
-| A-01 | Limitación de tasa (`limit_req`/`limit_conn` por `X-Client-Id`) | `make feature F=ratelimit` + `docker compose run --rm artillery run /scripts/scenarios/spike.yml` → contar `http.codes.429` |
+| A-01 | Limitación de tasa (`limit_req`/`limit_conn` por `X-Client-Id`) | `make test-ratelimit` (`ratelimit.yml`: cliente abusivo vs normales, con y sin límite) → 429 por tipo de cliente y peticiones a los backends |
 | A-02 | Microcaché de 1 s | `make feature F=microcache` + rampa con `WORK_PATH=/api/info` → `cache.HIT` vs `cache.MISS` en Artillery, throughput |
 | A-05 | Comparativa con HAProxy | `make haproxy-up` + `TARGET=http://haproxy scripts/run-test.sh A05 rampa.yml` (roundrobin/leastconn/source) → datos para C1 de la matriz 4.1 |
 | A-06 | Integración continua | `.github/workflows/ci.yml` |
-| A-03 / A-04 | TLS + HTTP/2; alta disponibilidad del balanceador (keepalived/VRRP) | documentadas como trabajo futuro |
+| A-03 | TLS + HTTP/2 con certificado autofirmado generado en contenedor | `make test-tls`: misma carga por http y https; ALPN h2 con curl, latencia, duración de sesión y CPU del balanceador |
+| A-04 | Alta disponibilidad del balanceador (keepalived/VRRP e IP flotante) | `make test-ha`: kill del NGINX activo bajo carga, con y sin preempción; failover, errores por fase y sonda de la VIP |
 
 ## Matriz de corridas y tiempo estimado
 

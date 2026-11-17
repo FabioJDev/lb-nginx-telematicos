@@ -249,6 +249,19 @@ Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo si
 
 ---
 
+## Mejoras avanzadas medidas (A-01, A-03, A-04)
+
+| Mejora | Resultado (3 repeticiones) |
+|---|---|
+| **A-01** límite 50 req/s por cliente | abusivo (~80 req/s): **35,9 % de 429** (lo que predice el límite) · normales: **0 rechazos**, mismo p95 · backends −24 % |
+| **A-03** TLS 1.3 + HTTP/2 | ALPN `h2` ✔ · latencia igual (p95 22 ms) · CPU del balanceador 6,0 → **8,1 %** |
+| **A-04** 2 NGINX + keepalived + IP flotante | kill del activo: respaldo responde en **3,5–3,7 s**, disponibilidad **99,93–99,95 %** |
+| A-04 con vs sin preempción | la vuelta del principal corta **9 ± 2** conexiones con preempción · **0** con `nopreempt` |
+
+<div class="small">Fuente: results/ejemplos/avanzadas.md (lotes A01, A03, A04 de GitHub Actions) · la VIP solo existe dentro de la red Docker.</div>
+
+---
+
 ## Hallazgos (lo que no estaba en el enunciado)
 
 1. **`hash … consistent` + `resolve` no da afinidad** en NGINX 1.30.6 (0 % de clientes fieles). Hash simple: 100 %, pero al pasar de 5 a 4 réplicas **remapea al 84 %** de los clientes (E-06).
@@ -256,6 +269,8 @@ Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo si
 3. **`resolve` envía tráfico antes del healthcheck** de Docker.
 4. **La afinidad no puede basarse en la cookie de la app:** el login llega sin cookie y cae en otro nodo (4 de 5 compras perdidas). La cookie la debe emitir el balanceador.
 5. **El 503 de una dependencia caída tumba réplicas sanas** en la detección pasiva.
+6. **El tiempo de respuesta de Artillery no ve la conexión** (ni el handshake TLS ni la espera del failover): hay que mirar la duración de la sesión.
+7. **VRRP con preempción corta dos veces**: `nopreempt` elimina el segundo corte.
 
 → Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de `resolve`.
 
@@ -269,7 +284,8 @@ Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo si
 - Base de datos: escalar backends no la alivia; la **microcaché** sí (−77 % CPU).
 - Resiliencia: caídas sin errores; cuelgues cuestan el timeout; 500 requiere `proxy_next_upstream http_500`.
 - Limitación: 2 vCPU → generador como cuello de botella; capacidad medida con costo de CPU.
-- Trabajo futuro: HA del balanceador (keepalived/VRRP), health checks activos, TLS/HTTP2, Kubernetes.
+- HA del balanceador: keepalived + IP flotante, failover 3,5 s, mejor con `nopreempt`.
+- Trabajo futuro: health checks activos, HA de PostgreSQL y Redis, TLS hasta los backends, Kubernetes.
 
 ---
 
