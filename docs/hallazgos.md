@@ -40,6 +40,10 @@ precalculado y funciona.
 **Solución aplicada.** `hash_client` y `hash_remote_addr` usan ahora hash simple (afinidad 100 %
 verificada). Se conserva `hash_client_consistent.conf` para reproducir el hallazgo.
 
+**Costo medido (E-06).** Con hash simple, al retirar 1 de 5 réplicas cambió de backend el **84 %**
+de 200 clientes fijos (teoría del hash por módulo: 80 %), frente al ≈ 20 % que remapearía un hash
+consistente funcional (`scripts/check-remap.sh`, CI 43984410914).
+
 **Consecuencia de diseño (matriz 4.3).** Elegir descubrimiento DNS con `resolve` tiene un costo no
 previsto: renuncia al hash consistente. Con hash simple, al cambiar el número de réplicas se remapea la
 mayoría de los clientes (no solo ~1/N). Si la afinidad estable ante escalado fuera un requisito, habría

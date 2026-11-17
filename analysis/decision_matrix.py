@@ -69,7 +69,7 @@ SCORES_43 = {
 CRITERIA_42 = [
     # (nombre, peso, cómo se obtiene)
     ("Latencia p99, backends homogéneos", 20, "p99 (ms) en rampa.yml, media de repeticiones (M-05/ALG). Menor es mejor: 5·(mejor/valor), mín. 1"),
-    ("Latencia p99, backends heterogéneos", 25, "p99 con un backend lento (E-03). Igual normalización"),
+    ("Latencia p95, backends heterogéneos", 25, "p95 con un backend lento (E-03). Igual normalización. Se usa p95 y no p99: en E-03 el p99 lo fija el propio nodo lento (~5 % de las peticiones) y vale 171-173 ms con todas las políticas"),
     ("Equidad de la distribución", 15, "Índice de Jain J sobre peticiones por backend (M-06). 5·J"),
     ("Errores durante fallo de backend", 20, "% de respuestas no-2xx en la ventana de 30 s tras la falla (M-03/E-07). 5 si 0 %; 5·(1 − min(err,5 %)/5 %), mín. 1"),
     ("Afinidad de sesión", 10, "% de clientes que siempre caen en el mismo backend (log NGINX, client_id). 5·(%/100), mín. 1"),
@@ -169,7 +169,7 @@ def matrix_42(rows):
         fail = pick(rows, {"M03", "E07"}, pol, "rm") or pick(rows, {"M03"}, pol)
         data[pol] = {
             "p99_hom": to_float(hom["ng_lat_p99_ms_mean"]) if hom else float("nan"),
-            "p99_het": to_float(het["ng_lat_p99_ms_mean"]) if het else float("nan"),
+            "p99_het": to_float(het["ng_lat_p95_ms_mean"]) if het else float("nan"),
             "jain": to_float(hom["ng_jain_mean"]) if hom else float("nan"),
             "err_fail": to_float(fail.get("error_rate_30s_after_backend_removed_mean", "nan")) * 100 if fail else float("nan"),
             "affinity": to_float(hom.get("ng_affinity_pct_mean", "nan")) if hom else float("nan"),
@@ -190,6 +190,7 @@ def matrix_42(rows):
     weights = [c[1] for c in CRITERIA_42]
     rows_md = []
     totals = {}
+    coverage = {}
     for pol in POLICIES_42:
         scores = [s_hom[pol], s_het[pol], s_jain[pol], s_err[pol], s_aff[pol], float(data[pol]["simplicity"])]
         # Criterios sin dato: se excluyen y se renormalizan los pesos (se indica en la tabla)
@@ -197,11 +198,12 @@ def matrix_42(rows):
         tot_w = sum(w for w, _ in pairs)
         total = (sum(w * s for w, s in pairs) / 5.0) * (100 / tot_w) if tot_w else float("nan")
         totals[pol] = total
+        coverage[pol] = tot_w
         rows_md.append([pol] + [f"{fmt(s)} ({fmt(v)})" for s, v in zip(
             scores, [data[pol]["p99_hom"], data[pol]["p99_het"], data[pol]["jain"], data[pol]["err_fail"], data[pol]["affinity"], data[pol]["simplicity"]])]
             + [fmt(total), f"{tot_w}/100"])
     headers = ["Política"] + [f"{c[0]} ({c[1]})" for c in CRITERIA_42] + ["Puntaje /100", "Pesos con dato"]
-    return md_table(headers, rows_md), totals, not have_any
+    return md_table(headers, rows_md), totals, not have_any, coverage
 
 
 def main() -> int:
@@ -246,7 +248,7 @@ def main() -> int:
     out.append("## Matriz 4.2 — algoritmo de balanceo recomendado (con datos medidos)\n")
     out.append(md_table(["Criterio", "Peso", "Métrica, prueba de origen y normalización"], [(c[0], c[1], c[2]) for c in CRITERIA_42]))
     comp = load_comparativo()
-    table, totals, pending = matrix_42(comp)
+    table, totals, pending, coverage = matrix_42(comp)
     if pending:
         out.append("\n> **PENDIENTE:** no hay datos en `results/resumen_comparativo.csv`. Ejecutar `make test-min` "
                    "(y `make test-ext E=E03`) y luego `make analyze && make matrix`. Las celdas muestran puntuación (valor medido).\n")
@@ -254,10 +256,19 @@ def main() -> int:
                "Los criterios sin dato se excluyen y los pesos restantes se renormalizan a 100 (columna 'Pesos con dato').\n")
     out.append(table)
     if not pending:
-        best = max(totals, key=lambda k: (totals[k] if not math.isnan(totals[k]) else -1))
-        out.append(f"\n**Algoritmo recomendado según los datos:** `{best}` ({totals[best]:.1f}/100). "
-                   "Interpretar junto con `results/significancia.txt`: si la diferencia es menor que la desviación observada, "
-                   "las alternativas se declaran no distinguibles.\n")
+        # Solo compiten las políticas con al menos 70 de 100 puntos de peso medidos
+        eligible = {k: v for k, v in totals.items() if not math.isnan(v) and coverage.get(k, 0) >= 70}
+        if eligible:
+            best = max(eligible, key=eligible.get)
+            ranking_txt = " > ".join(f"{k} ({v:.1f})" for k, v in sorted(eligible.items(), key=lambda kv: -kv[1]))
+            out.append(f"\n**Algoritmo recomendado según los datos:** `{best}` ({eligible[best]:.1f}/100). "
+                       f"Ranking entre las políticas con al menos 70/100 de peso medido: {ranking_txt}. "
+                       "Interpretar junto con `results/significancia.txt`: si la diferencia es menor que la desviación "
+                       "observada, las alternativas se declaran no distinguibles.\n")
+        skipped = [k for k in totals if k not in eligible]
+        if skipped:
+            out.append("Sin datos suficientes para competir (menos de 70/100 de peso medido): "
+                       + ", ".join(f"`{k}`" for k in skipped) + ".\n")
 
     # 4.3
     out.append("## Matriz 4.3 — estrategia de descubrimiento de backends (decisión de diseño)\n")

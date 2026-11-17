@@ -150,8 +150,39 @@ El hash consistente no mantuvo la afinidad: con `server … resolve` reparte com
 
 ## E-06 · Remapeo al retirar un nodo
 
-> Medición determinista con `scripts/check-remap.sh` (200 clientes fijos, 5 → 4 réplicas) en la CI;
-> se completa al terminar la ejecución.
+Fuente: paso "Remapeo de clientes al retirar un backend (E-06)" de la CI (ejecución 43984410914),
+`scripts/check-remap.sh 5 200`: 200 clientes fijos (`X-Client-Id = cliente-1…200`) se mapean con 5
+réplicas, se elimina una con `docker rm -f`, se espera la re-resolución DNS y se vuelven a mapear.
+La primera versión de E-06 (carga constante) no podía medirlo: cada cliente de `constante.yml` vive
+~1 s, así que ninguno aparecía antes y después de la retirada.
+
+| Política | Clientes en el nodo retirado | Clientes que cambiaron de backend | Referencia teórica | Fallos tras retirar |
+|---|---|---|---|---|
+| `hash $http_x_client_id` (simple) | 38 (19,0 %) | **168 (84,0 %)** | hash por módulo: (N−1)/N = 80 % | 0 |
+| `hash $http_x_client_id consistent` | 40 (20,0 %) | 160 (80,0 %) | ketama: ≈ 1/N = 20 % si funcionara | 0 |
+| round_robin (control) | 40 (20,0 %) | 160 (80,0 %) | sin afinidad | 0 |
+
+Lectura: el hash simple mantiene la afinidad mientras N no cambia (100 % en la comprobación de
+afinidad), pero al retirar 1 de 5 nodos **remapea al 84 % de los clientes**, no solo al 19 % que
+estaba en el nodo retirado. El hash consistente debería remapear solo ese ≈ 20 %, pero con `resolve`
+no aplica el hash (hallazgo H-1) y se comporta como round-robin. Para un servicio con sesiones en
+memoria esto significa que **escalar invalida la mayoría de las sesiones**: o se usan servidores
+estáticos con hash consistente, o se externaliza el estado de sesión (p. ej. Redis), que es la
+práctica recomendada.
+
+### Comprobación de afinidad por política (misma ejecución de CI)
+
+`scripts/check-affinity.sh 30 5`: 30 clientes lógicos × 5 peticiones, todos desde la misma IP.
+
+| Política | Clientes fieles a un backend | Backends distintos usados |
+|---|---|---|
+| round_robin / least_conn / random_two | 0 % | 3 |
+| ip_hash | 100 % | **1** (misma /24) |
+| hash_client (`hash $http_x_client_id`) | **100 %** | **3** |
+| hash_client_consistent | 0 % | 3 |
+| hash_remote_addr (`hash $remote_addr`) | 100 % | 1 (misma IP) |
+
+`hash_client` es la única política que da afinidad por cliente **y** reparte entre los tres backends.
 
 ## E-07 · Modos de falla bajo carga
 

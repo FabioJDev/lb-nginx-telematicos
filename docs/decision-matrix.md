@@ -90,14 +90,22 @@ pruebas; la normalización convierte cada métrica a la escala 1–5.
 | Criterio | Peso | Métrica y prueba de origen | Normalización a 1–5 |
 |---|---|---|---|
 | Latencia p99, backends homogéneos | 20 | p99 (ms) en `rampa.yml`, media de 3 repeticiones (M-05) — `ng_lat_p99_ms_mean` del log de NGINX tras 30 s de calentamiento | Menor es mejor: 5 × (mejor / valor), mínimo 1 |
-| Latencia p99, backends heterogéneos | 25 | p99 con un backend lento (E-03, `compose.weighted.yml`) | Igual que la anterior |
+| Latencia p95, backends heterogéneos | 25 | p95 con un backend lento (E-03, `compose.weighted.yml`) | Igual que la anterior |
 | Equidad de la distribución | 15 | Índice de Jain J = (Σxᵢ)² / (n·Σxᵢ²) sobre peticiones por backend (M-06); réplicas sin tráfico cuentan como 0 | 5 × J (J ∈ [1/n, 1]) |
 | Errores durante fallo de backend | 20 | % de respuestas no-2xx en los 30 s siguientes a la falla (M-03 / E-07, `error_rate_30s_after_backend_removed`) | 5 si 0 %; 5 × (1 − min(err, 5 %)/5 %), mínimo 1 |
 | Afinidad de sesión | 10 | % de clientes (`client_id`) que siempre cayeron en el mismo backend (`ng_affinity_pct`; también `afinidad.cambios_de_backend` de Artillery) | 5 × (% / 100), mínimo 1 |
 | Simplicidad operativa | 10 | Cualitativo: directivas extra, requisitos (p. ej. cabecera `X-Client-Id`) | Juicio del equipo: round_robin 5, least_conn 5, ip_hash 4, hash_remote_addr 4, random_two 4, hash_client 3 |
 
-Alternativas: `round_robin`, `least_conn`, `ip_hash`, `hash_client` (hash consistente por
-`X-Client-Id`) y `random_two`.
+Alternativas: `round_robin`, `least_conn`, `ip_hash`, `hash_client` (hash por `X-Client-Id`; hash
+simple, ver hallazgo H-1) y `random_two`.
+
+**Dos ajustes metodológicos hechos al ver los datos** (se declaran, no se ocultan):
+
+1. El criterio heterogéneo usa **p95** en lugar de p99. En E-03 el p99 vale 171–173 ms con todas las
+   políticas porque lo fija el propio nodo lento (≈ 5 % de las peticiones aun con `least_conn`), así que
+   no discrimina; el p95 sí (23 ms con `least_conn` frente a 171 ms con `round_robin`).
+2. Para recomendar un algoritmo se exige que tenga **al menos 70 de 100 puntos de peso medidos**. Sin esta
+   regla, una política con un solo criterio medido podía ganar con pesos renormalizados.
 
 **Hipótesis a confirmar o refutar con datos:** con backends homogéneos las diferencias son
 pequeñas (no distinguibles frente a la desviación); con backends heterogéneos `least_conn` y
@@ -124,3 +132,23 @@ red `/24` (E-05), por lo que su equidad será mínima y su afinidad máxima.
 el experimento de pesos y heterogeneidad (`compose.weighted.yml`, que monta una plantilla con dos
 grupos `backend` y `backend-slow` con `weight`). Si `resolve` presentara problemas en la versión
 usada, el plan B documentado es generar `backend1…backendN` con un script y recargar.
+
+### Revisión tras el hallazgo H-1 (hash consistente + `resolve`)
+
+Las pruebas revelaron un costo que la matriz original no contemplaba: con `resolve`, `hash … consistent`
+no mantiene la afinidad (H-1 en [`hallazgos.md`](hallazgos.md)). Se añade el criterio
+**C5 · Compatibilidad con hash consistente** (estáticos 5, `resolve` 1, regenerar + reload 5) con peso
+*x* tomado proporcionalmente de los demás:
+
+| Peso de C5 | Estáticos | DNS con `resolve` | Regenerar + reload | Gana |
+|---|---|---|---|---|
+| 0 (matriz original) | 60 | **78** | 64 | `resolve` |
+| 10 | 64 | **72** | 68 | `resolve` |
+| 15 | 66 | 69 | **69** | empate |
+| 20 | 68 | 66 | **71** | regenerar + reload |
+
+**Umbral:** si la afinidad estable ante escalado pesa **15 o más** sobre 100, conviene regenerar la
+configuración y recargar (o servidores estáticos) en lugar de `resolve`. En este proyecto ningún requisito
+del enunciado (R-01 … R-25) exige afinidad de sesión, y el escalado sin recarga (E-10: 0 errores al pasar
+de 3 a 6 réplicas) sí es un objetivo, por lo que **se mantiene `resolve`** con hash simple para
+`hash_client`. La reflexión queda registrada como lección de diseño para servicios con estado.

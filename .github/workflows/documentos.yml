@@ -1,0 +1,56 @@
+# .github/workflows/documentos.yml — compila los entregables de documentación sin
+# instalar nada en el host: diagrama de arquitectura (Mermaid → PNG), informe IEEE
+# (LaTeX → PDF) y diapositivas (Marp → PDF/HTML). Publica todo como artefacto.
+name: documentos
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "docs/informe/**"
+      - "docs/diagramas/**"
+      - "docs/figuras/**"
+      - "slides/**"
+      - ".github/workflows/documentos.yml"
+
+jobs:
+  compilar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Diagrama de arquitectura (Mermaid -> PNG)
+        run: |
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/docs/diagramas:/data" \
+            minlag/mermaid-cli:11.4.2 -i arquitectura.mmd -o arquitectura.png -b white -s 3 -w 1600
+          ls -la docs/diagramas
+
+      - name: Informe IEEE (LaTeX -> PDF)
+        run: |
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD/docs:/docs" -w /docs/informe \
+            texlive/texlive:TL2024-historic \
+            latexmk -pdf -interaction=nonstopmode -halt-on-error informe.tex
+          docker run --rm -v "$PWD/docs:/docs" texlive/texlive:TL2024-historic \
+            sh -c 'pdfinfo /docs/informe/informe.pdf 2>/dev/null | grep -i pages || echo "pdfinfo no disponible"'
+
+      - name: Diapositivas (Marp -> PDF y HTML)
+        run: |
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/home/marp/app" -e LANG=C.UTF-8 \
+            marpteam/marp-cli:v4.5.1 slides/presentacion.md --pdf --allow-local-files -o slides/presentacion.pdf
+          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/home/marp/app" -e LANG=C.UTF-8 \
+            marpteam/marp-cli:v4.5.1 slides/presentacion.md --html --allow-local-files -o slides/presentacion.html
+
+      - name: Publicar documentos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentos-${{ github.run_id }}
+          path: |
+            docs/diagramas/arquitectura.png
+            docs/informe/informe.pdf
+            docs/informe/informe.log
+            slides/presentacion.pdf
+            slides/presentacion.html
+          if-no-files-found: warn
