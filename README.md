@@ -93,6 +93,8 @@ Más diagramas (camino de una petición con reintento, flujo de una corrida) en
 | `redis` | `redis:7.4-alpine` | backend | **ninguno** | — | Sesiones compartidas (`SESSION_STORE=redis`) |
 | `analysis` | build `./analysis` (`python:3.12-slim`) | ninguna | ninguno | `tools` | Tablas CSV, gráficas PNG, matrices, comparación consolidada |
 | `haproxy` | `haproxy:3.2-alpine` | frontend, backend | `HAPROXY_PUBLIC_PORT`, `127.0.0.1:8404` | (compose.haproxy.yml) | Comparativa A-05 |
+| `lb2` | `nginx:1.30-alpine` | frontend, backend, ha | ninguno | (compose.ha.yml) | Segundo balanceador (BACKUP) para A-04 |
+| `vrrp1` / `vrrp2` | `alpine:3.22` + keepalived | espacio de red de `lb` / `lb2` | ninguno | (compose.ha.yml) | VRRP e IP flotante `172.31.250.100` (A-04) |
 | `navegador` | `mcr.microsoft.com/playwright:v1.64.1-noble` | frontend | ninguno | `capturas` (compose.capturas.yml) | Capturas de evidencia: `/nodo`, `stub_status`, Grafana |
 
 ### Decisiones de diseño clave
@@ -187,6 +189,7 @@ Archivo `.env` (plantilla en [`.env.example`](.env.example)). Las más relevante
 | `LB_POLICY` | `round_robin` | `round_robin` · `least_conn` · `ip_hash` · `hash_client` · `hash_remote_addr` · `random_two`. |
 | `LB_FEATURE` | `none` | Función L7 extra: `ratelimit` (A-01) o `microcache` (A-02). |
 | `LB_UPSTREAM_KEEPALIVE` | `on` | `keepalive 64` hacia los backends (E-12). |
+| `LB_TLS` / `LB_TLS_PORT` | `off` / `8443` | TLS + HTTP/2 en el balanceador (A-03; `on` requiere `compose.tls.yml` y `scripts/gen-cert.sh`). |
 | `LB_MAX_FAILS` / `LB_FAIL_TIMEOUT` | `3` / `10s` | Detección pasiva: tras 3 fallos en 10 s el backend se marca caído 10 s. |
 | `LB_CONNECT_TIMEOUT` / `LB_SEND_TIMEOUT` / `LB_READ_TIMEOUT` | `2s` / `10s` / `10s` | Timeouts hacia el upstream. |
 | `LB_NEXT_UPSTREAM` | `error timeout http_502 http_504` | Condiciones de reintento y de fallo pasivo (`off` lo desactiva). **Sin `http_503`**: el 503 de la app por una dependencia caída no debe descartar réplicas (hallazgo H-8). |
@@ -268,6 +271,26 @@ make feature F=microcache   # proxy_cache de 1 s; cabecera X-Cache-Status HIT/MI
 make feature F=none
 make keepalive K=off        # sin keepalive hacia upstream (E-12)
 ```
+
+### TLS + HTTP/2 (A-03)
+
+```bash
+make tls-up                 # certificado autofirmado (en contenedor) + LB_TLS=on con compose.tls.yml
+curl -k --http2 -sI https://localhost:8443/api/info   # HTTP/2 200 (el puerto 8080 sigue en HTTP)
+make test-tls              # misma carga por http y https: latencia y CPU del balanceador
+```
+
+### Alta disponibilidad del balanceador (A-04)
+
+```bash
+make ha-up                  # lb + lb2 con keepalived (VRRP) e IP flotante 172.31.250.100
+make test-ha                # kill del NGINX activo bajo carga: failover y failback
+make ha-down                # vuelve al stack con un solo balanceador
+```
+
+La IP flotante solo existe **dentro** de la red Docker `lbnginx_ha`: en Docker Desktop/WSL2 no se
+alcanza desde el host, por eso Artillery y la sonda corren en contenedores conectados a esa red.
+En un despliegue real la VIP estaría en la red física y los clientes apuntarían a ella.
 
 ### Monitoreo (R-18)
 
@@ -556,6 +579,10 @@ lb-nginx-telematicos/
 ├── docker-compose.override.yml   # SOLO desarrollo: recarga en caliente + stub_status en 127.0.0.1
 ├── compose.weighted.yml          # backend lento + pesos (E-03)
 ├── compose.haproxy.yml           # comparativa HAProxy (A-05)
+├── compose.tls.yml               # TLS + HTTP/2 en el balanceador (A-03)
+├── compose.ha.yml                # dos NGINX + keepalived e IP flotante (A-04)
+├── compose.capturas.yml          # navegador sin interfaz para las capturas de evidencia
+├── ha/                           # plantilla de keepalived y arranque de VRRP (A-04)
 ├── backend/                      # Dockerfile (node:24-alpine) + server.js (sin dependencias)
 ├── nginx/
 │   ├── nginx.conf                # montado :ro

@@ -19,8 +19,9 @@
 
 ## Propuestas (trabajo futuro, en orden de valor)
 
-1. **Alta disponibilidad del balanceador** (A-04): dos NGINX con keepalived (VRRP) e IP flotante; hoy
-   NGINX es un punto único de falla.
+1. **Alta disponibilidad del balanceador fuera de Docker** (A-04 ya medido dentro de Docker con
+   `compose.ha.yml`): llevar la IP flotante a la red física o a un balanceador de nube, y sincronizar el
+   estado de afinidad (cookie `lbid`) entre los dos NGINX.
 2. **Health checks activos**: NGINX OSS solo detecta fallos de forma pasiva. Opciones: el módulo de
    terceros `nginx_upstream_check_module`, HAProxy (que ya los trae) o un agente externo que retire
    réplicas no listas (`/ready`) del DNS.
@@ -28,8 +29,9 @@
    rutas idempotentes (`GET`), con un `location` separado para la API de escritura.
 4. **Alta disponibilidad de los datos**: réplica de lectura de PostgreSQL (o PgBouncer para el pool
    de conexiones) y Redis Sentinel; E-18 y E-19 muestran que son los nuevos puntos únicos de falla.
-5. **TLS y HTTP/2** en el balanceador (A-03), con certificados de prueba generados en contenedor.
-6. **Limitación de tasa por usuario** (A-01) medida con la tienda: proteger `/api/login` contra
-   fuerza bruta y `/api/orders` contra abuso.
+5. **TLS de extremo a extremo**: A-03 termina TLS en NGINX; faltaría TLS hacia los backends
+   (`proxy_ssl_*`) y certificados de una CA (ACME/Let's Encrypt) en lugar del autofirmado.
+6. **Limitación de tasa por ruta** (A-01 ya medido por cliente): límites distintos para `/api/login`
+   (fuerza bruta) y `/api/orders` (abuso), con la clave de cliente firmada para que no se pueda rotar.
 7. **Orquestación con Kubernetes**: Service + Ingress NGINX, para comparar el descubrimiento por DNS
    de Docker con el de Kubernetes.

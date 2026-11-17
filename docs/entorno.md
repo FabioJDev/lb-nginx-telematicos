@@ -17,6 +17,8 @@ Verificadas en Docker Hub el 16 de noviembre de 2026 (`.env.example`).
 | grafana | `grafana/grafana:12.4.15` | Dashboard y datasource aprovisionados desde el repo. |
 | cadvisor | `gcr.io/cadvisor/cadvisor:v0.52.1` | Profile aparte; puede no arrancar en Docker Desktop. |
 | haproxy | `haproxy:3.2-alpine` | Solo para la comparativa A-05. |
+| openssl / keepalived | `alpine:3.22` | Certificado autofirmado (`scripts/gen-cert.sh`, A-03) y keepalived instalado al arrancar (`compose.ha.yml`, A-04). |
+| curl | `curlimages/curl:8.11.1` | Comprobación de HTTP/2 por ALPN (A-03, CI) y ráfaga de la CI (A-01). |
 | navegador | `mcr.microsoft.com/playwright:v1.64.1-noble` | Chromium sin interfaz para `make capturas` (`compose.capturas.yml`). |
 | analysis | `lbnginx-analysis:local` (build de `python:3.12-slim`) | pandas 2.2.3, matplotlib 3.9.2. |
 | (docs) | `texlive/texlive:TL2024-historic`, `marpteam/marp-cli:v4.5.1`, `minlag/mermaid-cli:11.4.2`, `koalaman/shellcheck:v0.10.0` | Solo se usan bajo demanda (`make informe`, `make slides`, …). |
