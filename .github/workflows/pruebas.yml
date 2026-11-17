@@ -39,6 +39,10 @@ on:
         description: "Endpoint de carga (WORK_PATH), p. ej. /api/work?ms=20&cpu=3 para saturar CPU"
         type: string
         default: "/api/work?ms=20"
+      e03_politicas:
+        description: "Para test-ext E03: políticas a medir (vacío = round_robin least_conn random_two + ponderado)"
+        type: string
+        default: ""
 
 jobs:
   carga:
@@ -48,6 +52,8 @@ jobs:
       REPS: ${{ inputs.reps }}
       QUICK: ${{ inputs.quick && '1' || '0' }}
       WORK_PATH: ${{ inputs.work_path }}
+      E03_POLICIES: ${{ inputs.e03_politicas }}
+      E03_WEIGHTED: ${{ inputs.e03_politicas == '' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
 

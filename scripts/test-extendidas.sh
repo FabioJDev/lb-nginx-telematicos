@@ -55,11 +55,15 @@ E03() {
   log "===== E-03 backends heterogéneos (compose.weighted.yml) ====="
   export COMPOSE_EXTRA_ARGS="-f docker-compose.yml -f compose.weighted.yml"
   compose up -d --build --remove-orphans >/dev/null; wait_healthy lb 1 90; wait_healthy backend-slow 1 60
+  # E03_POLICIES permite repetir E-03 solo para algunas políticas; E03_WEIGHTED=0 omite el ponderado
+  local pols="${E03_POLICIES:-round_robin least_conn random_two}"
   for rep in $(seq 1 "$REPS"); do
-    for pol in $(shuffle round_robin least_conn random_two); do
+    # shellcheck disable=SC2086
+    for pol in $(shuffle $pols); do
       LB_WEIGHT_FAST=1 LB_WEIGHT_SLOW=1 "$S/set-policy.sh" "$pol"
       cooldown "$COOLDOWN"; NOTES="heterogéneo: 1 lento (${SLOW_BACKEND_DELAY_MS:-150}ms, ${SLOW_BACKEND_CPUS:-0.25} cpu)" "$S/run-test.sh" E03 rampa.yml "rep$rep"
     done
+    [ "${E03_WEIGHTED:-1}" = "0" ] && continue
     # round-robin ponderado: 3 (rápido) : 1 (lento)
     export LB_WEIGHT_FAST=3 LB_WEIGHT_SLOW=1
     "$S/set-policy.sh" round_robin

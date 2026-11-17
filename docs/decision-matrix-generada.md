@@ -48,24 +48,24 @@ NGINX obtiene 81/100 frente a 88/100 de HAProxy. Si HAProxy lidera en criterios 
 | Criterio | Peso | Métrica, prueba de origen y normalización |
 |---|---|---|
 | Latencia p99, backends homogéneos | 20 | p99 (ms) en rampa.yml, media de repeticiones (M-05/ALG). Menor es mejor: 5·(mejor/valor), mín. 1 |
-| Latencia p99, backends heterogéneos | 25 | p99 con un backend lento (E-03). Igual normalización |
+| Latencia p95, backends heterogéneos | 25 | p95 con un backend lento (E-03). Igual normalización. Se usa p95 y no p99: en E-03 el p99 lo fija el propio nodo lento (~5 % de las peticiones) y vale 171-173 ms con todas las políticas |
 | Equidad de la distribución | 15 | Índice de Jain J sobre peticiones por backend (M-06). 5·J |
 | Errores durante fallo de backend | 20 | % de respuestas no-2xx en la ventana de 30 s tras la falla (M-03/E-07). 5 si 0 %; 5·(1 − min(err,5 %)/5 %), mín. 1 |
 | Afinidad de sesión | 10 | % de clientes que siempre caen en el mismo backend (log NGINX, client_id). 5·(%/100), mín. 1 |
 | Simplicidad operativa | 10 | Cualitativo (juicio del equipo): directivas extra y requisitos del cliente |
 
-> **PENDIENTE:** no hay datos en `results/resumen_comparativo.csv`. Ejecutar `make test-min` (y `make test-ext E=E03`) y luego `make analyze && make matrix`. Las celdas muestran puntuación (valor medido).
-
-
 Celdas: puntuación 1–5 (valor medido: p99 en ms, Jain, % errores, % afinidad). Los criterios sin dato se excluyen y los pesos restantes se renormalizan a 100 (columna 'Pesos con dato').
 
-| Política | Latencia p99, backends homogéneos (20) | Latencia p99, backends heterogéneos (25) | Equidad de la distribución (15) | Errores durante fallo de backend (20) | Afinidad de sesión (10) | Simplicidad operativa (10) | Puntaje /100 | Pesos con dato |
+| Política | Latencia p99, backends homogéneos (20) | Latencia p95, backends heterogéneos (25) | Equidad de la distribución (15) | Errores durante fallo de backend (20) | Afinidad de sesión (10) | Simplicidad operativa (10) | Puntaje /100 | Pesos con dato |
 |---|---|---|---|---|---|---|---|---|
-| round_robin | — (—) | — (—) | — (—) | — (—) | — (—) | 5.0 (5) | 100.0 | 10/100 |
-| least_conn | — (—) | — (—) | — (—) | — (—) | — (—) | 5.0 (5) | 100.0 | 10/100 |
-| ip_hash | — (—) | — (—) | — (—) | — (—) | — (—) | 4.0 (4) | 80.0 | 10/100 |
-| hash_client | — (—) | — (—) | — (—) | — (—) | — (—) | 3.0 (3) | 60.0 | 10/100 |
-| random_two | — (—) | — (—) | — (—) | — (—) | — (—) | 4.0 (4) | 80.0 | 10/100 |
+| round_robin | 4.9 (22.5) | 1.0 (171.0) | 5.0 (1.0) | 5.0 (0.0) | 1.0 (0.1) | 5.0 (5) | 71.6 | 100/100 |
+| least_conn | 5.0 (22.0) | 5.0 (23.0) | 5.0 (1.0) | 5.0 (0.0) | 1.0 (0.3) | 5.0 (5) | 92.0 | 100/100 |
+| ip_hash | 4.8 (23.0) | — (—) | 1.7 (0.3) | 5.0 (0.0) | 5.0 (100.0) | 4.0 (4) | 82.8 | 75/100 |
+| hash_client | 5.0 (22.0) | — (—) | 5.0 (1.0) | 5.0 (0.0) | 5.0 (100.0) | 3.0 (3) | 94.7 | 75/100 |
+| random_two | 5.0 (22.0) | 4.5 (25.5) | 5.0 (1.0) | 5.0 (0.0) | 1.0 (0.0) | 4.0 (4) | 87.5 | 100/100 |
+
+**Algoritmo recomendado según los datos:** `hash_client` (94.7/100). Ranking entre las políticas con al menos 70/100 de peso medido: hash_client (94.7) > least_conn (92.0) > random_two (87.5) > ip_hash (82.8) > round_robin (71.6). Interpretar junto con `results/significancia.txt`: si la diferencia es menor que la desviación observada, las alternativas se declaran no distinguibles.
+
 ## Matriz 4.3 — estrategia de descubrimiento de backends (decisión de diseño)
 
 | Criterio (peso) | Servidores estáticos con nombre | DNS con resolve (elegida) | Regenerar config + reload |
