@@ -104,3 +104,40 @@ cliente: una cabecera propia (`X-Client-Id`), la IP o una cookie emitida por el 
 'roundrobin', …": HAProxy no expande variables fuera de comillas dobles. Se corrigió a
 `balance "${HAPROXY_BALANCE}"`. Lo detectó el paso de validación añadido a la CI antes de
 ejecutar la comparativa A-05.
+
+## H-8 · El 503 de una dependencia caída hace que NGINX descarte réplicas sanas
+
+**Síntoma.** E-18 (PostgreSQL caído 30 s): el p99 durante la caída fue de 0 ms y casi no hubo
+reintentos; al volver la base de datos, el servicio siguió fallando **6,3 s más**. E-19 (Redis caído
+30 s): además de login y carrito, falló el **catálogo**, que no usa Redis (357 errores 5xx).
+
+**Causa.** Cuando falla una dependencia, la aplicación responde `503`. Con
+`proxy_next_upstream error timeout http_502 http_503 http_504`, NGINX cuenta cada 503 como un intento
+fallido; tras `max_fails=3` en `fail_timeout=10s` marca la réplica como caída. Como **todas** las réplicas
+dependen de la misma base de datos o del mismo Redis, todas acumulan fallos y NGINX responde
+"no live upstreams" (502 inmediato, `upstream_addr = backend_pool`) incluso a rutas que funcionarían.
+Al recuperarse la dependencia, las réplicas siguen excluidas hasta que vence el `fail_timeout`.
+
+**Consecuencia.** La detección pasiva confunde "mi dependencia está caída" con "este backend está caído":
+deshace la degradación parcial de la aplicación (E-19) y alarga la recuperación (E-18). Por el lado
+bueno, evita una tormenta de reintentos contra la base de datos.
+
+**Corrección propuesta y medida.** No incluir `http_503` en `proxy_next_upstream` cuando el 503 lo
+genera la aplicación por una dependencia (`LB_NEXT_UPSTREAM="error timeout http_502 http_504"`): las
+caídas de proceso siguen detectándose por `error`/`timeout`. Se mide en E-18B y E-19B.
+
+## H-9 · Los cambios de `.env` a mitad de un lote no llegaban a los scripts hijos
+
+**Síntoma.** E-08 (timeouts × reintentos) dio resultados idénticos en sus cuatro configuraciones. Los
+`metadata.json` lo delataron: las cuatro registraban `LB_READ_TIMEOUT=10s` y el mismo
+`proxy_next_upstream`.
+
+**Causa.** `load_env` exportaba el `.env` al iniciar el lote. Cuando `set-env.sh` lo modificaba, los
+scripts hijos (por ejemplo `set-policy.sh`, que recrea NGINX) heredaban el valor viejo, y en Compose el
+entorno tiene prioridad sobre el `.env`.
+
+**Corrección.** `load_env` refresca desde el `.env` actual los valores heredados de una carga anterior y
+respeta los fijados explícitamente; la función `compose` relee el `.env` antes de cada llamada. Además,
+`metadata.json` registra ahora la configuración **efectiva** leída de NGINX (`nginx_effective`). Se
+verificó que E-12, A-02 y E-16 no estaban afectadas: sus metadatos muestran la configuración aplicada
+(`keepalive`, `feature`, `SESSION_STORE`). E-08, E-18B y E-19B se repitieron.

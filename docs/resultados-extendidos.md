@@ -16,7 +16,7 @@ satura los backends (≈ 166 req/s por réplica con 0,5 CPU).
 [E-05 afinidad](#e-05--trampa-de-ip_hash-y-afinidad-l7) · [E-06 remapeo](#e-06--remapeo-al-retirar-un-nodo) ·
 [E-07 modos de falla](#e-07--modos-de-falla-bajo-carga) · [E-09 falla total](#e-09--falla-múltiple-y-total) ·
 [E-10 escalado en caliente](#e-10--escalado-en-caliente-bajo-carga) · [E-11 recarga](#e-11--recarga-de-configuración-bajo-carga) ·
-[E-14 pico](#e-14--pico-súbito) · [pendientes](#pruebas-no-ejecutadas)
+[E-14 pico](#e-14--pico-súbito) · [E-12 keepalive](#e-12--keepalive-hacia-los-backends) · [E-15 resistencia](#e-15--resistencia-15-minutos-a-80-usuarioss) · [E-16 tienda](#e-16--la-tienda-sobrevive-la-sesión-al-balanceo) · [E-17 BD compartida](#e-17--escalabilidad-con-base-de-datos-compartida) · [E-18 caída de PostgreSQL](#e-18--caída-de-postgresql-bajo-carga) · [E-19 caída de Redis](#e-19--caída-de-redis-durante-compras) · [A-02 microcaché](#a-02--microcaché-del-catálogo-frente-a-la-base-de-datos) · [A-05 HAProxy](#a-05--nginx-frente-a-haproxy) · [pendientes](#pruebas-no-ejecutadas)
 
 ## E-01 / E-02 · Escalabilidad horizontal
 
@@ -275,9 +275,146 @@ El pico multiplicó la tasa por 16 (de 150 a ~2400 req/s durante 20 s). Resultad
 máximo de **31 ms** en la ventana del pico, 22–24 ms antes y después. Con el endpoint de espera el
 sistema absorbe la ráfaga sin cola.
 
+## E-12 · Keepalive hacia los backends
+
+Fuente: `results/ejemplos/lote-E12-actions/` (`rampa.yml`, 2 repeticiones, orden aleatorio; los
+metadatos confirman `upstream_keepalive` on/off en la configuración efectiva).
+
+| keepalive | Media (ms) | p95 (ms) | p99 (ms) | CPU de NGINX | CPU de los backends |
+|---|---|---|---|---|---|
+| on (`keepalive 64`) | 20,33 ± 0,02 | 21 | 22 | 11,9 ± 1,4 % | 6,1 % |
+| off | 20,30 ± 0,02 | 21 | 22 | 12,3 ± 0,0 % | 6,0 % |
+
+**No distinguibles.** Con backends en la misma red Docker, abrir una conexión TCP cuesta microsegundos
+y no se nota frente a los 20 ms del endpoint. La reutilización de conexiones importa con backends
+remotos, con TLS hacia el backend o con tasas mucho mayores.
+
+## E-15 · Resistencia (15 minutos a 80 usuarios/s)
+
+Fuente: `results/ejemplos/lote-E15-actions/` (`soak.yml`, 360 000 peticiones).
+
+- **0 errores** y p99 estable: media de los p99 por segundo de **21,8 ms en los primeros 5 minutos y
+  21,8 ms en los últimos 5**; ~400 req/s todo el tiempo.
+- Memoria sin crecimiento sostenido: NGINX 7,2 → 12,1 MiB (buffers del log), backends 110,7 → 68,3 MiB
+  (suma de las 3 réplicas; el recolector de Node liberó memoria), PostgreSQL 32,4 → 33,2 MiB.
+- No hay degradación progresiva ni fugas de memoria en 15 minutos.
+
+## E-16 · La tienda: ¿sobrevive la sesión al balanceo?
+
+Fuente: `results/ejemplos/lote-tienda-memory-actions/` y `lote-tienda-redis-actions/` (`tienda.yml`:
+portada → categorías → catálogo → búsqueda → detalle → login → 2 × agregar al carrito → ver carrito →
+comprar; 1 400 recorridos por corrida; 6 políticas × 2 almacenes de sesión × 2 repeticiones, orden
+aleatorio); figuras `docs/figuras/tienda_sesiones.png` y `comparacion_tienda.png`.
+
+| Política | Sesiones en **memoria**: recorridos con sesión perdida | Memoria: compras completadas | Memoria: carrito correcto | Sesiones en **Redis**: compras completadas |
+|---|---|---|---|---|
+| round_robin | **97,9 ± 0,3 %** | 22,0 ± 2,0 % | 2,6 % | **100 %** |
+| least_conn | **99,4 ± 0,1 %** | 20,5 ± 1,3 % | 2,2 % | **100 %** |
+| random_two | **99,0 ± 0,5 %** | 18,7 ± 2,2 % | 3,2 % | **100 %** |
+| ip_hash | 0 % | **100 %** | 100 % | **100 %** |
+| hash_client | 0 % | **100 %** | 100 % | **100 %** |
+| sticky_cookie | 0 % | **100 %** | 100 % | **100 %** |
+
+Lectura:
+
+- Con sesiones **en la memoria de cada réplica**, las políticas sin afinidad rompen la tienda: en el
+  **98–99 % de los recorridos** alguna petición cae en una réplica que no conoce la sesión. Solo ~20 %
+  de las compras se completan, y casi siempre con el carrito incompleto (2–3 % de carritos correctos).
+- Las tres políticas con afinidad (`ip_hash`, `hash_client`, `sticky_cookie`) conservan el 100 % de las
+  sesiones. Pero `ip_hash` lo logra mandando **todo** a una réplica (Jain 0,333), mientras que
+  `hash_client` y `sticky_cookie` reparten (Jain 0,997–0,999).
+- Con sesiones **en Redis**, las seis políticas completan el 100 % de las compras: el almacén compartido
+  hace innecesaria la afinidad y permite usar el algoritmo que mejor reparte la carga.
+- Latencias muy bajas en todos los casos (p95 de 2–3 ms en NGINX, p95 de la compra 2–6 ms): la tienda
+  con 3 réplicas no se acerca a la saturación a 108 req/s. Redis añade ~1 ms al p95.
+- Recomendación: **sesiones compartidas (Redis) + `least_conn`**. Si la aplicación no puede
+  externalizar la sesión, `sticky_cookie` (afinidad por cookie del balanceador) es la mejor opción.
+
+## E-17 · Escalabilidad con base de datos compartida
+
+Fuente: `results/ejemplos/lote-E17-actions/` (`tienda-lectura.yml`: solo lecturas del catálogo,
+5 → 60 recorridos/s; N = 1, 2, 3, 5; 2 repeticiones); figura `docs/figuras/escalabilidad_tienda.png`.
+
+| N backends | Goodput (req/s) | Errores | p95 (ms) | p99 (ms) | CPU media de PostgreSQL (máx.) | CPU media de los backends (máx. por réplica) |
+|---|---|---|---|---|---|---|
+| 1 | 419,5 | 0 | 2,5 | 4,0 | 23,5 % (39 %) | 9,5 % (21 %) |
+| 2 | 419,5 | 0 | 2,0 | 4,0 | 23,5 % (40 %) | 5,6 % (11 %) |
+| 3 | 419,5 | 0 | 2,0 | 4,0 | 21,5 % (36 %) | 3,7 % (9 %) |
+| 5 | 419,5 | 0 | 3,5 | 6,5 | 23,0 % (41 %) | 3,7 % (9 %) |
+
+Lectura: con esta carga nada se satura y el goodput lo fija el escenario. Aun así se ve lo esencial: al
+pasar de 1 a 5 réplicas la CPU por réplica baja de 21 % a 9 %, pero la **CPU de PostgreSQL no se mueve
+(~23 %)**: todas las réplicas hacen las mismas consultas a la misma base de datos. Escalar backends
+reparte el trabajo de la aplicación, pero **no** el de la base de datos, que ya es el componente más
+cargado. Para escalar lecturas hacen falta caché (A-02) o réplicas de lectura de la base de datos.
+
+## E-18 · Caída de PostgreSQL bajo carga
+
+Fuente: `results/ejemplos/lote-E18-actions/` (`tienda-lectura.yml`; PostgreSQL detenido 30 s).
+
+- Durante la caída fallaron **las 11 411 peticiones (100 %)**: el balanceador no puede compensar una
+  dependencia compartida.
+- No hubo tormenta de reintentos (6 en total). La causa es el hallazgo H-8: las réplicas responden 503,
+  `proxy_next_upstream … http_503` cuenta cada 503 como fallo y, al llegar a `max_fails=3`, NGINX marca
+  **las tres réplicas como caídas**. Desde ahí responde 502 al instante sin consultarlas.
+- Al volver PostgreSQL el servicio tardó **6,3 s más** en recuperarse: NGINX esperó el `fail_timeout`
+  (10 s) antes de volver a probar las réplicas, que ya estaban sanas.
+
+## E-19 · Caída de Redis durante compras
+
+Fuente: `results/ejemplos/lote-E19-actions/` (`tienda.yml`, sesiones en Redis; Redis detenido 30 s).
+
+- Fallaron las operaciones que necesitan sesión (login, carrito, compra): 72,8 % de las compras de toda
+  la corrida se completaron.
+- Pero también falló **el catálogo**, que no usa Redis: 357 errores 5xx en catálogo, portada y
+  categorías. Los 503 del login y del carrito hicieron que NGINX marcara las réplicas como caídas
+  (hallazgo H-8) y entonces rechazó **todas** las peticiones, no solo las de sesión. El balanceador
+  deshizo la degradación parcial que la aplicación sí hacía bien.
+- Tras volver Redis, los errores siguieron ~3 s.
+
+## E-18B / E-19B · Las mismas caídas sin contar el 503 como fallo
+
+> Pendiente: en ejecución con `proxy_next_upstream error timeout http_502 http_504`.
+
+## A-02 · Microcaché del catálogo frente a la base de datos
+
+Fuente: `results/ejemplos/lote-A02-actions/` (`tienda-lectura.yml`, 2 repeticiones, orden aleatorio;
+los metadatos confirman `feature` none/microcache); figura `docs/figuras/cache_tienda.png`.
+
+| | Sin caché | Microcaché de 1 s | Cambio |
+|---|---|---|---|
+| Aciertos de caché | — | **61,6 %** | |
+| Latencia media en NGINX | 1,24 ms | **0,28 ms** | −77 % |
+| p95 / p99 en NGINX | 3 / 5 ms | **1 / 3 ms** | |
+| CPU media de PostgreSQL | 22,6 % | **5,1 %** | **−77 %** |
+| CPU media de los backends | 3,6 % | 2,0 % | −44 % |
+| CPU media de NGINX | 5,0 % | 7,8 % | +56 % (NGINX hace más trabajo) |
+| Errores | 0 | 0 | |
+
+Una caché de **1 segundo** en el balanceador quita tres cuartas partes de la carga de la base de
+datos, a cambio de un poco más de CPU en NGINX y de datos con hasta 1 s de antigüedad en el catálogo.
+Es la respuesta práctica a E-17: si escalar backends no alivia la base de datos, cachear sí. Solo se
+cachea el catálogo público; carrito, sesión y pedidos nunca (la clave de caché no incluye la cookie).
+
+## A-05 · NGINX frente a HAProxy
+
+Fuente: `results/ejemplos/lote-A05-actions/` (`rampa.yml`, mismos 3 backends, 2 repeticiones, orden
+aleatorio). Detalle y salvedad de configuración en [`decision-matrix.md`](decision-matrix.md).
+
+| Balanceador y algoritmo | Media | p95 | p99 | CPU del balanceador |
+|---|---|---|---|---|
+| NGINX `round_robin` | 21,1 ms | 24,3 ms | 32,5 ms | 11,6 % |
+| NGINX `least_conn` | 21,4 ms | 24,8 ms | 34,1 ms | 11,0 % |
+| HAProxy `roundrobin` | 22,9 ms | 30,0 ms | 40,5 ms | 23,5 % |
+| HAProxy `leastconn` | 22,7 ms | 29,7 ms | 38,1 ms | 23,4 % |
+
+## E-08 · Timeouts × reintentos ante un backend colgado
+
+> La primera ejecución quedó **invalidada** (hallazgo H-9): por un error de los scripts, las cuatro
+> configuraciones corrieron con el mismo `proxy_read_timeout` de 10 s, como muestran sus `metadata.json`.
+> Repetida tras la corrección; pendiente de resultados.
+
 ## Pruebas no ejecutadas
 
-- **E-08** (matriz timeouts × reintentos bajo `hang`), **E-12** (keepalive on/off), **E-15** (soak 15 min):
-  disponibles con `make test-ext E=E08|E12|E15`.
-- **A-01** (limitación de tasa), **A-02** (microcaché), **A-05** (HAProxy): disponibles con
-  `make feature F=…` y `make haproxy-up`.
+- **A-01** (limitación de tasa): disponible con `make feature F=ratelimit`.
+- **A-03** (TLS) y **A-04** (alta disponibilidad del balanceador): trabajo futuro (`docs/mejoras.md`).
