@@ -101,6 +101,8 @@ figuras `docs/figuras/algoritmos_latencia_E03.png` y `algoritmos_distribucion_E0
 | round_robin ponderado 3:1 | 35,5 ± 0,0 | 171 | 172 | 10,0 % | 0,893 |
 | least_conn | **27,1 ± 0,0** | **23** | 171 | **4,5 %** | 0,816 |
 | random_two (least_conn) | 27,9 ± 0,1 | 25,5 ± 2,1 | 171 | 4,9 % | 0,823 |
+| hash_client (ejecución 43992726277) | 58,3 ± 0,2 | 171 | 173 | 25,0–25,2 % | 1,000 |
+| ip_hash (ejecución 43992726277) | 97,8 ± 109,7 | 113,5 ± 130,8 | 133,5 ± 157,7 | **100 % en rep. 1, 0 % en rep. 2** | 0,333 |
 
 Round-robin reparte por turnos e ignora que un nodo es 8 veces más lento: el 25 % de las peticiones paga
 170 ms, la **media se duplica** (58 vs 27 ms) y el **p95 pasa de 23 a 171 ms**. `least_conn` y
@@ -110,6 +112,11 @@ de antemano la capacidad de cada nodo. Diferencia least_conn vs random_two: 0,8 
 
 Hipótesis "least_conn y random_two protegen la cola de latencia": **confirmada en media y p95**; el p99
 lo fija el propio backend lento.
+
+Las políticas de hash ignoran la carga: `hash_client` reparte por cliente como si todos los nodos fueran
+iguales (25 % al lento, p95 171 ms, igual que round-robin). `ip_hash` es una lotería: toda la /24 de
+Artillery cae en un solo nodo, que en la repetición 1 fue el lento (media ≈ 175 ms) y en la 2 uno rápido
+(media ≈ 20 ms); de ahí la desviación enorme. Fuente: `results/ejemplos/lote-E03-hash-actions/`.
 
 ## E-04 · Peticiones de costo variable
 

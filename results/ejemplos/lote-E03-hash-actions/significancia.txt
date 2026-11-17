@@ -1,0 +1,1 @@
+E03 (3 backends): mejor p99 ip_hash (133.5 ms) vs hash_client (173.0 ms): diferencia 39.5 ms, desv. máx. 157.7 ms -> NO distinguible (diferencia <= desviación)

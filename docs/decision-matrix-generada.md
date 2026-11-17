@@ -60,11 +60,11 @@ Celdas: puntuación 1–5 (valor medido: p99 en ms, Jain, % errores, % afinidad)
 |---|---|---|---|---|---|---|---|---|
 | round_robin | 4.9 (22.5) | 1.0 (171.0) | 5.0 (1.0) | 5.0 (0.0) | 1.0 (0.1) | 5.0 (5) | 71.6 | 100/100 |
 | least_conn | 5.0 (22.0) | 5.0 (23.0) | 5.0 (1.0) | 5.0 (0.0) | 1.0 (0.3) | 5.0 (5) | 92.0 | 100/100 |
-| ip_hash | 4.8 (23.0) | — (—) | 1.7 (0.3) | 5.0 (0.0) | 5.0 (100.0) | 4.0 (4) | 82.8 | 75/100 |
-| hash_client | 5.0 (22.0) | — (—) | 5.0 (1.0) | 5.0 (0.0) | 5.0 (100.0) | 3.0 (3) | 94.7 | 75/100 |
+| ip_hash | 4.8 (23.0) | 1.0 (113.5) | 1.7 (0.3) | 5.0 (0.0) | 5.0 (100.0) | 4.0 (4) | 67.2 | 100/100 |
+| hash_client | 5.0 (22.0) | 1.0 (171.0) | 5.0 (1.0) | 5.0 (0.0) | 5.0 (100.0) | 3.0 (3) | 76.0 | 100/100 |
 | random_two | 5.0 (22.0) | 4.5 (25.5) | 5.0 (1.0) | 5.0 (0.0) | 1.0 (0.0) | 4.0 (4) | 87.5 | 100/100 |
 
-**Algoritmo recomendado según los datos:** `hash_client` (94.7/100). Ranking entre las políticas con al menos 70/100 de peso medido: hash_client (94.7) > least_conn (92.0) > random_two (87.5) > ip_hash (82.8) > round_robin (71.6). Interpretar junto con `results/significancia.txt`: si la diferencia es menor que la desviación observada, las alternativas se declaran no distinguibles.
+**Algoritmo recomendado según los datos:** `least_conn` (92.0/100). Ranking entre las políticas con al menos 70/100 de peso medido: least_conn (92.0) > random_two (87.5) > hash_client (76.0) > round_robin (71.6) > ip_hash (67.2). Interpretar junto con `results/significancia.txt`: si la diferencia es menor que la desviación observada, las alternativas se declaran no distinguibles.
 
 ## Matriz 4.3 — estrategia de descubrimiento de backends (decisión de diseño)
 

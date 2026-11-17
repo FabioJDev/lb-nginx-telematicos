@@ -209,7 +209,7 @@ Endpoint con 3 ms de CPU: goodput **170 → 271 → 472 → 783 req/s** para N =
 
 ## Matriz 4.2 y conclusiones
 
-- **Algoritmo recomendado (con datos):** <span class="todo">___ (docs/decision-matrix-generada.md)</span>
+- **Algoritmo recomendado (matriz 4.2, todos los criterios medidos): `least_conn` (92,0)** > random_two (87,5) > hash_client (76,0) > round_robin (71,6) > ip_hash (67,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 26/100.
 - Homogéneos: no importa el algoritmo. Heterogéneos en **capacidad**: `least_conn` (p95 171 → 23 ms).
 - Afinidad: en L7 con `hash $http_x_client_id`, sabiendo que escalar remapea la mayoría de las sesiones.
 - Resiliencia: caídas sin errores; cuelgues cuestan el timeout; 500 requiere `proxy_next_upstream http_500`.

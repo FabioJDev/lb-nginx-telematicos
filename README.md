@@ -374,12 +374,26 @@ Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida
 |---|---|
 | E-02 escalabilidad (3 ms de CPU por petición) | goodput **170 → 271 → 472 → 783 req/s** con N = 1, 2, 3, 5; error 81 % → 0 %; eficiencia 0,79–0,92 |
 | E-13 punto de quiebre (3 ms de CPU) | carga máx. con error < 1 % y p99 < 1 s: ~185 / 582 / 875 req/s con 1 / 3 / 5 réplicas |
-| E-03 un backend lento (150 ms, 0,25 CPU) | p95: round_robin **171 ms** vs least_conn **23 ms**; al lento: 25 % vs 4,5 % del tráfico |
+| E-03 un backend lento (150 ms, 0,25 CPU) | p95: round_robin y hash_client **171 ms** vs least_conn **23 ms**; al lento: 25 % vs 4,5 % del tráfico; ip_hash: todo al lento en una repetición y a uno rápido en otra |
 | E-04 costo variable (5 / 300 ms de espera) | round_robin = least_conn = random_two (media 34,7 ms, p99 301 ms) |
 | E-05 / E-06 afinidad | hash simple por `X-Client-Id`: 100 % de afinidad en 3 nodos; al pasar de 5 a 4 réplicas remapea el **84 %** de los clientes |
 | E-07 modos de falla | stop / kill / crash: **0 errores**; pause / hang: 9 errores y p99 10 s (timeout); **error 500: 33 % de errores sin reintento** |
 | E-09 falla total | 0 errores con 2 y 1 réplicas; página de mantenimiento sin réplicas; recuperación en **0,84 s** |
 | E-10 / E-11 / E-14 | escalar 3 → 6, recargar la configuración y un pico × 16 de la tasa: **0 errores**; 6 → 2: 1 error en 54 000 |
+
+### Algoritmo recomendado (matriz 4.2 con datos medidos)
+
+| Política | p99 homogéneos (20) | p95 un backend lento (25) | Jain (15) | Errores al caer un backend (20) | Afinidad (10) | Simplicidad (10) | **Puntaje /100** |
+|---|---|---|---|---|---|---|---|
+| **least_conn** | 22 ms | **23 ms** | 1,00 | 0 % | 0 % | 5 | **92,0** |
+| random_two | 22 ms | 26 ms | 1,00 | 0 % | 0 % | 4 | 87,5 |
+| hash_client | 22 ms | 171 ms | 1,00 | 0 % | **100 %** | 3 | 76,0 |
+| round_robin | 23 ms | 171 ms | 1,00 | 0 % | 0 % | 5 | 71,6 |
+| ip_hash | 23 ms | 114 ms | 0,33 | 0 % | 100 % | 4 | 67,2 |
+
+Recomendación: **`least_conn`**. Con ±5 en cualquier peso el líder no cambia; `hash_client` solo ganaría
+si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada criterio en
+[`docs/decision-matrix.md`](docs/decision-matrix.md).
 
 ### Hallazgos
 

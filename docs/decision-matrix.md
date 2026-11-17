@@ -116,6 +116,34 @@ red `/24` (E-05), por lo que su equidad será mínima y su afinidad máxima.
 > [`decision-matrix-generada.md`](decision-matrix-generada.md). Los criterios sin dato se excluyen
 > y los pesos restantes se renormalizan; el documento indica qué pesos tienen dato.
 
+### Resultado con datos medidos
+
+Fuente: `results/ejemplos/matriz-4.2/resumen_comparativo_combinado.csv`, que une los lotes de GitHub
+Actions test-min (REPS=3), ALG, E-03 (dos ejecuciones), E-05 y M-03 por política. Las cinco políticas
+tienen **100/100 de peso medido**. Celdas: puntuación 1–5 (valor medido).
+
+| Política | p99 homogéneos (20) | p95 un backend lento (25) | Jain (15) | Errores al caer un backend (20) | Afinidad (10) | Simplicidad (10) | **Puntaje /100** |
+|---|---|---|---|---|---|---|---|
+| **least_conn** | 5,0 (22 ms) | **5,0 (23 ms)** | 5,0 (1,00) | 5,0 (0 %) | 1,0 (0,3 %) | 5 | **92,0** |
+| random_two | 5,0 (22 ms) | 4,5 (25,5 ms) | 5,0 (1,00) | 5,0 (0 %) | 1,0 (0 %) | 4 | 87,5 |
+| hash_client | 5,0 (22 ms) | 1,0 (171 ms) | 5,0 (1,00) | 5,0 (0 %) | **5,0 (100 %)** | 3 | 76,0 |
+| round_robin | 4,9 (22,5 ms) | 1,0 (171 ms) | 5,0 (1,00) | 5,0 (0 %) | 1,0 (0,1 %) | 5 | 71,6 |
+| ip_hash | 4,8 (23 ms) | 1,0 (113,5 ms) | 1,7 (0,33) | 5,0 (0 %) | 5,0 (100 %) | 4 | 67,2 |
+
+**Recomendación: `least_conn`.** Iguala a las demás con backends homogéneos y es la que mejor protege la
+latencia cuando un backend se degrada.
+
+**Análisis de sensibilidad** (cada peso ±5, redistribuido proporcionalmente): el líder **no cambia en
+ningún caso**. Umbrales de cambio de líder: `hash_client` pasaría al primer lugar si la **afinidad de
+sesión pesara 26/100 o más** (hoy 10), o si el criterio de backends heterogéneos pesara 0. Ningún otro
+criterio, dentro de 0–100, cambia el líder.
+
+**Contraste con las hipótesis:** homogéneos no distinguibles (confirmada); `least_conn` y `random_two`
+protegen la cola con heterogeneidad de capacidad (confirmada en p95, no en p99); `ip_hash` concentra la
+carga de una /24 (confirmada: Jain 0,33, y con un backend lento su resultado depende de a qué nodo cae la
+/24). Resultado no previsto: `hash_client` sin datos heterogéneos llegó a liderar (94,7) solo porque los
+pesos se renormalizaban; medir ese criterio lo bajó a 76,0. Por eso se exige ≥ 70/100 de peso medido.
+
 ---
 
 ## Matriz 4.3 — estrategia de descubrimiento de backends (decisión de diseño)
