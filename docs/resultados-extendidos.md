@@ -146,7 +146,26 @@ El hash consistente no mantuvo la afinidad: con `server … resolve` reparte com
 
 ### Segunda ejecución: hash simple
 
-> Ejecución 43982116149 en curso; se completa al terminar.
+Fuente: `results/ejemplos/lote-E05-actions/` (ejecución 43982116149; `rampa.yml`, 2 repeticiones,
+orden aleatorio); figura `docs/figuras/algoritmos_distribucion_E05.png`.
+
+| Política | Jain (3 nodos) | % al backend más cargado | Clientes fieles a un backend | Cambios de backend (Artillery) | p99 NGINX |
+|---|---|---|---|---|---|
+| ip_hash | 0,333 | 100 % | 100 % | 0 | 22 ms |
+| `hash $remote_addr` (hash_remote_addr) | 0,333 | 100 % | 100 % | 0 | 22 ms |
+| **`hash $http_x_client_id` (hash_client)** | **1,000** | **33,6 %** | **100 %** | **0** | 22 ms |
+| `hash $http_x_client_id consistent` | 1,000 | 33,3 % | 0,1 % | 165 456 ± 1 715 | 22 ms |
+
+Lectura: `ip_hash` y `hash $remote_addr` dan afinidad pero, como todo el tráfico de prueba llega desde
+una sola IP, lo concentran en un nodo. `hash_client` es la única política que **mantiene la afinidad
+(100 %, 0 cambios de backend en 27 451 clientes) y reparte la carga por igual** (Jain 1,000): decide por
+una cabecera HTTP, algo imposible en un balanceador de capa 4. La variante `consistent` confirma el
+hallazgo H-1. Las cuatro son indistinguibles en latencia (p99 22 ms).
+
+La comparación de las cinco políticas principales con el mismo escenario (`results/ejemplos/lote-ALG-actions/`,
+ejecución 43984864495, 2 repeticiones) da el mismo cuadro: media 20,32–20,41 ms y p99 22–23 ms en todas,
+Jain 1,000 salvo ip_hash (0,333), y afinidad 100 % solo en hash_client e ip_hash; figuras
+`docs/figuras/algoritmos_latencia_ALG.png` y `algoritmos_distribucion_ALG.png`.
 
 ## E-06 · Remapeo al retirar un nodo
 

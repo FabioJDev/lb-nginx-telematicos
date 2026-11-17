@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794875611.985369849,2026-11-17T00:33:31.999Z,artillery_start,"scenario=rampa.yml policy=random_two replicas=3 target=http://lb"
+1794875886.232840248,2026-11-17T00:38:06.236Z,artillery_end,"exit=0 duration_s=279"

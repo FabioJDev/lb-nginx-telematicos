@@ -660,8 +660,8 @@ def fig_algoritmos(comp: pd.DataFrame, runs: pd.DataFrame) -> None:
         ax.set_xticks(range(len(cfgs)))
         ax.set_xticklabels(cfgs, rotation=25, ha="right")
         ax.set_ylabel("% de peticiones por backend (apilado)")
-        ax.set_title(f"{tid}: distribución por backend (log NGINX, Jain medio = " +
-                     ", ".join(f"{p}:{j:.2f}" for p, j in zip(g["policy"], g["ng_jain_mean"])) + ")", fontsize=8)
+        ax.set_title(f"{tid}: distribución por backend (log de NGINX)\nJain medio: " +
+                     ", ".join(f"{p} {j:.2f}" for p, j in zip(g["policy"], g["ng_jain_mean"])), fontsize=8)
         fig.tight_layout()
         fig.savefig(FIG_DIR / f"algoritmos_distribucion_{tid}.png")
         plt.close(fig)
