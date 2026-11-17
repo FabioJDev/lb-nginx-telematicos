@@ -376,7 +376,8 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "short",
+          "noValue": "Solo con PUBLISH_METRICS=1"
         },
         "overrides": []
       },
@@ -935,7 +936,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (node) (rate(backend_requests_total{status=~\"5..\"}[30s]))",
+          "expr": "sum by (node) (rate(backend_requests_total{status=~\"5..\"}[30s])) or (sum by (node) (rate(backend_requests_total[30s])) * 0)",
           "legendFormat": "{{node}}",
           "refId": "A",
           "range": true
@@ -1011,7 +1012,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Ninguna"
         },
         "overrides": []
       },
@@ -1134,7 +1136,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con PUBLISH_METRICS=1"
         },
         "overrides": []
       },
@@ -1194,7 +1197,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con PUBLISH_METRICS=1"
         },
         "overrides": []
       },
@@ -1244,7 +1248,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con PUBLISH_METRICS=1"
         },
         "overrides": []
       },
@@ -1314,7 +1319,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con PUBLISH_METRICS=1"
         },
         "overrides": []
       },
@@ -1377,7 +1383,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con make cadvisor-up"
         },
         "overrides": []
       },
@@ -1427,7 +1434,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con make cadvisor-up"
         },
         "overrides": []
       },
@@ -1490,7 +1498,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con make haproxy-up (A-05)"
         },
         "overrides": []
       },
@@ -1540,7 +1549,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Solo con make haproxy-up (A-05)"
         },
         "overrides": []
       },
@@ -1590,7 +1600,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (node) (rate(tienda_sessions_total{event=\"lost\"}[30s]))",
+          "expr": "sum by (node) (rate(tienda_sessions_total{event=\"lost\"}[30s])) or (sum by (node) (rate(backend_requests_total[30s])) * 0)",
           "legendFormat": "{{node}}",
           "refId": "A",
           "range": true
@@ -1663,7 +1673,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Sin pedidos en la ventana"
         },
         "overrides": []
       },
@@ -1713,7 +1724,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Sin inicios de sesión en la ventana"
         },
         "overrides": []
       },
@@ -1823,7 +1835,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Sin consultas en la ventana"
         },
         "overrides": []
       },
@@ -1873,7 +1886,8 @@
             "lineWidth": 2,
             "fillOpacity": 12,
             "showPoints": "never"
-          }
+          },
+          "noValue": "Sin consultas en la ventana"
         },
         "overrides": []
       },
@@ -1910,7 +1924,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(tienda_db_errors_total[30s]))",
+          "expr": "sum(rate(tienda_db_errors_total[30s])) or vector(0)",
           "legendFormat": "errores BD/s",
           "refId": "A",
           "range": true
@@ -1920,7 +1934,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(tienda_sessions_total{event=\"store_error\"}[30s]))",
+          "expr": "sum(rate(tienda_sessions_total{event=\"store_error\"}[30s])) or vector(0)",
           "legendFormat": "errores Redis/s",
           "refId": "B",
           "range": true
