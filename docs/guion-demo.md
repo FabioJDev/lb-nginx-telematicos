@@ -1,15 +1,18 @@
-# Guion de presentación y sustentación (máximo 20 minutos)
+# Guion de presentación y sustentación (máximo 25 minutos)
 
 | Min. | Bloque | Contenido | Diapositivas |
 |---|---|---|---|
-| 0–1 | Apertura | Problema (punto único de falla, techo de capacidad) y objetivo en una diapositiva | 1–2 |
-| 1–3 | Conceptos | Proxy inverso, L4 vs L7, algoritmos (con un dibujo, no texto) | 3–4 |
-| 3–5 | Selección de la alternativa | Matriz multicriterio 4.1, cómo se midió cada criterio, sensibilidad y reflexión (HAProxy > NGINX en balanceo puro) | 5–6 |
-| 5–7 | Arquitectura | Diagrama, dos redes, decisiones clave (`resolve`, config externa, política = archivo) y cumplimiento R-01…R-25 | 7–8 |
-| 7–12 | **Demo en vivo** | Ver guion abajo | 9 |
-| 12–15 | Resultados | 3–4 gráficas: algoritmos (M-05), trampa de ip_hash (E-05), resiliencia (M-03), escalabilidad (E-02) | 10–13 |
-| 15–16 | Conclusiones | Recomendación de algoritmo con datos (matriz 4.2) y limitaciones | 14 |
-| 16–20 | Preguntas | Sustentación | — |
+| 0–2 | Apertura | Título, el proyecto en cifras, problema y objetivo | 1–3 |
+| 2–3 | Requisitos | Requisitos del catálogo y pruebas mínimas → evidencia | 4 |
+| 3–5 | Selección | Matriz 4.1 (cómo se mide cada criterio, mediciones), reflexión (HAProxy gana; NGINX es requisito) y matriz 4.3 | 5–6 |
+| 5–7 | Diseño | Arquitectura, configuración, 7 políticas, metodología y observabilidad | 7–8 |
+| 7–10 | Pruebas mínimas | Reparto y capturas (M-00…M-06), resiliencia y 1000 usuarios (M-03, M-04), algoritmos (M-05, E-03) | 9–11 |
+| 10–13 | Pruebas extendidas | Escalabilidad (E-02, E-13), fallas y operación en caliente, matriz 4.2 con datos | 12–14 |
+| 13–15 | Aplicación con estado | TelemaShop y sesiones (E-16), base de datos compartida (E-17, A-02, E-18/19) | 15–16 |
+| 15–17 | Mejoras y hallazgos | A-01 a A-06, hallazgos H-1…H-11 | 17–18 |
+| 17–18 | Conclusiones | Recomendación (`least_conn`; Redis o `sticky_cookie`) y trabajo futuro | 19 |
+| 18–24 | **Demo en vivo** | Ver guion abajo | 20 |
+| 24–25 | Cierre | Preguntas; diapositivas de respaldo 22–24 solo si las piden | 21 |
 
 ## Guion de la demo (ensayar y grabar un video de respaldo)
 
