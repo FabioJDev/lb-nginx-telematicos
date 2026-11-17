@@ -23,6 +23,7 @@ vrrp_instance VI_LB {
     virtual_router_id 51
     priority __PRIO__
     advert_int 1
+    __PREEMPT__
     unicast_src_ip __SELF__
     unicast_peer {
         __PEER__

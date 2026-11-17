@@ -2,8 +2,12 @@
 # ha/vrrp-entry.sh — A-04: arranca keepalived dentro del espacio de red de un NGINX.
 # Uso (entrypoint en compose.ha.yml): vrrp-entry.sh <MASTER|BACKUP> <prioridad> <ip_propia> <ip_par>
 # keepalived se instala al arrancar en un contenedor alpine (nada en el host).
+# HA_PREEMPT=on (defecto): el nodo de más prioridad recupera la VIP al volver.
+# HA_PREEMPT=off: nopreempt; quien tiene la VIP la conserva (exige estado BACKUP en ambos).
 set -eu
 STATE="$1"; PRIO="$2"; SELF="$3"; PEER="$4"; VIP="${VIP:-172.31.250.100}"
+PREEMPT=""
+if [ "${HA_PREEMPT:-on}" = "off" ]; then STATE="BACKUP"; PREEMPT="nopreempt"; fi
 
 apk add --no-cache keepalived >/dev/null
 
@@ -19,6 +23,7 @@ done
 mkdir -p /etc/keepalived
 sed -e "s/__STATE__/$STATE/g" -e "s/__PRIO__/$PRIO/g" -e "s/__IFACE__/$IFACE/g" \
     -e "s/__SELF__/$SELF/g" -e "s/__PEER__/$PEER/g" -e "s#__VIP__#$VIP#g" \
+    -e "s/__PREEMPT__/$PREEMPT/g" \
     /ha/keepalived.conf.tmpl > /etc/keepalived/keepalived.conf
-echo "vrrp-entry: $STATE prioridad=$PRIO interfaz=$IFACE ip=$SELF par=$PEER vip=$VIP"
+echo "vrrp-entry: $STATE prioridad=$PRIO interfaz=$IFACE ip=$SELF par=$PEER vip=$VIP preempt=${HA_PREEMPT:-on}"
 exec keepalived --dont-fork --log-console --log-detail -f /etc/keepalived/keepalived.conf

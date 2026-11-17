@@ -212,38 +212,81 @@ def probe_stats(run: Path) -> dict:
     return out
 
 
+def art_phases(run: Path) -> dict:
+    """Errores de Artillery y duración máxima de sesión en las ventanas de 10 s que
+    contienen el failover (kill) y el failback (vuelta de lb)."""
+    art, ev = load(run / "artillery.json") or {}, run / "events.csv"
+    if not art or not ev.exists():
+        return {}
+    events = pd.read_csv(ev)
+
+    def ev_ms(name):
+        e = events[events["event"] == name]
+        return float(e["epoch"].iloc[0]) * 1000 if not e.empty else None
+
+    t_kill, t_rest = ev_ms("lb_killed"), ev_ms("lb_restore_start")
+    out = {"art_err_failover": 0, "art_err_failback": 0, "sesion_max_failover_ms": float("nan"),
+           "sesion_max_failback_ms": float("nan")}
+    for it in art.get("intermediate", []):
+        p0 = float(it.get("period") or 0)
+        errs = sum(v for k, v in it.get("counters", {}).items() if k.startswith("errors."))
+        smax = it.get("summaries", {}).get("vusers.session_length", {}).get("max")
+        for key, t in (("failover", t_kill), ("failback", t_rest)):
+            # ventana que contiene el evento o la siguiente (los efectos llegan unos segundos después)
+            if t and p0 <= t + 10000 and p0 + 10000 > t:
+                out[f"art_err_{key}"] += errs
+                if smax is not None:
+                    cur = out[f"sesion_max_{key}_ms"]
+                    out[f"sesion_max_{key}_ms"] = smax if pd.isna(cur) else max(cur, smax)
+    return out
+
+
 def a04() -> tuple[str, list[dict]]:
     rows = []
     for run, r in runs("A04"):
+        lab = label_of(run, r)
+        variant = "off" if "preempt-off" in lab else "on"
         ps = probe_stats(run)
+        ph = art_phases(run)
         req = r.get("art_requests") or 0
         bad = (r.get("art_non2xx") or 0) + (r.get("art_transport_errors") or 0)
         rows.append({
-            "prueba": "A04", "corrida": run.name, "config": "ha-kill",
+            "prueba": "A04", "corrida": run.name, "config": f"preempt-{variant}",
             "peticiones": req, "fallidas": bad,
             "disponibilidad_pct": 100.0 * (1 - bad / req) if req else float("nan"),
             "errores_transporte": r.get("art_transport_errors", 0),
             "tipos_error": " · ".join(f"{k} {v}" for k, v in sorted((r.get("art_errors") or {}).items())),
             "p99_ms": r.get("art_lat_p99"), "max_ms": r.get("art_lat_max"),
             "cpu_lb": r.get("cpu_mean_lb"), "cpu_lb2": r.get("cpu_mean_lb2"),
-            **ps,
+            **ps, **ph,
         })
     if not rows:
         return "## A-04 · Alta disponibilidad del balanceador\n\nSin corridas A04 en results/.\n", rows
     df = pd.DataFrame(rows)
     md = ["## A-04 · Alta disponibilidad del balanceador (keepalived + IP flotante)", "",
-          "Carga `constante.yml` contra la VIP `172.31.250.100`; `docker kill` del NGINX activo en t = 60 s y "
-          "vuelta en t = 120 s. Sonda propia cada 100 ms (conexión nueva, timeout 1 s) que registra qué NGINX "
-          "respondió (`X-LB-Host`).", "",
-          "| Corrida | Peticiones (Artillery) | Fallidas (tipo) | Disponibilidad | p99 / máx. | Failover: 1.ª respuesta de lb2 tras el kill | Sondas fallidas en el failover | Sondas fallidas en el failback | Atendía al final |",
-          "|---|---|---|---|---|---|---|---|---|"]
+          "Carga `constante.yml` (100 usuarios/s, 180 s) contra la VIP `172.31.250.100`; `docker kill` del NGINX "
+          "activo en t = 60 s y vuelta en t = 120 s. Sonda propia cada 100 ms (conexión nueva, timeout 1 s) que "
+          "registra qué NGINX respondió (`X-LB-Host`). `preempt-on`: lb recupera la VIP al volver (defecto de VRRP); "
+          "`preempt-off`: `nopreempt`, la VIP se queda en lb2.", "",
+          "### Por configuración (media ± desviación)", "",
+          "| Configuración | Corridas | Disponibilidad | Failover (1.ª respuesta de lb2) | Errores en el failover | Sesión más larga en el failover | Errores en la vuelta de lb | Atendía al final |",
+          "|---|---|---|---|---|---|---|---|"]
+    for cfg in ("preempt-on", "preempt-off"):
+        g = df[df["config"] == cfg]
+        if g.empty:
+            continue
+        final = ", ".join(sorted(set(str(v) for v in g.get("svc_final", pd.Series(dtype=str)).dropna())))
+        md.append(f"| `{cfg}` | {len(g)} | {pm(g['disponibilidad_pct'], 2, ' %')} | {pm(g['failover_ms'] / 1000, 2, ' s')} "
+                  f"| {pm(g['art_err_failover'], 0)} | {pm(g['sesion_max_failover_ms'] / 1000, 2, ' s')} "
+                  f"| {pm(g['art_err_failback'], 0)} | {final or '—'} |")
+    md += ["", "### Por corrida", "",
+           "| Corrida | Peticiones | Fallidas (tipo) | Disponibilidad | Failover | Sondas fallidas (failover / vuelta) | Errores Artillery (failover / vuelta) |",
+           "|---|---|---|---|---|---|---|"]
     for _, x in df.iterrows():
         md.append(f"| `{x['corrida']}` | {fmt(x['peticiones'], 0)} | {fmt(x['fallidas'], 0)} ({x['tipos_error'] or '—'}) "
-                  f"| {fmt(x['disponibilidad_pct'], 2, ' %')} | {fmt(x['p99_ms'], 0, ' ms')} / {fmt(x['max_ms'], 0, ' ms')} "
-                  f"| {fmt((x.get('failover_ms') or float('nan')) / 1000, 2, ' s')} | {fmt(x.get('failover_fallidas'), 0)} "
-                  f"| {fmt(x.get('failback_fallidas'), 0)} | {x.get('svc_final', '—') or '—'} |")
-    if len(df) > 1:
-        md += ["", f"Failover medio: {pm(df['failover_ms'] / 1000, 2, ' s')} · disponibilidad media: {pm(df['disponibilidad_pct'], 2, ' %')}."]
+                  f"| {fmt(x['disponibilidad_pct'], 2, ' %')} | {fmt((x.get('failover_ms') or float('nan')) / 1000, 2, ' s')} "
+                  f"| {fmt(x.get('failover_fallidas'), 0)} / {fmt(x.get('failback_fallidas'), 0)} "
+                  f"| {fmt(x.get('art_err_failover'), 0)} / {fmt(x.get('art_err_failback'), 0)} |")
     md.append("")
     return "\n".join(md), rows
 
