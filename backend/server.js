@@ -211,11 +211,16 @@ function htmlPage() {
   <button onclick="location.reload()">Recargar (cambia de nodo con round-robin)</button>
 </main>
 <script>
-  // Lee las cabeceras de diagnóstico que agrega NGINX (X-LB-Policy, X-Upstream-Addr)
+  // Lee las cabeceras de diagnóstico que agrega NGINX (X-LB-Policy, X-Upstream-Addr).
+  // Ojo: es una petición NUEVA a /api/info, que el balanceador reparte por su cuenta;
+  // con round-robin la atiende otro nodo, y eso es justamente lo que se muestra.
   fetch('/api/info', {cache:'no-store'}).then(r => {
     const p = r.headers.get('x-lb-policy'), u = r.headers.get('x-upstream-addr');
+    const n = r.headers.get('x-backend-node') || '?';
+    const mismo = n === ${JSON.stringify(info.node)} ? 'el mismo nodo' : 'otro nodo';
     document.getElementById('lb').textContent = p
-      ? 'Balanceador: política=' + p + ' · upstream=' + u
+      ? 'Balanceador: política=' + p + ' · la siguiente petición (/api/info) la atendió ' + n
+        + ' (' + mismo + ', upstream=' + u + ')'
       : 'Acceso directo (sin pasar por el balanceador)';
   }).catch(() => {});
 </script>

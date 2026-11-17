@@ -45,6 +45,10 @@ compose up -d >/dev/null
 wait_healthy lb 1 60
 for _ in $(seq 1 60); do http_ok http://grafana:3000/api/health && break; sleep 2; done
 http_ok http://grafana:3000/api/health || die "Grafana no responde"
+# Precalentar la interfaz de Grafana sin carga: con 2 CPU y la carga en marcha, el
+# paquete JavaScript puede no terminar de arrancar y Grafana muestra su página de error.
+GRAFANA_URL="http://grafana:3000/d/lbnginx?orgId=1&kiosk&from=now-3m&to=now"
+compose exec -T navegador npx -y "playwright@$PW_VERSION" screenshot   --wait-for-timeout=15000 "$GRAFANA_URL" /tmp/precalentar.png >/dev/null 2>&1 || true
 
 # ---- M-00: el color de /nodo cambia en cada petición nueva (round_robin) --------
 scripts/set-policy.sh round_robin
@@ -65,8 +69,9 @@ for p in $POLICIES; do
   sleep "$SHOT_AFTER"
   stub_status_raw > "$OUT/stub_status_$p.txt"
   shot "http://lb:8080/stub_status" "stub_status_$p.png" "560,200" 300
-  shot "http://grafana:3000/d/lbnginx?orgId=1&kiosk&from=now-3m&to=now" "grafana_$p.png" "1600,1000" 10000
   wait "$art_pid" || warn "Artillery terminó con error en $p (ver distribución)"
+  # Grafana se captura al terminar la carga (CPU libre); el rango de 3 min cubre la corrida
+  shot "$GRAFANA_URL" "grafana_$p.png" "1600,1000" 15000
   {
     echo "# Respuestas por backend con $p (Artillery, ${LOAD_SECONDS} s a 100 VU/s, 3 peticiones por VU)"
     awk '/Summary report/ {s=1} s && /backend\./' "$tmp/artillery_$p.log" | sed -E 's/\.{2,}/ /; s/^ +//'
@@ -82,7 +87,7 @@ rm -rf "${tmp:?}"
   echo "Generadas por \`scripts/capturas.sh\` el $(date -u '+%Y-%m-%d %H:%M UTC') en $(uname -n)"
   echo "($(nproc) CPU), con un navegador Chromium sin interfaz (Playwright $PW_VERSION) en la red"
   echo "frontend. Cada política atiende ${LOAD_SECONDS} s de carga constante (\`constante.yml\`, 100 VU/s)"
-  echo "y las capturas se toman a los ${SHOT_AFTER} s."
+  echo "y \`stub_status\` se captura a los ${SHOT_AFTER} s; Grafana, al terminar la carga (últimos 3 min)."
   echo
   echo "| Evidencia | Archivos |"
   echo "|---|---|"
