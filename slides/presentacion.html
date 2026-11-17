@@ -174,7 +174,7 @@ table { font-size: 20px; }
 <table>
 <thead>
 <tr>
-<th>Criterio (peso) · cómo se mide → escala</th>
+<th>Criterio (peso) · cómo se mide</th>
 <th>NGINX</th>
 <th>HAProxy</th>
 <th>Traefik</th>
@@ -184,7 +184,7 @@ table { font-size: 20px; }
 </thead>
 <tbody>
 <tr>
-<td>C1 Desempeño (20) · <strong>medido</strong>: p99 y CPU, misma carga → 5·(½·p99 mín/p99 + ½·CPU mín/CPU)</td>
+<td>C1 Desempeño (20) · <strong>medido</strong>: p99 y CPU</td>
 <td>5</td>
 <td>5</td>
 <td>3</td>
@@ -192,7 +192,7 @@ table { font-size: 20px; }
 <td>5†</td>
 </tr>
 <tr>
-<td>C2 Algoritmos (15) · conteo en docs libres → 5 ≥ 8, 4 = 5–7, 3 = 3–4</td>
+<td>C2 Algoritmos (15) · nº en docs libres</td>
 <td>4</td>
 <td>5</td>
 <td>3</td>
@@ -200,7 +200,7 @@ table { font-size: 20px; }
 <td>5</td>
 </tr>
 <tr>
-<td>C3 Fallos (15) · activos, pasivos, reintentos → 5 los tres, 3 pasivos+reintentos</td>
+<td>C3 Fallos (15) · activos, pasivos, reintentos</td>
 <td>3</td>
 <td>5</td>
 <td>5</td>
@@ -208,7 +208,7 @@ table { font-size: 20px; }
 <td>1</td>
 </tr>
 <tr>
-<td>C4 Observabilidad (10) · métricas por servidor → 5 Prometheus, 2 globales</td>
+<td>C4 Observabilidad (10) · métricas por servidor</td>
 <td>2</td>
 <td>5</td>
 <td>4</td>
@@ -216,7 +216,7 @@ table { font-size: 20px; }
 <td>4</td>
 </tr>
 <tr>
-<td>C5 Facilidad (10) · <strong>medido</strong>: líneas del caso base funcionando → 4 = 11–20, 3 = 21–30</td>
+<td>C5 Facilidad (10) · <strong>medido</strong>: líneas del caso base</td>
 <td>4</td>
 <td>4</td>
 <td>3</td>
@@ -224,7 +224,7 @@ table { font-size: 20px; }
 <td>2</td>
 </tr>
 <tr>
-<td>C6 Descubrimiento (10) · réplica nueva → 5 API Docker, 4 DNS, 3 recarga</td>
+<td>C6 Descubrimiento (10) · cómo entra una réplica</td>
 <td>4</td>
 <td>4</td>
 <td>5</td>
@@ -232,7 +232,7 @@ table { font-size: 20px; }
 <td>1</td>
 </tr>
 <tr>
-<td>C7 Madurez (10) · años y versiones recientes → 5 ≥ 15 años</td>
+<td>C7 Madurez (10) · años y versiones</td>
 <td>5</td>
 <td>5</td>
 <td>4</td>
@@ -240,7 +240,7 @@ table { font-size: 20px; }
 <td>4</td>
 </tr>
 <tr>
-<td>C8 Funciones L7 (10) · de 6 funciones libres → 5 = 6, 4 = 5</td>
+<td>C8 L7 (10) · de 6 funciones libres</td>
 <td>5</td>
 <td>4</td>
 <td>3</td>
@@ -257,7 +257,7 @@ table { font-size: 20px; }
 </tr>
 </tbody>
 </table>
-<p>† LVS no medible en contenedores (IPVS en el kernel del host): 5 por diseño, declarado.</p>
+<p>Cada criterio tiene escala 1–5 con umbrales fijados antes de puntuar (p. ej. C2: 5 ≥ 8 algoritmos; C5: 4 = 11–20 líneas). † LVS no medible en contenedores: 5 por diseño, declarado.</p>
 </div>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
@@ -277,12 +277,10 @@ table { font-size: 20px; }
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="sensibilidad-y-reflexi%C3%B3n">Sensibilidad y reflexión</h2>
 <ul>
-<li><strong>Medido (A05B, 3 rep.):</strong> p99 / CPU · NGINX 35,7 ms / 9,9 % · HAProxy 36,0 / 10,9 · Apache 38,0 / 19,6 · Traefik 41,2 / 28,1. Caso base: HAProxy 18 líneas, NGINX 20, Apache 23, Traefik 27.</li>
-<li>Con reutilización de conexiones <strong>NGINX y HAProxy empatan</strong> en desempeño (la ventaja de NGINX en A-05 era por <code>http-server-close</code>).</li>
-<li><strong>La matriz no elige NGINX: HAProxy gana por 13 puntos</strong> (checks activos y pasivos, algoritmos, métricas por servidor). Estable con ±5 en cualquier peso; solo C6 ≥ 56 (Traefik) o C8 ≥ 46 (NGINX) cambian el líder.</li>
-<li>Al medir, la ventaja de HAProxy creció de 3 a 13: las puntuaciones iniciales favorecían a NGINX sin evidencia. Lo decimos.</li>
-<li>NGINX es <strong>requisito del cliente</strong>: la matriz valida la elección y expone su costo. Empata en desempeño, es la más completa en L7 (microcaché <strong>−77 %</strong> CPU de la base de datos) y sus debilidades se mitigan en el diseño (C3, C4, C6). Sin esa restricción: HAProxy.</li>
-<li>Matriz 4.3 (descubrimiento): DNS con <code>resolve</code> 78 &gt; regenerar+reload 58 &gt; estáticos 56.</li>
+<li><strong>Medido (A05B, 3 rep.):</strong> p99 / CPU · NGINX 35,7 ms / 9,9 % · HAProxy 36,0 / 10,9 · Apache 38,0 / 19,6 · Traefik 41,2 / 28,1. NGINX y HAProxy <strong>empatan</strong> (en A-05 HAProxy no reutilizaba conexiones).</li>
+<li><strong>La matriz no elige NGINX: HAProxy gana por 13</strong> y es estable con ±5; solo C6 ≥ 56 o C8 ≥ 46 cambian el líder. Al medir, la ventaja creció de 3 a 13. Lo decimos.</li>
+<li>NGINX es <strong>requisito del cliente</strong>: la matriz valida la elección y expone su costo. Empata en desempeño, es la más completa en L7 (microcaché <strong>−77 %</strong> CPU de la BD) y sus debilidades se mitigan en el diseño. Sin esa restricción: HAProxy.</li>
+<li>Matriz 4.3 (descubrimiento): <code>resolve</code> 78 &gt; regenerar + reload 58 &gt; estáticos 56.</li>
 </ul>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
