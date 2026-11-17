@@ -105,12 +105,80 @@ services:
       PORT: "3000"
       BASE_DELAY_MS: ${BACKEND_BASE_DELAY_MS:-0}
       FAULT_MODE: none
+      # Tienda web: base de datos compartida y sesiones (redis = compartidas, memory = por réplica)
+      DATABASE_URL: postgres://${POSTGRES_USER:-tienda}:${POSTGRES_PASSWORD:-cambiar-esto-db}@postgres:5432/${POSTGRES_DB:-tienda}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      SESSION_STORE: ${SESSION_STORE:-redis}
+      REDIS_URL: redis://redis:6379
     deploy:
       replicas: ${BACKEND_REPLICAS:-3}
       resources:
         limits:
           cpus: "${BACKEND_CPUS:-0.50}"
           memory: ${BACKEND_MEMORY:-256M}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # Base de datos de la tienda, COMPARTIDA por todas las réplicas del backend.
+  # Esquema y datos de prueba en db/init (se cargan al crear el volumen).
+  # Solo en la red interna: no publica puertos al host.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tienda}
+      POSTGRES_USER: ${POSTGRES_USER:-tienda}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambiar-esto-db}
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=${POSTGRES_MAX_CONNECTIONS:-200}"
+      - "-c"
+      - "shared_buffers=128MB"
+      - "-c"
+      - "log_min_duration_statement=500"
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
+    deploy:
+      resources:
+        limits:
+          cpus: "${DB_CPUS:-1.0}"
+          memory: ${DB_MEMORY:-512M}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB} -h 127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ---------------------------------------------------------------------------
+  # Almacén de sesiones compartido (SESSION_STORE=redis). Sin persistencia: las
+  # sesiones son efímeras. Solo en la red interna.
+  # ---------------------------------------------------------------------------
+  redis:
+    image: ${REDIS_IMAGE:-redis:7.4-alpine}
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"]
+    networks:
+      - backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    restart: unless-stopped
 
   # ---------------------------------------------------------------------------
   # Generador de carga (R-14). No arranca con 'up': se usa con 'run'.
@@ -243,3 +311,4 @@ networks:
 volumes:
   prometheus-data:
   grafana-data:
+  pgdata:

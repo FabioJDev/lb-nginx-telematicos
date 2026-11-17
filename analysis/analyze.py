@@ -141,7 +141,30 @@ def parse_artillery(path: Path) -> dict:
         "art_affinity_changes": counters.get("afinidad.cambios_de_backend", 0),
         "art_retries": counters.get("lb.reintentos", 0),
         "art_jain": jain(backend_counts.values()) if backend_counts else float("nan"),
+        "art_4xx": sum(v for c, v in codes.items() if c.startswith("4")),
     }
+    # Tienda: contadores tienda.* emitidos por artillery/lib/processor.js
+    for k, v in counters.items():
+        if k.startswith("tienda."):
+            out["t_" + k[len("tienda."):].replace(".", "_")] = v
+    ini = counters.get("tienda.recorridos_iniciados", 0)
+    if ini:
+        out["t_sesion_perdida_pct"] = 100.0 * counters.get("tienda.recorridos_con_sesion_perdida", 0) / ini
+        out["t_pedido_ok_pct"] = 100.0 * counters.get("tienda.pedido_ok", 0) / ini
+        out["t_carrito_ok_pct"] = 100.0 * counters.get("tienda.carrito_ok", 0) / ini
+    cache = {k[len("cache."):]: v for k, v in counters.items() if k.startswith("cache.")}
+    if cache:
+        out["cache_hit_pct"] = 100.0 * cache.get("HIT", 0) / max(sum(cache.values()), 1)
+    # Latencia por endpoint (plugin metrics-by-endpoint, nombres de la petición)
+    pre = "plugins.metrics-by-endpoint.response_time."
+    endpoints = {}
+    for k, sm in agg.get("summaries", {}).items():
+        if k.startswith(pre):
+            name = re.sub(r"[^a-z0-9]+", "_", k[len(pre):].lower()).strip("_")
+            endpoints[name] = {"mean": sm.get("mean"), "p95": sm.get("p95"), "p99": sm.get("p99"), "count": sm.get("count")}
+            out[f"ep_p95_{name}"] = sm.get("p95")
+            out[f"ep_mean_{name}"] = sm.get("mean")
+    out["art_endpoints"] = endpoints
     # Serie intermedia (cada 10 s): usuarios activos, rps, p99, errores
     rows = []
     created_cum = completed_cum = 0
@@ -287,6 +310,22 @@ def nginx_metrics(df: pd.DataFrame, warmup: float, events: pd.DataFrame | None, 
                     out[f"errors_30s_after_{name}"] = int(win["is_error"].sum())
                     out[f"error_rate_30s_after_{name}"] = float(win["is_error"].mean())
                     out[f"p99_30s_after_{name}_ms"] = float(win["request_time"].quantile(0.99) * 1000)
+            if name.endswith("_stopped") and not name.startswith("backend"):
+                # Caída de una dependencia COMPARTIDA (postgres, redis): no hay réplica sana
+                # a la que redirigir; se mide el impacto y la amplificación por reintentos.
+                win = df[(df["t_rel"] >= t_ev) & (df["t_rel"] < t_next)]
+                if len(win):
+                    out[f"outage_s_{name}"] = float(t_next - t_ev)
+                    out[f"requests_during_{name}"] = int(len(win))
+                    out[f"errors_during_{name}"] = int(win["is_error"].sum())
+                    out[f"error_rate_during_{name}"] = float(win["is_error"].mean())
+                    out[f"retries_during_{name}"] = int(win["retried"].sum())
+                    out[f"upstream_tries_during_{name}"] = float(win["upstream_addr"].str.count(",").mean() + 1)
+                    out[f"p99_during_{name}_ms"] = float(win["request_time"].quantile(0.99) * 1000)
+            if name.endswith("_started") and not name.startswith("backend"):
+                after = df[(df["t_rel"] > t_ev) & (df["t_rel"] < t_ev + 60)]
+                errs = after[after["is_error"]]
+                out[f"recover_s_{name}"] = float(errs["t_rel"].max() - t_ev) if len(errs) else 0.0
             if name in ("backend_restore_start", "scale_start", "backend_started", "backend_unpaused"):
                 # Recuperación: desde que EMPIEZA la reposición hasta la primera respuesta de un nodo nuevo
                 # (scale.sh registra 'backend_restored' al terminar los healthchecks, pero NGINX ya
@@ -389,7 +428,12 @@ def _to_mb(s: str) -> float:
 
 def _role(name: str) -> str:
     n = name.lower()
-    for key in ("backend-slow", "backend", "artillery", "haproxy", "lb", "prometheus", "grafana", "exporter", "pushgateway", "cadvisor"):
+    parts = n.split("-")
+    # Nombres de Compose: <proyecto>-<servicio>-<índice> (p. ej. lbnginx-backend-3)
+    if len(parts) >= 3 and parts[-1].isdigit():
+        return "-".join(parts[1:-1]) or "otro"
+    for key in ("artillery", "backend-slow", "backend", "haproxy", "postgres", "redis", "prometheus", "grafana",
+                "exporter", "pushgateway", "cadvisor", "lb"):
         if key in n:
             return key
     return "otro"
@@ -520,6 +564,7 @@ def analyze_run(run: Path) -> dict | None:
         "target": meta.get("target", ""),
         "notes": meta.get("notes", ""),
         "started_at": meta.get("started_at", ""),
+        "session_store": (meta.get("env") or {}).get("SESSION_STORE", ""),
         "artillery_exit": meta.get("artillery_exit_code", ""),
     }
 
@@ -603,6 +648,7 @@ def analyze_run(run: Path) -> dict | None:
     full["ng_backend_counts_all"] = ng_counts_all
     full["art_backend_counts"] = art_counts
     full["art_codes"] = art.get("art_codes", {})
+    full["art_endpoints"] = art.get("art_endpoints", {})
     full["art_errors"] = art.get("art_errors", {})
     full["ng_status_counts"] = ng.get("ng_status_counts", {})
     full["ng_lat_by_backend_ms"] = ng.get("ng_lat_by_backend_ms", {})
@@ -614,7 +660,7 @@ def analyze_run(run: Path) -> dict | None:
 # Figuras comparativas
 # ---------------------------------------------------------------------------
 def fig_algoritmos(comp: pd.DataFrame, runs: pd.DataFrame) -> None:
-    sel = comp[comp["test_id"].isin(["M05", "ALG", "E03", "E04", "E05", "E12"])]
+    sel = comp[comp["test_id"].isin(["M05", "ALG", "E03", "E04", "E05", "E12", "E16", "A02", "A05"])]
     if sel.empty:
         return
     for tid, g in sel.groupby("test_id"):
@@ -667,8 +713,8 @@ def fig_algoritmos(comp: pd.DataFrame, runs: pd.DataFrame) -> None:
         plt.close(fig)
 
 
-def fig_escalabilidad(comp: pd.DataFrame) -> None:
-    sel = comp[comp["test_id"].isin(["E01", "E02"])].sort_values("replicas")
+def fig_escalabilidad(comp: pd.DataFrame, ids=("E01", "E02"), fname: str = "escalabilidad.png") -> None:
+    sel = comp[comp["test_id"].isin(list(ids))].sort_values("replicas")
     if sel.empty or sel["replicas"].nunique() < 2:
         return
     base = sel[sel["replicas"] == sel["replicas"].min()]
@@ -687,7 +733,61 @@ def fig_escalabilidad(comp: pd.DataFrame) -> None:
     axes[2].axhline(1.0, ls="--", color="gray"); axes[2].set_ylim(0, max(1.3, float(np.nanmax(eff)) * 1.1))
     axes[2].set_xlabel("backends (N)"); axes[2].set_ylabel("eficiencia de escalado"); axes[2].set_title("Throughput(N) / (N·Throughput(1))", fontsize=9)
     fig.tight_layout()
-    fig.savefig(FIG_DIR / "escalabilidad.png")
+    fig.savefig(FIG_DIR / fname)
+    plt.close(fig)
+
+
+def fig_tienda(comp: pd.DataFrame) -> None:
+    """E-16: % de recorridos con sesión perdida y % de pedidos completados por política y almacén."""
+    sel = comp[comp["test_id"] == "E16"].copy()
+    if sel.empty or "t_sesion_perdida_pct_mean" not in sel:
+        return
+    sel["store"] = sel["label_base"].astype(str).str.replace("ses-", "", regex=False)
+    policies = [p for p in POLICY_ORDER + ["sticky_cookie"] if p in set(sel["policy"])]
+    stores = [st for st in ("memory", "redis") if st in set(sel["store"])]
+    fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
+    w = 0.8 / max(len(stores), 1)
+    x = np.arange(len(policies))
+    for ax, col, title in ((axes[0], "t_sesion_perdida_pct", "% de recorridos con sesión perdida"),
+                           (axes[1], "t_pedido_ok_pct", "% de recorridos con pedido completado")):
+        for i, st in enumerate(stores):
+            vals, errs = [], []
+            for pol in policies:
+                r = sel[(sel["policy"] == pol) & (sel["store"] == st)]
+                vals.append(float(r[f"{col}_mean"].iloc[0]) if len(r) else np.nan)
+                errs.append(float(r[f"{col}_std"].fillna(0).iloc[0]) if len(r) else 0)
+            ax.bar(x + (i - (len(stores) - 1) / 2) * w, vals, w, yerr=errs, capsize=3,
+                   color=["#444", "#bbb"][i % 2], edgecolor="black", hatch=["", "//"][i % 2], label=f"sesiones en {st}")
+        ax.set_xticks(x)
+        ax.set_xticklabels(policies, rotation=25, ha="right")
+        ax.set_ylim(0, 105)
+        ax.set_ylabel("%")
+        ax.set_title(f"E-16: {title}", fontsize=9)
+        if col == "t_sesion_perdida_pct":
+            ax.legend(fontsize=7, loc="upper right")
+    fig.tight_layout()
+    fig.savefig(FIG_DIR / "tienda_sesiones.png")
+    plt.close(fig)
+
+
+def fig_cache(comp: pd.DataFrame) -> None:
+    """A-02: microcaché vs sin caché (p95, goodput, CPU de PostgreSQL)."""
+    sel = comp[comp["test_id"] == "A02"].copy()
+    if sel.empty:
+        return
+    sel["cfg"] = sel["label_base"].astype(str).str.replace("cache-", "", regex=False)
+    sel = sel.sort_values("cfg")
+    cols = [("ng_lat_p95_ms", "p95 en NGINX (ms)"), ("ng_goodput_rps", "goodput (req/s)"), ("cpu_mean_postgres", "CPU media de PostgreSQL (%)")]
+    cols = [c for c in cols if f"{c[0]}_mean" in sel]
+    fig, axes = plt.subplots(1, len(cols), figsize=(4 * len(cols), 3.4))
+    axes = np.atleast_1d(axes)
+    for ax, (col, name) in zip(axes, cols):
+        ax.bar(sel["cfg"], sel[f"{col}_mean"], yerr=sel[f"{col}_std"].fillna(0), capsize=4,
+               color=["#bbb", "#444"][: len(sel)], edgecolor="black")
+        ax.set_title(name, fontsize=9)
+    fig.suptitle("A-02: microcaché de 1 s del catálogo (tienda-lectura.yml)", fontsize=9)
+    fig.tight_layout()
+    fig.savefig(FIG_DIR / "cache_tienda.png")
     plt.close(fig)
 
 
@@ -749,7 +849,7 @@ def main() -> int:
 
     # Significancia práctica: diferencia menor que la desviación observada -> "no distinguible"
     notes = []
-    comparables = comp[comp["test_id"].isin(["M05", "ALG", "E03", "E04", "E05", "E12"])]
+    comparables = comp[comp["test_id"].isin(["M05", "ALG", "E03", "E04", "E05", "E12", "E16", "A02", "A05"])]
     for (tid, reps), g in comparables.groupby(["test_id", "replicas"]):
         if len(g) < 2 or "ng_lat_p99_ms_mean" not in g:
             continue
@@ -769,9 +869,19 @@ def main() -> int:
     for n in notes:
         log(n)
 
-    fig_algoritmos(comp, df)
-    fig_escalabilidad(comp)
-    fig_quiebre(df)
+    # Cada figura es independiente: si a un lote le faltan columnas, se omite esa figura
+    for name, fn in (("algoritmos", lambda: fig_algoritmos(comp, df)),
+                     ("escalabilidad", lambda: fig_escalabilidad(comp)),
+                     ("escalabilidad_tienda", lambda: fig_escalabilidad(comp, ("E17",), "escalabilidad_tienda.png")),
+                     ("quiebre", lambda: fig_quiebre(df)),
+                     ("tienda", lambda: fig_tienda(comp)),
+                     ("cache", lambda: fig_cache(comp))):
+        try:
+            fn()
+        except KeyError as e:
+            log(f"  figura {name} omitida (falta la columna {e})")
+        except Exception as e:  # noqa: BLE001
+            log(f"  figura {name} omitida: {e!r}")
     # Copias de timelines y recursos de pruebas de fallo/operación a docs/figuras
     for run in runs:
         tid = (load_json(run / "metadata.json") or {}).get("test_id", "")

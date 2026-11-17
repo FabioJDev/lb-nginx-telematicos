@@ -1,0 +1,63 @@
+# artillery/scenarios/tienda-lectura.yml — NAVEGACIÓN del catálogo sin login (E-17,
+# A-02 microcaché, E-18 caída de la base de datos). Solo lecturas a PostgreSQL:
+# portada, categorías, 2 páginas del catálogo, una categoría, una búsqueda y 2 detalles.
+#   calentamiento 20 s @ 5/s -> rampa 60 s 5->60/s -> sostenido 100 s @ 60/s   (180 s)
+# 8 peticiones por recorrido -> ~480 req/s en la fase sostenida.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+  phases:
+    - name: calentamiento
+      duration: 20
+      arrivalRate: 5
+    - name: rampa
+      duration: 60
+      arrivalRate: 5
+      rampTo: 60
+    - name: sostenido
+      duration: 100
+      arrivalRate: 60
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+scenarios:
+  - name: "navegar catálogo"
+    beforeScenario: "setupShopper"
+    beforeRequest: "addClientHeader"
+    flow:
+      - get:
+          url: "/api/categories"
+          name: "categorias"
+          afterResponse: "checkRead"
+      - get:
+          url: "/api/products?page={{ page }}&size=12"
+          name: "catalogo"
+          afterResponse: "checkRead"
+      - think: 0.3
+      - get:
+          url: "/api/products?page=1&size=12&category={{ category }}"
+          name: "categoria"
+          afterResponse: "checkRead"
+      - get:
+          url: "/api/products?q={{ term }}&size=12"
+          name: "busqueda"
+          afterResponse: "checkRead"
+      - think: 0.3
+      - get:
+          url: "/api/products/{{ productA }}"
+          name: "detalle"
+          afterResponse: "checkRead"
+      - get:
+          url: "/api/products/{{ productB }}"
+          name: "detalle"
+          afterResponse: "checkRead"
+      - get:
+          url: "/api/products?page=1&size=12"
+          name: "portada-catalogo"
+          afterResponse: "checkRead"
+      - get:
+          url: "/api/products/{{ productC }}"
+          name: "detalle"
+          afterResponse: "checkRead"

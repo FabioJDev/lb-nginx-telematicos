@@ -18,7 +18,8 @@ N              ?= 3
 F              ?= none
 REPS           ?= 3
 
-.PHONY: help env up up-clean down down-v ps logs logs-lb logs-backend build \
+.PHONY: help env up up-clean down down-v ps logs logs-lb logs-backend build compare sesiones db-shell db-reset \
+        test-tienda test-cache test-haproxy \
         smoke nginx-test reload status config policy feature keepalive scale \
         monitoring-up monitoring-down cadvisor-up weighted-up weighted-down \
         haproxy-up haproxy-down \
@@ -154,7 +155,29 @@ test-escalabilidad: ## E-02: misma carga con N = 1, 2, 3, 5, 7 backends
 test-quiebre: ## E-13: punto de quiebre con N = 1, 3, 5
 	$(SCRIPTS)/test-quiebre.sh
 
-test-ext: ## Pruebas extendidas: make test-ext E=E03|E04|E05|E06|E07|E08|E09|E10|E11|E12|E14|E15|all
+test-tienda: ## E-16: compra completa con cada política y sesiones en memoria/Redis (SESSIONS=, POLICIES=)
+	REPS=$(REPS) $(SCRIPTS)/test-tienda.sh
+
+test-cache: ## A-02: microcaché del catálogo vs sin caché (tienda-lectura.yml)
+	REPS=$(REPS) $(SCRIPTS)/test-cache.sh
+
+test-haproxy: ## A-05: NGINX vs HAProxy con los mismos backends y la misma carga
+	REPS=$(REPS) $(SCRIPTS)/test-haproxy.sh
+
+sesiones: ## Cambia dónde viven las sesiones y recrea los backends: make sesiones S=memory|redis
+	$(SCRIPTS)/set-env.sh SESSION_STORE $(S) --recreate-backend
+
+db-shell: ## Consola psql de la base de datos de la tienda
+	$(COMPOSE) exec postgres sh -c 'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"'
+
+db-reset: ## Borra y recrea la base de datos (vuelve a cargar db/init)
+	$(COMPOSE) stop postgres
+	$(COMPOSE) rm -f postgres
+	docker volume rm $${COMPOSE_PROJECT_NAME:-lbnginx}_pgdata || true
+	$(COMPOSE) up -d postgres
+	$(SCRIPTS)/wait-healthy.sh postgres 1 120
+
+test-ext: ## Pruebas extendidas: make test-ext E=E03|E04|E05|E06|E07|E08|E09|E10|E11|E12|E14|E15|E17|E18|E19|all
 	$(SCRIPTS)/test-extendidas.sh $(E)
 
 test-all: test-min test-algoritmos test-escalabilidad test-quiebre ## Todo lo anterior (varias horas)
@@ -165,6 +188,10 @@ test-all: test-min test-algoritmos test-escalabilidad test-quiebre ## Todo lo an
 analyze: env ## Genera CSV y PNG para todas las corridas (contenedor analysis)
 	$(COMPOSE) --profile tools build analysis
 	$(COMPOSE) --profile tools run --rm analysis
+
+compare: env ## Comparación consolidada de todas las políticas -> docs/comparacion-algoritmos.md
+	$(COMPOSE) --profile tools build analysis
+	$(COMPOSE) --profile tools run --rm analysis python compare_all.py
 
 matrix: env ## Matrices de decisión (4.1 sensibilidad, 4.2 con datos) -> docs/decision-matrix-generada.md
 	$(COMPOSE) --profile tools build analysis

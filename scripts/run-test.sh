@@ -45,7 +45,8 @@ STATS_INTERVAL="${STATS_INTERVAL:-2}"
 # ---------------------------------------------------------------------------
 # Identidad de la corrida
 # ---------------------------------------------------------------------------
-POLICY=$(current_policy); POLICY="${POLICY:-desconocida}"
+# POLICY_OVERRIDE: para balanceadores distintos de NGINX (p. ej. HAProxy en A-05)
+POLICY="${POLICY_OVERRIDE:-$(current_policy)}"; POLICY="${POLICY:-desconocida}"
 FEATURE=$(current_feature); FEATURE="${FEATURE:-none}"
 REPLICAS=$(backend_count)
 STAMP=$(date +%Y%m%d-%H%M%S)
@@ -186,7 +187,10 @@ cat > "$RUN_DIR/metadata.json" <<EOF
     "LB_NEXT_UPSTREAM_TIMEOUT": "$LB_NEXT_UPSTREAM_TIMEOUT",
     "BACKEND_CPUS": "$BACKEND_CPUS",
     "BACKEND_MEMORY": "$BACKEND_MEMORY",
-    "BACKEND_BASE_DELAY_MS": "$BACKEND_BASE_DELAY_MS"
+    "BACKEND_BASE_DELAY_MS": "$BACKEND_BASE_DELAY_MS",
+    "SESSION_STORE": "${SESSION_STORE:-redis}",
+    "DB_POOL_MAX": "${DB_POOL_MAX:-10}",
+    "DB_CPUS": "${DB_CPUS:-1.0}"
   },
   "host": {
     "docker_server": "$DOCKER_VER",

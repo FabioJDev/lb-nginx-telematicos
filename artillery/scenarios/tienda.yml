@@ -1,0 +1,87 @@
+# artillery/scenarios/tienda.yml — RECORRIDO COMPLETO de compra en la tienda (E-16).
+# Cada usuario virtual: portada -> categorías -> catálogo -> búsqueda -> detalle ->
+# login -> agrega 2 productos -> revisa el carrito -> compra. Las cookies (sid) se
+# conservan por usuario virtual, como en un navegador.
+# Mide si la sesión SOBREVIVE al balanceo: con SESSION_STORE=memory y una política
+# sin afinidad, el carrito vive en una réplica y la siguiente petición cae en otra.
+#   calentamiento 20 s @ 2/s -> rampa 40 s 2->12/s -> sostenido 90 s @ 12/s   (150 s)
+# ~11 peticiones por recorrido de ~8 s -> ~130 req/s y ~100 usuarios simultáneos.
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 15
+  phases:
+    - name: calentamiento
+      duration: 20
+      arrivalRate: 2
+    - name: rampa
+      duration: 40
+      arrivalRate: 2
+      rampTo: 12
+    - name: sostenido
+      duration: 90
+      arrivalRate: 12
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+scenarios:
+  - name: "compra completa"
+    beforeScenario: "setupShopper"
+    beforeRequest: "addClientHeader"
+    flow:
+      - get:
+          url: "/"
+          name: "portada"
+          afterResponse: "trackBackend"
+      - get:
+          url: "/api/categories"
+          name: "categorias"
+          afterResponse: "checkRead"
+      - think: 0.5
+      - get:
+          url: "/api/products?page={{ page }}&size=12"
+          name: "catalogo"
+          afterResponse: "checkRead"
+      - get:
+          url: "/api/products?q={{ term }}&size=12"
+          name: "busqueda"
+          afterResponse: "checkRead"
+      - think: 0.5
+      - get:
+          url: "/api/products/{{ productA }}"
+          name: "detalle"
+          afterResponse: "checkRead"
+      - post:
+          url: "/api/login"
+          name: "login"
+          json:
+            username: "{{ username }}"
+            password: "{{ password }}"
+          afterResponse: "checkLogin"
+      - think: 1
+      - post:
+          url: "/api/cart"
+          name: "agregar"
+          json:
+            productId: "{{ productA }}"
+            qty: 1
+          afterResponse: "checkCartAdd"
+      - think: 0.5
+      - post:
+          url: "/api/cart"
+          name: "agregar"
+          json:
+            productId: "{{ productB }}"
+            qty: 2
+          afterResponse: "checkCartAdd"
+      - think: 1
+      - get:
+          url: "/api/cart"
+          name: "carrito"
+          afterResponse: "verifyCart"
+      - think: 1
+      - post:
+          url: "/api/orders"
+          name: "pedido"
+          afterResponse: "checkOrder"

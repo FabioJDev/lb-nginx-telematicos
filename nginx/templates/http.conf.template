@@ -30,6 +30,13 @@ map $upstream_addr $lb_retried {
     "~,"    1;
 }
 
+# Clave de afinidad para la política sticky_cookie: la cookie de sesión de la tienda
+# ("sid") o, si aún no existe (antes del login), un valor aleatorio por petición.
+map $cookie_sid $lb_sticky_key {
+    ""      $request_id;
+    default $cookie_sid;
+}
+
 # DNS interno de Docker: permite que 'backend' se re-resuelva al escalar réplicas
 resolver 127.0.0.11 valid=5s ipv6=off;
 

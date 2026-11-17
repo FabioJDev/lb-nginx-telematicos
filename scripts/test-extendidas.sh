@@ -16,6 +16,9 @@
 #   E12  keepalive hacia upstream on/off
 #   E14  pico súbito (spike.yml)
 #   E15  resistencia (soak.yml, 15 min)
+#   E17  escalabilidad con base de datos compartida (tienda-lectura.yml, N = 1 2 3 5)
+#   E18  caída de PostgreSQL bajo carga
+#   E19  caída de Redis (sesiones) durante compras
 #
 # Uso: scripts/test-extendidas.sh <E03|E04|...|all>      Variables: REPS=2 COOLDOWN=20
 # =============================================================================
@@ -180,11 +183,48 @@ E15() {
   "$S/run-test.sh" E15 soak.yml
 }
 
+E17() {
+  log "===== E-17 escalabilidad con base de datos compartida (tienda-lectura.yml) ====="
+  ID=E17 SCENARIO=tienda-lectura.yml NS="${NS:-1 2 3 5}" REPS="$REPS" "$S/test-escalabilidad.sh"
+}
+
+# Detiene/arranca un servicio de infraestructura y registra el evento
+svc_event() { # svc_event <stop|start> <servicio>
+  if [ "$1" = "stop" ]; then
+    compose stop -t 2 "$2" >/dev/null; log_event "$RUN_DIR" "${2}_stopped" "servicio=$2"
+    grafana_annotate "$2 detenido" "falla,$2"
+  else
+    compose start "$2" >/dev/null; log_event "$RUN_DIR" "${2}_started" "servicio=$2"
+    grafana_annotate "$2 arrancado" "recuperacion,$2"
+  fi
+}
+
+E18() {
+  log "===== E-18 caída de PostgreSQL bajo carga (el balanceador no puede compensarla) ====="
+  "$S/scale.sh" "$BASE"; "$S/set-policy.sh" round_robin; cooldown "$COOLDOWN"
+  start_bg_run E18 tienda-lectura.yml bd-caida
+  at 90;  svc_event stop postgres
+  at 120; svc_event start postgres
+  finish_bg_run
+  wait_healthy postgres 1 60
+}
+
+E19() {
+  log "===== E-19 caída de Redis (sesiones compartidas) durante compras ====="
+  "$S/scale.sh" "$BASE"; "$S/set-policy.sh" round_robin
+  "$S/set-env.sh" SESSION_STORE redis --recreate-backend; cooldown "$COOLDOWN"
+  start_bg_run E19 tienda.yml redis-caido
+  at 80;  svc_event stop redis
+  at 110; svc_event start redis
+  finish_bg_run
+  wait_healthy redis 1 60
+}
+
 # ---------------------------------------------------------------------------
 WHICH="${1:-}"
-[ -n "$WHICH" ] || die "uso: $0 <E03|E04|E05|E06|E07|E08|E09|E10|E11|E12|E14|E15|all>"
+[ -n "$WHICH" ] || die "uso: $0 <E03|E04|E05|E06|E07|E08|E09|E10|E11|E12|E14|E15|E17|E18|E19|all>"
 if [ "$WHICH" = "all" ]; then
-  for e in E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E14 E15; do "$e"; done
+  for e in E03 E04 E05 E06 E07 E08 E09 E10 E11 E12 E14 E15 E17 E18 E19; do "$e"; done
 else
   declare -F "$WHICH" >/dev/null || die "prueba desconocida: $WHICH"
   "$WHICH"

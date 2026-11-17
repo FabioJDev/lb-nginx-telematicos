@@ -9,7 +9,10 @@
  * simulada usa temporizadores (setTimeout), nunca bloqueo.
  *
  * Endpoints:
- *   GET  /               Página HTML que identifica el nodo (color por hostname)
+ *   GET  /               Tienda web (public/index.html) si hay base de datos; si no, /nodo
+ *   GET  /nodo           Página HTML que identifica el nodo (color por hostname)
+ *   GET  /ready          200 si PostgreSQL y el almacén de sesiones responden
+ *   /api/products, /api/login, /api/cart, /api/orders…  tienda (ver tienda.js)
  *   GET  /api/info       JSON: node, hostname, ip, pid, uptime, requests_served, inflight
  *   GET  /api/work?ms=N&cpu=M  Espera N ms y/o consume M ms de CPU
  *   GET  /api/mixed      90 % rápidas (~5 ms) / 10 % lentas (~300 ms)
@@ -265,7 +268,7 @@ function metricsText() {
     '# TYPE backend_base_delay_ms gauge',
     `backend_base_delay_ms{${l}} ${BASE_DELAY_MS}`,
   );
-  return lines.join('\n') + '\n';
+  return lines.join('\n') + '\n' + tienda.metricsText(l);
 }
 
 // ---------------------------------------------------------------------------
@@ -331,6 +334,12 @@ async function handle(req, res) {
   if (path === '/metrics') {
     return send(res, 200, metricsText(), { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8' });
   }
+  // Disponibilidad de dependencias (PostgreSQL y almacén de sesiones). /health solo
+  // indica que el proceso vive; /ready que además puede atender la tienda.
+  if (path === '/ready') {
+    const r = await tienda.ready();
+    return send(res, r.ok ? 200 : 503, r);
+  }
   if (path.startsWith('/admin/')) return handleAdmin(req, res, url);
 
   // --- Tráfico de aplicación: instrumentado
@@ -353,6 +362,11 @@ async function handle(req, res) {
     }
 
     if (path === '/') {
+      // Con la tienda habilitada, / es la tienda; la página de identificación del nodo pasa a /nodo
+      if (tienda.serveIndex(res)) return undefined;
+      return send(res, 200, htmlPage(), { 'Content-Type': 'text/html; charset=utf-8' });
+    }
+    if (path === '/nodo') {
       return send(res, 200, htmlPage(), { 'Content-Type': 'text/html; charset=utf-8' });
     }
     if (path === '/api/info') {
@@ -375,6 +389,8 @@ async function handle(req, res) {
       await sleep(slow ? 300 : 5);
       return send(res, 200, { node: NODE_NAME, kind: slow ? 'slow' : 'fast', elapsed_ms: Number(process.hrtime.bigint() - t0) / 1e6 });
     }
+    // Rutas de la tienda (PostgreSQL + sesiones)
+    if (await tienda.handle(req, res, url)) return undefined;
     status = 404;
     return send(res, 404, { node: NODE_NAME, error: 'no encontrado', path });
   } catch (err) {
@@ -400,6 +416,18 @@ async function handle(req, res) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Tienda web con estado (backend/tienda.js): PostgreSQL + sesiones en Redis o memoria.
+// Si no hay DATABASE_URL (o TIENDA_ENABLED=0) queda deshabilitada y el backend se
+// comporta como antes (solo endpoints de prueba).
+// ---------------------------------------------------------------------------
+const tienda = require('./tienda').create({
+  nodeName: NODE_NAME,
+  send,
+  readBody,
+  log: (msg) => console.log(`[${NODE_NAME}] ${msg}`),
+});
+
 const server = http.createServer((req, res) => {
   handle(req, res).catch((err) => {
     console.error(`[${NODE_NAME}] error no controlado:`, err);
@@ -422,7 +450,7 @@ function shutdown(signal) {
   releaseHanging(503);
   server.close(() => {
     console.log(`[${NODE_NAME}] todas las peticiones en vuelo terminaron; saliendo`);
-    process.exit(0);
+    tienda.close().finally(() => process.exit(0));
   });
   if (typeof server.closeIdleConnections === 'function') server.closeIdleConnections();
   setTimeout(() => {

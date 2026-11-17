@@ -29,6 +29,10 @@ services:
       NODE_LABEL: slow
       BASE_DELAY_MS: ${SLOW_BACKEND_DELAY_MS:-150}
       FAULT_MODE: none
+      DATABASE_URL: postgres://${POSTGRES_USER:-tienda}:${POSTGRES_PASSWORD:-cambiar-esto-db}@postgres:5432/${POSTGRES_DB:-tienda}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      SESSION_STORE: ${SESSION_STORE:-redis}
+      REDIS_URL: redis://redis:6379
     expose:
       - "3000"
     networks:

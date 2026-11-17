@@ -1,0 +1,24 @@
+# artillery/scenarios/tienda-smoke.yml — 5 recorridos de compra (CI y verificación rápida).
+config:
+  target: "{{ $env.TARGET }}"
+  processor: "../lib/processor.js"
+  http:
+    timeout: 10
+  phases:
+    - name: smoke
+      duration: 5
+      arrivalRate: 1
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+scenarios:
+  - name: "compra completa (smoke)"
+    beforeScenario: "setupShopper"
+    beforeRequest: "addClientHeader"
+    flow:
+      - get: { url: "/api/products?size=5", name: "catalogo", afterResponse: "checkRead" }
+      - post: { url: "/api/login", name: "login", json: { username: "{{ username }}", password: "{{ password }}" }, afterResponse: "checkLogin" }
+      - post: { url: "/api/cart", name: "agregar", json: { productId: "{{ productA }}", qty: 1 }, afterResponse: "checkCartAdd" }
+      - post: { url: "/api/cart", name: "agregar", json: { productId: "{{ productB }}", qty: 2 }, afterResponse: "checkCartAdd" }
+      - get: { url: "/api/cart", name: "carrito", afterResponse: "verifyCart" }
+      - post: { url: "/api/orders", name: "pedido", afterResponse: "checkOrder" }

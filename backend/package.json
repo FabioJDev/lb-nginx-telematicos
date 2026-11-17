@@ -1,0 +1,15 @@
+{
+  "name": "lbnginx-backend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Backend instrumentado + tienda web (PostgreSQL y sesiones en Redis o memoria) para el balanceador NGINX",
+  "main": "server.js",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "pg": "8.23.1",
+    "redis": "4.7.0"
+  }
+}

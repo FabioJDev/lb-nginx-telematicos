@@ -26,7 +26,8 @@ for rep in $(seq 1 "$REPS"); do
     # Recrear lb para que el pool arranque limpio con las N réplicas resueltas
     compose up -d --no-deps --force-recreate lb >/dev/null; wait_healthy lb 1 60
     cooldown "$COOLDOWN"
-    id="E02"; [ "$n" = "1" ] && id="E01"
+    # ID (opcional) permite reutilizar el lote, p. ej. ID=E17 con la tienda
+    id="${ID:-E02}"; [ "$n" = "1" ] && [ -z "${ID:-}" ] && id="E01"
     "$ROOT_DIR/scripts/run-test.sh" "$id" "$SCENARIO" "rep$rep"
   done
 done

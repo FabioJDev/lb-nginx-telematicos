@@ -18,7 +18,7 @@ on:
         type: choice
         required: true
         default: test-min
-        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext]
+        options: [test-min, test-algoritmos, test-resiliencia, test-escalabilidad, test-quiebre, test-ext, test-tienda, test-cache, test-haproxy]
       reps:
         description: "Repeticiones por configuración (REPS)"
         type: string
@@ -43,6 +43,14 @@ on:
         description: "Para test-ext E03: políticas a medir (vacío = round_robin least_conn random_two + ponderado)"
         type: string
         default: ""
+      politicas:
+        description: "POLICIES para test-algoritmos / test-tienda (vacío = valores por defecto del script)"
+        type: string
+        default: ""
+      sesiones:
+        description: "Para test-tienda: memory, redis o 'memory redis'"
+        type: string
+        default: "memory redis"
 
 jobs:
   carga:
@@ -54,6 +62,8 @@ jobs:
       WORK_PATH: ${{ inputs.work_path }}
       E03_POLICIES: ${{ inputs.e03_politicas }}
       E03_WEIGHTED: ${{ inputs.e03_politicas == '' && '1' || '0' }}
+      POLICIES: ${{ inputs.politicas }}
+      SESSIONS: ${{ inputs.sesiones }}
     steps:
       - uses: actions/checkout@v4
 
@@ -79,6 +89,9 @@ jobs:
             test-escalabilidad) scripts/test-escalabilidad.sh ;;
             test-quiebre)      scripts/test-quiebre.sh ;;
             test-ext)          scripts/test-extendidas.sh "${{ inputs.extra }}" ;;
+            test-tienda)       scripts/test-tienda.sh ;;
+            test-cache)        scripts/test-cache.sh ;;
+            test-haproxy)      scripts/test-haproxy.sh ;;
           esac
 
       - name: Análisis y matrices
@@ -87,6 +100,7 @@ jobs:
           docker compose --profile tools build analysis
           docker compose --profile tools run --rm analysis || true
           docker compose --profile tools run --rm analysis python decision_matrix.py > /dev/null || true
+          docker compose --profile tools run --rm analysis python compare_all.py || true
           sudo chown -R "$(id -u):$(id -g)" results docs || true
           ls -la results | head -40
           cat results/significancia.txt 2>/dev/null || true
@@ -104,6 +118,7 @@ jobs:
             results/
             docs/figuras/
             docs/decision-matrix-generada.md
+            docs/comparacion-algoritmos.md
           if-no-files-found: warn
           retention-days: 90
 

@@ -32,12 +32,20 @@ jobs:
       - name: shellcheck
         run: make shellcheck
 
+      - name: Configuración de HAProxy válida (A-05)
+        run: |
+          docker run --rm -e HAPROXY_BALANCE=roundrobin \
+            -v "$PWD/nginx/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro" \
+            haproxy:3.2-alpine haproxy -c -f /usr/local/etc/haproxy/haproxy.cfg
+
       - name: Construir backend
         run: docker compose build backend
 
       - name: Levantar stack base
         run: |
           docker compose up -d
+          scripts/wait-healthy.sh postgres 1 120
+          scripts/wait-healthy.sh redis 1 60
           scripts/wait-healthy.sh backend 3 120
           scripts/wait-healthy.sh lb 1 60
           docker compose ps
@@ -80,6 +88,31 @@ jobs:
           done
           scripts/set-policy.sh round_robin >/dev/null
 
+      - name: Tienda (PostgreSQL + Redis) a través del balanceador
+        run: |
+          docker compose exec -T lb wget -qO- http://127.0.0.1/ready; echo
+          docker compose exec -T lb wget -qO- "http://127.0.0.1/api/products?size=2"; echo
+          docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "select count(*) from products"'
+          scripts/run-test.sh CI-TIENDA tienda-smoke.yml redis
+          f=$(ls -d results/*_CI-TIENDA_*_redis)/artillery.json
+          grep -oE '"tienda\.[a-z_.]+": *[0-9]+' "$f"
+          grep -qE '"tienda\.pedido_ok": *5' "$f" || { echo "ERROR: se esperaban 5 pedidos completados"; exit 1; }
+
+      - name: Sesiones en memoria sin y con afinidad (E-16 en miniatura)
+        run: |
+          scripts/set-env.sh SESSION_STORE memory --recreate-backend
+          scripts/set-policy.sh round_robin
+          scripts/run-test.sh CI-SES tienda-smoke.yml memoria-rr
+          scripts/set-policy.sh sticky_cookie
+          scripts/run-test.sh CI-SES tienda-smoke.yml memoria-sticky
+          echo "--- round_robin + memoria (se espera pérdida de sesión):"
+          grep -oE '"tienda\.[a-z_.]+": *[0-9]+' results/*_CI-SES_*_memoria-rr/artillery.json || true
+          echo "--- sticky_cookie + memoria (se esperan 5 pedidos):"
+          grep -oE '"tienda\.[a-z_.]+": *[0-9]+' results/*_CI-SES_*_memoria-sticky/artillery.json || true
+          grep -qE '"tienda\.pedido_ok": *5' results/*_CI-SES_*_memoria-sticky/artillery.json
+          scripts/set-env.sh SESSION_STORE redis --recreate-backend
+          scripts/set-policy.sh round_robin
+
       - name: Escenario smoke de Artillery con el ejecutor completo
         run: scripts/run-test.sh CI smoke.yml
 
@@ -88,6 +121,7 @@ jobs:
           docker compose --profile tools build analysis
           docker compose --profile tools run --rm analysis
           docker compose --profile tools run --rm analysis python decision_matrix.py > /dev/null
+          docker compose --profile tools run --rm analysis python compare_all.py
 
       - name: Diagnóstico (estado, healthchecks y logs)
         if: always()

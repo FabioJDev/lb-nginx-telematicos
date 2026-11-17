@@ -28,3 +28,15 @@ if [ "$RECREATE" = "--recreate-lb" ]; then
   wait_healthy lb 1 60
   lb_exec nginx -t 2>&1 | sed 's/^/  /'
 fi
+
+if [ "$RECREATE" = "--recreate-backend" ]; then
+  # Variables del backend (p. ej. SESSION_STORE): recrear TODAS las réplicas con el
+  # mismo número que hay ahora; luego recrear lb para que resuelva las IPs nuevas.
+  n=$(backend_count); n="${n:-${BACKEND_REPLICAS:-3}}"; [ "$n" -gt 0 ] || n="${BACKEND_REPLICAS:-3}"
+  log "recreando $n réplicas del backend para aplicar $KEY"
+  export "$KEY=$VALUE"
+  compose up -d --no-deps --force-recreate --scale "backend=$n" backend >/dev/null
+  wait_healthy backend "$n" 120
+  compose up -d --no-deps --force-recreate lb >/dev/null
+  wait_healthy lb 1 60
+fi
