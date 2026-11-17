@@ -181,6 +181,9 @@ HOST_MEM_MB=$(awk '/MemTotal/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null 
 HOST_KERNEL=$(uname -r 2>/dev/null || echo "?")
 NGINX_VER=$(lb_exec nginx -v 2>&1 | sed 's/.*nginx\///' | tr -d '[:space:]' || echo "?")
 KEEPALIVE=$(lb_exec sh -c "grep -o 'keepalive/[a-z]*' /etc/nginx/generated/http.conf | head -1 | cut -d/ -f2" | tr -d '[:space:]')
+# Configuración EFECTIVA de NGINX (leída de la config generada, no del entorno)
+EFF_READ_TIMEOUT=$(lb_exec sh -c "grep -m1 -o 'proxy_read_timeout *[^;]*' /etc/nginx/generated/http.conf | awk '{print \$2}'" | tr -d '[:space:]')
+EFF_NEXT_UPSTREAM=$(lb_exec sh -c "grep -m1 -o 'proxy_next_upstream  *[^;]*' /etc/nginx/generated/http.conf | sed 's/proxy_next_upstream *//'" | tr -d '\r')
 
 cat > "$RUN_DIR/metadata.json" <<EOF
 {
@@ -194,6 +197,10 @@ cat > "$RUN_DIR/metadata.json" <<EOF
   "policy": "$POLICY",
   "feature": "$FEATURE",
   "upstream_keepalive": "$KEEPALIVE",
+  "nginx_effective": {
+    "proxy_read_timeout": "$(json_str "$EFF_READ_TIMEOUT")",
+    "proxy_next_upstream": "$(json_str "$EFF_NEXT_UPSTREAM")"
+  },
   "replicas": $REPLICAS,
   "warmup_seconds": ${WARMUP_SECONDS:-30},
   "started_at": "$START_ISO",

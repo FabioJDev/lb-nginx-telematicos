@@ -29,20 +29,35 @@ ensure_env() {
   fi
 }
 
-# Exporta las variables de .env al entorno del script (sin pisar las ya definidas
-# en la línea de comandos, p. ej. TARGET=http://haproxy scripts/run-test.sh ...)
+# Exporta las variables de .env al entorno del script, sin pisar las que se fijaron
+# EXPLÍCITAMENTE (p. ej. TARGET=http://haproxy scripts/run-test.sh …, o un
+# `export LB_WEIGHT_FAST=3` de un lote).
+#
+# Las que vinieron de un load_env anterior (registradas en _LBNGINX_ENV_SNAPSHOT) se
+# REFRESCAN desde el .env actual: si set-env.sh cambió el .env a mitad de un lote, los
+# scripts hijos y las llamadas a Compose ven el valor nuevo y no el heredado. (Sin esto,
+# E-08 corrió sus 4 configuraciones con el mismo timeout: ver docs/hallazgos.md, H-9.)
 load_env() {
   ensure_env
-  local line key value
+  local line key value snap_line
+  declare -A _snap=()
+  while IFS= read -r snap_line; do
+    [ -n "$snap_line" ] && _snap["${snap_line%%=*}"]="${snap_line#*=}"
+  done <<< "${_LBNGINX_ENV_SNAPSHOT:-}"
+  local new_snapshot=""
   while IFS= read -r line || [ -n "$line" ]; do
     line="${line%$'\r'}"
     case "$line" in ''|'#'*) continue ;; esac
     key="${line%%=*}"
     value="${line#*=}"
     if [ -z "${!key+x}" ]; then
-      export "$key=$value"
-    fi
+      export "$key=$value"                       # no estaba definida
+    elif [ -n "${_snap[$key]+x}" ] && [ "${!key}" = "${_snap[$key]}" ]; then
+      export "$key=$value"                       # heredada de un .env anterior: refrescar
+    fi                                           # si no, la fijó alguien explícitamente
+    [ "${!key}" = "$value" ] && new_snapshot+="${key}=${value}"$'\n'
   done < "$ENV_FILE"
+  export _LBNGINX_ENV_SNAPSHOT="$new_snapshot"
   export COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-lbnginx}"
 }
 
@@ -63,8 +78,10 @@ set_env_var() {
 # ---------------------------------------------------------------------------
 # COMPOSE_EXTRA_ARGS permite añadir archivos: COMPOSE_EXTRA_ARGS="-f docker-compose.yml -f compose.weighted.yml"
 compose() {
+  # Releer .env justo antes de cada llamada (solo en esta subshell): Compose interpola
+  # con el entorno, que tiene prioridad sobre .env, así que debe llevar el valor vigente.
   # shellcheck disable=SC2086
-  (cd "$ROOT_DIR" && docker compose ${COMPOSE_EXTRA_ARGS:-} "$@")
+  (cd "$ROOT_DIR" && load_env && docker compose ${COMPOSE_EXTRA_ARGS:-} "$@")
 }
 
 lb_exec() { compose exec -T lb "$@"; }
