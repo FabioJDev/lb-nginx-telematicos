@@ -1,5 +1,5 @@
 flowchart LR
-    subgraph HOST["Host (Windows 11 + WSL2 + Docker Desktop)"]
+    subgraph HOST["Host · Docker Desktop + WSL2"]
         direction LR
         CLI[("curl / navegador<br/>localhost:8080")]
         subgraph FRONT["red lbnginx_frontend (bridge)"]
@@ -7,23 +7,33 @@ flowchart LR
             GRAF["grafana :3000<br/>(profile monitoring)"]
         end
         subgraph LBN["lb — NGINX 1.30 (en ambas redes)"]
-            NGX["upstream backend_pool<br/>policy include · resolve · keepalive<br/>:80 público · :8080 stub_status"]
+            NGX["upstream backend_pool<br/>política intercambiable · resolve · keepalive<br/>:80 público · :8080 stub_status"]
         end
         subgraph BACK["red lbnginx_backend (internal: true — sin host ni Internet)"]
-            B1["backend réplica 1<br/>node:24-alpine :3000"]
+            B1["backend réplica 1<br/>Node.js 24 :3000"]
             B2["backend réplica 2"]
             B3["backend réplica N<br/>(--scale backend=N)"]
+            PG[("PostgreSQL 17<br/>catálogo y pedidos")]
+            RD[("Redis 7.4<br/>sesiones")]
             EXP["nginx-prometheus-exporter"]
             PROM["prometheus :9090"]
             PUSH["pushgateway"]
         end
     end
-    CLI -- "HTTP :8080→80" --> NGX
-    ART -- "HTTP http://lb" --> NGX
-    NGX -- "proxy_pass (DNS 'backend' → N IPs)" --> B1 & B2 & B3
+    CLI -- "HTTP :8080 → 80" --> NGX
+    ART -- "HTTP a lb:80" --> NGX
+    NGX -- "proxy_pass (DNS backend → N IP)" --> B1
+    NGX --> B2
+    NGX --> B3
+    B1 & B2 & B3 --> PG
+    B1 -. "sesiones (SESSION_STORE=redis)" .-> RD
+    B2 -.-> RD
+    B3 -.-> RD
     EXP -. "scrape lb:8080/stub_status" .-> NGX
     PROM -. "scrape" .-> EXP
-    PROM -. "dns_sd backend:3000/metrics" .-> B1 & B2 & B3
+    PROM -. "dns_sd backend:3000/metrics" .-> B1
+    PROM -.-> B2
+    PROM -.-> B3
     ART -. "publish-metrics (opcional)" .-> PUSH
     PROM -. "scrape" .-> PUSH
     GRAF -. "PromQL" .-> PROM
