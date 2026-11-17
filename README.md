@@ -93,7 +93,7 @@ Más diagramas (camino de una petición con reintento, flujo de una corrida) en
 | `redis` | `redis:7.4-alpine` | backend | **ninguno** | — | Sesiones compartidas (`SESSION_STORE=redis`) |
 | `analysis` | build `./analysis` (`python:3.12-slim`) | ninguna | ninguno | `tools` | Tablas CSV, gráficas PNG, matrices, comparación consolidada |
 | `haproxy` | `haproxy:3.2-alpine` | frontend, backend | `HAPROXY_PUBLIC_PORT`, `127.0.0.1:8404` | (compose.haproxy.yml) | Comparativa A-05 |
-| `navegador` | `mcr.microsoft.com/playwright:v1.49.1-noble` | frontend | ninguno | `capturas` (compose.capturas.yml) | Capturas de evidencia: `/nodo`, `stub_status`, Grafana |
+| `navegador` | `mcr.microsoft.com/playwright:v1.64.1-noble` | frontend | ninguno | `capturas` (compose.capturas.yml) | Capturas de evidencia: `/nodo`, `stub_status`, Grafana |
 
 ### Decisiones de diseño clave
 
@@ -198,7 +198,7 @@ Archivo `.env` (plantilla en [`.env.example`](.env.example)). Las más relevante
 | `ARTILLERY_IMAGE` / `WORK_PATH` / `PUBLISH_METRICS` / `WARMUP_SECONDS` | `…:2.0.34` / `/api/work?ms=20` / `0` / `30` | Generador de carga, endpoint, publicación a Prometheus, calentamiento descartado. |
 | `PROMETHEUS_PORT` / `GRAFANA_PORT` / `GRAFANA_ADMIN_USER` / `GRAFANA_ADMIN_PASSWORD` | `9090` / `3000` / `admin` / `cambiar-esto` | Monitoreo. |
 | `HAPROXY_IMAGE` / `HAPROXY_PUBLIC_PORT` / `HAPROXY_STATS_PORT` / `HAPROXY_BALANCE` | `haproxy:3.2-alpine` / `8090` / `8404` / `roundrobin` | Comparativa A-05. |
-| `PLAYWRIGHT_IMAGE` | `mcr.microsoft.com/playwright:v1.49.1-noble` | Navegador sin interfaz para `make capturas` (`compose.capturas.yml`). |
+| `PLAYWRIGHT_IMAGE` | `mcr.microsoft.com/playwright:v1.64.1-noble` | Navegador sin interfaz para `make capturas` (`compose.capturas.yml`). |
 
 ## 5. Operación
 

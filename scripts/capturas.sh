@@ -16,7 +16,7 @@ source "$(dirname "$0")/lib.sh"
 POLICIES="${POLICIES:-round_robin least_conn ip_hash hash_client hash_remote_addr random_two sticky_cookie}"
 LOAD_SECONDS="${LOAD_SECONDS:-75}"
 SHOT_AFTER="${SHOT_AFTER:-50}"
-PW_VERSION="${PW_VERSION:-1.49.1}"
+PW_VERSION="${PW_VERSION:-1.64.1}"
 OUT="$ROOT_DIR/docs/capturas"
 
 files="-f docker-compose.yml"
