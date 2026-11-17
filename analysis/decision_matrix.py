@@ -163,7 +163,8 @@ def matrix_42(rows):
     """Devuelve (tabla markdown, filas de datos, pendiente:bool)."""
     data = {}
     for pol in POLICIES_42:
-        hom = pick(rows, {"M05", "ALG"}, pol)
+        # Backends homogéneos con rampa.yml: M-05 (o ALG) y, para las políticas hash, E-05
+        hom = pick(rows, {"M05", "ALG"}, pol) or pick(rows, {"E05"}, pol)
         het = pick(rows, {"E03"}, pol)
         fail = pick(rows, {"M03", "E07"}, pol, "rm") or pick(rows, {"M03"}, pol)
         data[pol] = {
