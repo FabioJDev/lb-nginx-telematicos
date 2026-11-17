@@ -230,6 +230,8 @@ def nginx_metrics(df: pd.DataFrame, warmup: float, events: pd.DataFrame | None, 
         "ng_requests_post_warmup": int(len(post)),
         "ng_duration_s": float(df["t_rel"].max()),
         "ng_rps_post_warmup": float(len(post) / max(post["t_rel"].max() - post["t_rel"].min(), 1e-9)),
+        # goodput: solo respuestas correctas (sin 5xx/499) por segundo
+        "ng_goodput_rps": float((~post["is_error"]).sum() / max(post["t_rel"].max() - post["t_rel"].min(), 1e-9)),
         "ng_errors": int(post["is_error"].sum()),
         "ng_error_rate": float(post["is_error"].mean()),
         "ng_availability": float(1 - post["is_error"].mean()),
@@ -540,7 +542,7 @@ def analyze_run(run: Path) -> dict | None:
         if len(real) > 1:
             row["seq_max_diff_pct"] = float((real.max() - real.min()) / real.mean() * 100)
         fig_distribution(run, row["ng_backend_counts"], {}, title)
-        (run / "resumen.json").write_text(json.dumps(row, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+        (run / "resumen.json").write_text(json.dumps(row, indent=2, ensure_ascii=False, default=str), encoding="utf-8", newline="\n")
         return row
 
     art = parse_artillery(run / "artillery.json")
@@ -574,13 +576,13 @@ def analyze_run(run: Path) -> dict | None:
     total = max(dist["nginx_log"].sum(), 1)
     dist["pct_log"] = dist["nginx_log"] / total * 100
     dist["lat_mean_ms"] = dist["backend"].map(lambda n: ng.get("ng_lat_by_backend_ms", {}).get(n, np.nan))
-    dist.to_csv(run / "distribucion_backend.csv", index=False)
+    dist.to_csv(run / "distribucion_backend.csv", index=False, lineterminator="\n")
 
     serie = per_second_series(df)
     if not serie.empty:
-        serie.to_csv(run / "serie_1s.csv", index=False)
+        serie.to_csv(run / "serie_1s.csv", index=False, lineterminator="\n")
     if not inter.empty:
-        inter.to_csv(run / "serie_artillery_10s.csv", index=False)
+        inter.to_csv(run / "serie_artillery_10s.csv", index=False, lineterminator="\n")
         # Punto de quiebre (E-13): mayor tasa con error < 1 % y p99 < 1000 ms
         okp = inter[(inter["error_rate"] < 0.01) & (inter["p99"].fillna(1e9) < 1000)]
         row["break_max_rps_ok"] = float(okp["rps"].max()) if len(okp) and okp["rps"].notna().any() else float("nan")
@@ -604,7 +606,7 @@ def analyze_run(run: Path) -> dict | None:
     full["art_errors"] = art.get("art_errors", {})
     full["ng_status_counts"] = ng.get("ng_status_counts", {})
     full["ng_lat_by_backend_ms"] = ng.get("ng_lat_by_backend_ms", {})
-    (run / "resumen.json").write_text(json.dumps(full, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+    (run / "resumen.json").write_text(json.dumps(full, indent=2, ensure_ascii=False, default=str), encoding="utf-8", newline="\n")
     return row
 
 
@@ -670,17 +672,19 @@ def fig_escalabilidad(comp: pd.DataFrame) -> None:
     if sel.empty or sel["replicas"].nunique() < 2:
         return
     base = sel[sel["replicas"] == sel["replicas"].min()]
-    base_tp = float(base["ng_rps_post_warmup_mean"].iloc[0]) if len(base) else np.nan
+    tp = "ng_goodput_rps" if "ng_goodput_rps_mean" in sel else "ng_rps_post_warmup"
+    base_tp = float(base[f"{tp}_mean"].iloc[0]) if len(base) else np.nan
     base_n = int(sel["replicas"].min())
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.6))
-    axes[0].errorbar(sel["replicas"], sel["ng_rps_post_warmup_mean"], yerr=sel["ng_rps_post_warmup_std"].fillna(0), marker="o", color="black", capsize=3)
-    axes[0].set_xlabel("backends (N)"); axes[0].set_ylabel("throughput (req/s)"); axes[0].set_title("Throughput vs N", fontsize=9)
+    axes[0].errorbar(sel["replicas"], sel["ng_rps_post_warmup_mean"], yerr=sel["ng_rps_post_warmup_std"].fillna(0), marker="o", color="gray", capsize=3, ls="--", label="atendidas (incl. errores)")
+    axes[0].errorbar(sel["replicas"], sel[f"{tp}_mean"], yerr=sel[f"{tp}_std"].fillna(0), marker="o", color="black", capsize=3, label="correctas (goodput)")
+    axes[0].set_xlabel("backends (N)"); axes[0].set_ylabel("req/s"); axes[0].set_title("Throughput vs N", fontsize=9); axes[0].legend(fontsize=7)
     axes[1].errorbar(sel["replicas"], sel["ng_lat_p95_ms_mean"], yerr=sel["ng_lat_p95_ms_std"].fillna(0), marker="s", color="black", capsize=3, label="p95")
     axes[1].errorbar(sel["replicas"], sel["ng_lat_p99_ms_mean"], yerr=sel["ng_lat_p99_ms_std"].fillna(0), marker="^", color="gray", capsize=3, label="p99")
     axes[1].set_xlabel("backends (N)"); axes[1].set_ylabel("latencia (ms)"); axes[1].set_title("p95 / p99 vs N", fontsize=9); axes[1].legend(fontsize=7)
-    eff = sel["ng_rps_post_warmup_mean"] / (sel["replicas"] / base_n * base_tp)
+    eff = sel[f"{tp}_mean"] / (sel["replicas"] / base_n * base_tp)
     axes[2].plot(sel["replicas"], eff, marker="d", color="black")
-    axes[2].axhline(1.0, ls="--", color="gray"); axes[2].set_ylim(0, 1.3)
+    axes[2].axhline(1.0, ls="--", color="gray"); axes[2].set_ylim(0, max(1.3, float(np.nanmax(eff)) * 1.1))
     axes[2].set_xlabel("backends (N)"); axes[2].set_ylabel("eficiencia de escalado"); axes[2].set_title("Throughput(N) / (N·Throughput(1))", fontsize=9)
     fig.tight_layout()
     fig.savefig(FIG_DIR / "escalabilidad.png")
@@ -731,7 +735,7 @@ def main() -> int:
         return 0
     df = pd.DataFrame(rows)
     out_cols = [c for c in df.columns if not c.startswith("_")]
-    df[out_cols].to_csv(RESULTS_DIR / "resumen_corridas.csv", index=False)
+    df[out_cols].to_csv(RESULTS_DIR / "resumen_corridas.csv", index=False, lineterminator="\n")
     log(f"resumen_corridas.csv: {len(df)} corridas")
 
     num_cols = [c for c in df.columns if df[c].dtype.kind in "fi" and c not in ("replicas",)]
@@ -740,7 +744,7 @@ def main() -> int:
     agg.columns = [f"{a}_{b}" for a, b in agg.columns]
     agg["n"] = df.groupby(keys, dropna=False).size()
     comp = agg.reset_index()
-    comp.to_csv(RESULTS_DIR / "resumen_comparativo.csv", index=False)
+    comp.to_csv(RESULTS_DIR / "resumen_comparativo.csv", index=False, lineterminator="\n")
     log(f"resumen_comparativo.csv: {len(comp)} configuraciones")
 
     # Significancia práctica: diferencia menor que la desviación observada -> "no distinguible"
@@ -757,11 +761,11 @@ def main() -> int:
             notes.append(f"{tid} ({reps} backends): una sola repetición por configuración; no se puede evaluar la significancia (REPS>=2)")
             continue
         sd = max(sds)
-        verdict = "NO distinguible (diferencia < desviación)" if gap < sd else "distinguible"
+        verdict = "NO distinguible (diferencia <= desviación)" if gap <= sd else "distinguible"
         cfg = lambda r: r["policy"] + (f" [{r['label_base']}]" if str(r.get("label_base") or "") else "")  # noqa: E731
         notes.append(f"{tid} ({reps} backends): mejor p99 {cfg(best)} ({best['ng_lat_p99_ms_mean']:.1f} ms) vs {cfg(second)} "
                      f"({second['ng_lat_p99_ms_mean']:.1f} ms): diferencia {gap:.1f} ms, desv. máx. {sd:.1f} ms -> {verdict}")
-    (RESULTS_DIR / "significancia.txt").write_text("\n".join(notes) + "\n", encoding="utf-8")
+    (RESULTS_DIR / "significancia.txt").write_text("\n".join(notes) + "\n", encoding="utf-8", newline="\n")
     for n in notes:
         log(n)
 

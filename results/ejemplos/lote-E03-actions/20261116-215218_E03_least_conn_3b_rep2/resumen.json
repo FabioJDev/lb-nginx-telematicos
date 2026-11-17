@@ -34,6 +34,7 @@
   "ng_requests_post_warmup": 273013,
   "ng_duration_s": 270.4979999065399,
   "ng_rps_post_warmup": 1135.2175108220397,
+  "ng_goodput_rps": 1135.2175108220397,
   "ng_errors": 0,
   "ng_error_rate": 0.0,
   "ng_availability": 1.0,

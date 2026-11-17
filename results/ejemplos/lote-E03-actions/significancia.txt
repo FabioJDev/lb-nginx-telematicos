@@ -1,1 +1,1 @@
-E03 (3 backends): mejor p99 least_conn (171.0 ms) vs random_two (171.0 ms): diferencia 0.0 ms, desv. máx. 0.0 ms -> distinguible
+E03 (3 backends): mejor p99 least_conn (171.0 ms) vs random_two (171.0 ms): diferencia 0.0 ms, desv. máx. 0.0 ms -> NO distinguible (diferencia <= desviación)

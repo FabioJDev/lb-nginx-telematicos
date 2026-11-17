@@ -1,0 +1,1 @@
+M05 (3 backends): mejor p99 least_conn (22.0 ms) vs round_robin (22.0 ms): diferencia 0.0 ms, desv. máx. 0.0 ms -> NO distinguible (diferencia <= desviación)

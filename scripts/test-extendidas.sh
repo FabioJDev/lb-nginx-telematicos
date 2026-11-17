@@ -82,15 +82,12 @@ E05() {
 }
 
 E06() {
-  log "===== E-06 hash consistente al quitar un nodo (5 -> 4) ====="
-  # hash_client (simple) vs hash_client_consistent: ver docs/hallazgos.md sobre consistent + resolve
-  for pol in hash_client hash_client_consistent ip_hash; do
-    "$S/scale.sh" 5; "$S/set-policy.sh" "$pol"; cooldown "$COOLDOWN"
-    start_bg_run E06 constante.yml "$pol"
-    at 60; "$S/inject-fault.sh" rm 5
-    finish_bg_run
+  log "===== E-06 remapeo de clientes al retirar un nodo (5 -> 4), clientes fijos ====="
+  for pol in hash_client hash_client_consistent round_robin; do
+    "$S/set-policy.sh" "$pol" >/dev/null
+    "$S/check-remap.sh" 5 200 | tee -a "$RESULTS_DIR/E06_remap_$(date +%Y%m%d).txt"
   done
-  "$S/scale.sh" "$BASE"; "$S/set-policy.sh" round_robin
+  "$S/set-policy.sh" round_robin
 }
 
 E07() {

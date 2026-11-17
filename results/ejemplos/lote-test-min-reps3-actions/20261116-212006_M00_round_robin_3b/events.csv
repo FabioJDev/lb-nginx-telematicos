@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794864007.936024331,2026-11-16T21:20:07.942Z,artillery_start,"scenario=smoke.yml policy=round_robin replicas=3 target=http://lb"
+1794864051.923442689,2026-11-16T21:20:51.926Z,artillery_end,"exit=0 duration_s=45"

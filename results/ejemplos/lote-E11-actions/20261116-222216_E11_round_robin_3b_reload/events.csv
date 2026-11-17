@@ -1,0 +1,5 @@
+epoch,iso,event,detail
+1794867737.900104183,2026-11-16T22:22:17.904Z,artillery_start,"scenario=constante.yml policy=round_robin replicas=3 target=http://lb"
+1794867798.064241317,2026-11-16T22:23:18.693Z,reload,"política round_robin->least_conn con nginx -s reload"
+1794867858.051082761,2026-11-16T22:24:18.553Z,reload,"política least_conn->round_robin con nginx -s reload"
+1794867954.283561908,2026-11-16T22:25:54.286Z,artillery_end,"exit=0 duration_s=218"

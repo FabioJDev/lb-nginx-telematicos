@@ -1,0 +1,3 @@
+epoch,iso,event,detail
+1794867568.755739569,2026-11-16T22:19:28.769Z,artillery_start,"scenario=p04-1000-usuarios.yml policy=round_robin replicas=3 target=http://lb"
+1794867654.890090414,2026-11-16T22:20:54.895Z,artillery_end,"exit=0 duration_s=93"

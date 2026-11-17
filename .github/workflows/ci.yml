@@ -72,6 +72,14 @@ jobs:
           done
           scripts/set-policy.sh round_robin >/dev/null
 
+      - name: Remapeo de clientes al retirar un backend (E-06)
+        run: |
+          for pol in hash_client hash_client_consistent round_robin; do
+            scripts/set-policy.sh "$pol" >/dev/null
+            scripts/check-remap.sh 5 200 || true
+          done
+          scripts/set-policy.sh round_robin >/dev/null
+
       - name: Escenario smoke de Artillery con el ejecutor completo
         run: scripts/run-test.sh CI smoke.yml
 
