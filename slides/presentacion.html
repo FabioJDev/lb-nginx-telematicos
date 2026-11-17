@@ -41,7 +41,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="problema-y-objetivo">Problema y objetivo</h2>
 <ul>
@@ -63,7 +63,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="conceptos-del-curso">Conceptos del curso</h2>
 <table>
@@ -114,7 +114,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="algoritmos-de-balanceo">Algoritmos de balanceo</h2>
 <table>
@@ -167,7 +167,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="alternativas-matriz-multicriterio-41">Alternativas: matriz multicriterio 4.1</h2>
 <div class="small">
@@ -184,9 +184,9 @@ table { font-size: 20px; }
 </thead>
 <tbody>
 <tr>
-<td>C1 Desempeño (20) · throughput/p99 mismo escenario, <code>docker stats</code></td>
+<td>C1 Desempeño (20) · <strong>medido en A-05</strong> (p99, CPU del balanceador)</td>
 <td>5</td>
-<td>5</td>
+<td><strong>4</strong></td>
 <td>4</td>
 <td>3</td>
 <td>5</td>
@@ -250,7 +250,7 @@ table { font-size: 20px; }
 <tr>
 <td><strong>Puntaje /100</strong></td>
 <td><strong>81</strong></td>
-<td><strong>88</strong></td>
+<td><strong>84</strong></td>
 <td><strong>79</strong></td>
 <td><strong>68</strong></td>
 <td><strong>56</strong></td>
@@ -272,17 +272,18 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="sensibilidad-y-reflexi%C3%B3n">Sensibilidad y reflexión</h2>
 <ul>
-<li>±5 en cualquier peso: <strong>el ranking no cambia</strong>. NGINX lideraría solo si C8 ≥ 24, C5 ≥ 34 o C7 ≥ 34; Traefik si C6 ≥ 38.</li>
+<li><strong>A-05 medido:</strong> misma carga, NGINX p99 32,5 ms con 11,6 % de CPU vs HAProxy 40,5 ms con 23,5 % (salvedad: HAProxy sin reutilizar conexiones) → C1 de HAProxy 5 → 4.</li>
+<li>Ventaja de HAProxy <strong>pequeña y frágil</strong> (84 vs 81): NGINX lidera si C4 baja a 5, o si C8 ≥ 17, C5/C7 ≥ 22, C1 ≥ 31.</li>
 <li><strong>HAProxy supera a NGINX</strong> en balanceo puro (checks activos, métricas por backend). Lo decimos.</li>
 <li>NGINX se selecciona porque:
 <ol>
 <li>es la restricción del proyecto asignado (requisito del cliente);</li>
-<li>queda en el grupo líder (−7 puntos, ranking estable);</li>
-<li>funciones L7 completas en un solo componente;</li>
+<li>queda a 3 puntos y <strong>midió mejor latencia con la mitad de CPU</strong>;</li>
+<li>funciones L7 completas en un solo componente (la microcaché bajó <strong>77 %</strong> la CPU de la base de datos);</li>
 <li>las debilidades se <strong>mitigan en el diseño</strong>: detección pasiva + reintentos (C3), exporter + logs JSON + <code>/metrics</code> por réplica (C4), <code>resolve</code> (C6).</li>
 </ol>
 </li>
@@ -302,10 +303,10 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="arquitectura">Arquitectura</h2>
-<p><img src="../docs/diagramas/arquitectura.png" alt="" style="height:420px;" /></p>
+<p><img src="../docs/diagramas/arquitectura.png" alt="" style="height:400px;" /></p>
 <div class="small">Dos redes con nombre: <code>lbnginx_frontend</code> (publica :8080) y <code>lbnginx_backend</code> (<code>internal: true</code>). Config NGINX 100 % externa (volúmenes :ro + envsubst). Política = un archivo. Backend instrumentado (X-Backend-Node, fallos, /metrics).</div>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
@@ -321,7 +322,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="cumplimiento-de-requisitos-resumen">Cumplimiento de requisitos (resumen)</h2>
 <div class="small">
@@ -372,12 +373,13 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
-<h2 id="demo-en-vivo-5-min">Demo en vivo (5 min)</h2>
+<h2 id="demo-en-vivo-7-min">Demo en vivo (7 min)</h2>
 <ol>
-<li><code>docker compose ps</code> → backends sin <code>0.0.0.0:</code></li>
-<li>Navegador <code>localhost:8080</code>: recargar → cambia nodo y color</li>
+<li><code>docker compose ps</code> → backends, PostgreSQL y Redis sin <code>0.0.0.0:</code></li>
+<li><strong>La tienda</strong> en <code>localhost:8080</code>: buscar, login, carrito, compra; panel de diagnóstico muestra qué réplica atiende</li>
+<li><code>make sesiones S=memory</code> → &quot;Sesión perdida&quot; · <code>make policy P=sticky_cookie</code> → el carrito se conserva</li>
 <li>Carga constante + Grafana: distribución por réplica en vivo</li>
 <li><code>make policy P=ip_hash</code> → todo a un backend (la /24) · <code>P=hash_client</code> → se reparte</li>
 <li><code>scripts/inject-fault.sh rm 1</code> → redistribución, error ≈ 0</li>
@@ -397,7 +399,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="resultados-pruebas-m%C3%ADnimas-3-repeticiones-github-actions-2-vcpu">Resultados: pruebas mínimas (3 repeticiones, GitHub Actions 2 vCPU)</h2>
 <table>
@@ -445,7 +447,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="resultados-algoritmos-y-la-trampa-de-ip_hash">Resultados: algoritmos y la trampa de ip_hash</h2>
 <p><img src="../docs/figuras/algoritmos_distribucion_M05.png" alt="" style="height:300px;" /></p>
@@ -467,7 +469,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="resultados-backends-heterog%C3%A9neos-e-03">Resultados: backends heterogéneos (E-03)</h2>
 <p>3 réplicas rápidas + 1 lenta (150 ms, 0,25 CPU):</p>
@@ -522,7 +524,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="resultados-resiliencia-m-03--e-07--e-09">Resultados: resiliencia (M-03 / E-07 / E-09)</h2>
 <p><img src="../docs/figuras/resiliencia_M03_round_robin.png" alt="" style="height:250px;" /></p>
@@ -545,6 +547,11 @@ table { font-size: 20px; }
 <td>pause / hang</td>
 <td>9 (0,1 %)</td>
 <td><strong>10 s</strong> (= proxy_read_timeout)</td>
+</tr>
+<tr>
+<td>hang con timeout <strong>3 s</strong> + reintentos (E-08)</td>
+<td><strong>0</strong></td>
+<td><strong>3 s</strong></td>
 </tr>
 <tr>
 <td>responde 500</td>
@@ -573,7 +580,7 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="resultados-escalabilidad-y-punto-de-quiebre-e-02--e-13">Resultados: escalabilidad y punto de quiebre (E-02 / E-13)</h2>
 <p><img src="../docs/figuras/escalabilidad.png" alt="" style="height:260px;" /></p>
@@ -594,16 +601,17 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
-<h2 id="hallazgos-lo-que-no-estaba-en-el-enunciado">Hallazgos (lo que no estaba en el enunciado)</h2>
-<ol>
-<li><strong><code>hash … consistent</code> + <code>resolve</code> no da afinidad</strong> en NGINX 1.30.6 (0 % de clientes fieles). Hash simple: 100 %, pero al pasar de 5 a 4 réplicas <strong>remapea al 84 %</strong> de los clientes (E-06).</li>
-<li><strong>Errores 500 y lentitud son invisibles</strong> para la detección pasiva de NGINX OSS.</li>
-<li><strong><code>resolve</code> envía tráfico antes del healthcheck</strong> de Docker.</li>
-<li><code>server.maxConnections = 0</code> en Node 24 = <strong>cero</strong> conexiones (lo detectó la CI).</li>
-</ol>
-<p>→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</p>
+<h2 id="una-aplicaci%C3%B3n-con-estado-telemashop">Una aplicación con estado: TelemaShop</h2>
+<p>Recomendación del profesor: probar con <strong>funcionalidades y base de datos</strong>, no solo una página.</p>
+<ul>
+<li>Catálogo y búsqueda, login, carrito y <strong>compra transaccional</strong> sobre <strong>PostgreSQL 17</strong> (compartido por todas las réplicas)</li>
+<li>Sesiones en <strong>Redis</strong> (compartidas) o en la <strong>memoria</strong> de cada réplica (<code>SESSION_STORE</code>)</li>
+<li>Nueva política <strong><code>sticky_cookie</code></strong>: NGINX emite la cookie <code>lbid</code> y hace hash de ella</li>
+<li>Recorrido de compra en Artillery: portada → catálogo → búsqueda → detalle → login → 2 × carrito → compra</li>
+<li>Métricas en Grafana: sesiones perdidas, pedidos por réplica, pool de PostgreSQL</li>
+</ul>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
 </foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="16" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-theme="default" data-style="section { font-size: 26px; }
@@ -618,32 +626,128 @@ h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
+<header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
+<h2 id="resultados-%C2%BFsobrevive-la-sesi%C3%B3n-al-balanceo-e-16">Resultados: ¿sobrevive la sesión al balanceo? (E-16)</h2>
+<p><img src="../docs/figuras/comparacion_tienda.png" alt="" style="height:230px;" /></p>
+<div class="small">
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Memoria: sesión perdida</th>
+<th>Memoria: compras OK</th>
+<th>Redis: compras OK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>round_robin / least_conn / random_two</td>
+<td><strong>98–99 %</strong></td>
+<td>~20 %</td>
+<td><strong>100 %</strong></td>
+</tr>
+<tr>
+<td>ip_hash / hash_client / sticky_cookie</td>
+<td>0 %</td>
+<td><strong>100 %</strong></td>
+<td><strong>100 %</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo sirve.</p>
+</div>
+<footer>Balanceador de carga web con NGINX</footer>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="17" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-theme="default" data-style="section { font-size: 26px; }
+h1 { color: #009639; }
+h2 { color: #1f2937; }
+table { font-size: 20px; }
+.small { font-size: 18px; }
+.todo { color: #b91c1c; font-weight: bold; }
+" lang="C" data-marpit-pagination="17" style="--paginate:true;--header:Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3;--footer:Balanceador de carga web con NGINX;--theme:default;--style:section { font-size: 26px; }
+h1 { color: #009639; }
+h2 { color: #1f2937; }
+table { font-size: 20px; }
+.small { font-size: 18px; }
+.todo { color: #b91c1c; font-weight: bold; }
+;" data-marpit-pagination-total="20" data-size="16:9">
+<header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
+<h2 id="resultados-la-base-de-datos-compartida-e-17-a-02-e-1819">Resultados: la base de datos compartida (E-17, A-02, E-18/19)</h2>
+<ul>
+<li><strong>E-17:</strong> de 1 a 5 réplicas, la CPU por réplica baja de 21 % a 9 %… pero <strong>PostgreSQL sigue en ~23 %</strong>: escalar backends no escala la base de datos.</li>
+<li><strong>A-02 microcaché de 1 s</strong> (solo catálogo público): 61,6 % de aciertos, CPU de PostgreSQL <strong>−77 %</strong>, latencia media 1,24 → 0,28 ms.</li>
+<li><strong>E-18 PostgreSQL caído 30 s:</strong> 100 % de errores (inevitable) y <strong>6,3 s</strong> extra de recuperación.</li>
+<li><strong>E-19 Redis caído:</strong> fallaron login y carrito… <strong>y también el catálogo</strong>, que no usa Redis.</li>
+<li>Causa (H-8): los 503 de la app cuentan como fallo en <code>proxy_next_upstream</code> → NGINX descarta las réplicas <strong>sanas</strong>.</li>
+<li><strong>Corrección medida (E-18B/E-19B):</strong> sin <code>http_503</code> → réplicas descartadas 99,9 % → <strong>0 %</strong>, catálogo con Redis caído <strong>0 %</strong> de errores, recuperación 6,3 → <strong>1,3 s</strong>.</li>
+</ul>
+<footer>Balanceador de carga web con NGINX</footer>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="18" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-theme="default" data-style="section { font-size: 26px; }
+h1 { color: #009639; }
+h2 { color: #1f2937; }
+table { font-size: 20px; }
+.small { font-size: 18px; }
+.todo { color: #b91c1c; font-weight: bold; }
+" lang="C" data-marpit-pagination="18" style="--paginate:true;--header:Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3;--footer:Balanceador de carga web con NGINX;--theme:default;--style:section { font-size: 26px; }
+h1 { color: #009639; }
+h2 { color: #1f2937; }
+table { font-size: 20px; }
+.small { font-size: 18px; }
+.todo { color: #b91c1c; font-weight: bold; }
+;" data-marpit-pagination-total="20" data-size="16:9">
+<header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
+<h2 id="hallazgos-lo-que-no-estaba-en-el-enunciado">Hallazgos (lo que no estaba en el enunciado)</h2>
+<ol>
+<li><strong><code>hash … consistent</code> + <code>resolve</code> no da afinidad</strong> en NGINX 1.30.6 (0 % de clientes fieles). Hash simple: 100 %, pero al pasar de 5 a 4 réplicas <strong>remapea al 84 %</strong> de los clientes (E-06).</li>
+<li><strong>Errores 500 y lentitud son invisibles</strong> para la detección pasiva de NGINX OSS.</li>
+<li><strong><code>resolve</code> envía tráfico antes del healthcheck</strong> de Docker.</li>
+<li><strong>La afinidad no puede basarse en la cookie de la app:</strong> el login llega sin cookie y cae en otro nodo (4 de 5 compras perdidas). La cookie la debe emitir el balanceador.</li>
+<li><strong>El 503 de una dependencia caída tumba réplicas sanas</strong> en la detección pasiva.</li>
+</ol>
+<p>→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</p>
+<footer>Balanceador de carga web con NGINX</footer>
+</section>
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="19" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-theme="default" data-style="section { font-size: 26px; }
+h1 { color: #009639; }
+h2 { color: #1f2937; }
+table { font-size: 20px; }
+.small { font-size: 18px; }
+.todo { color: #b91c1c; font-weight: bold; }
+" lang="C" data-marpit-pagination="19" style="--paginate:true;--header:Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3;--footer:Balanceador de carga web con NGINX;--theme:default;--style:section { font-size: 26px; }
+h1 { color: #009639; }
+h2 { color: #1f2937; }
+table { font-size: 20px; }
+.small { font-size: 18px; }
+.todo { color: #b91c1c; font-weight: bold; }
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 <h2 id="matriz-42-y-conclusiones">Matriz 4.2 y conclusiones</h2>
 <ul>
 <li><strong>Algoritmo recomendado (matriz 4.2, todos los criterios medidos): <code>least_conn</code> (92,0)</strong> &gt; random_two (87,5) &gt; hash_client (76,0) &gt; round_robin (71,6) &gt; ip_hash (67,2). Estable con ±5 en cualquier peso; hash_client ganaría solo si la afinidad pesara ≥ 26/100.</li>
 <li>Homogéneos: no importa el algoritmo. Heterogéneos en <strong>capacidad</strong>: <code>least_conn</code> (p95 171 → 23 ms).</li>
-<li>Afinidad: en L7 con <code>hash $http_x_client_id</code>, sabiendo que escalar remapea la mayoría de las sesiones.</li>
+<li>Con estado: <strong>sesiones en Redis + <code>least_conn</code></strong>; si la sesión no puede salir de la réplica, <code>sticky_cookie</code>.</li>
+<li>Base de datos: escalar backends no la alivia; la <strong>microcaché</strong> sí (−77 % CPU).</li>
 <li>Resiliencia: caídas sin errores; cuelgues cuestan el timeout; 500 requiere <code>proxy_next_upstream http_500</code>.</li>
 <li>Limitación: 2 vCPU → generador como cuello de botella; capacidad medida con costo de CPU.</li>
 <li>Trabajo futuro: HA del balanceador (keepalived/VRRP), health checks activos, TLS/HTTP2, Kubernetes.</li>
 </ul>
 <footer>Balanceador de carga web con NGINX</footer>
 </section>
-</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="17" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-class="lead" data-theme="default" data-style="section { font-size: 26px; }
+</foreignObject></svg><svg data-marpit-svg="" viewBox="0 0 1280 720"><foreignObject width="1280" height="720"><section id="20" data-paginate="true" data-header="Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3" data-footer="Balanceador de carga web con NGINX" data-class="lead" data-theme="default" data-style="section { font-size: 26px; }
 h1 { color: #009639; }
 h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-" lang="C" class="lead" data-marpit-pagination="17" style="--paginate:true;--header:Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3;--footer:Balanceador de carga web con NGINX;--class:lead;--theme:default;--style:section { font-size: 26px; }
+" lang="C" class="lead" data-marpit-pagination="20" style="--paginate:true;--header:Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3;--footer:Balanceador de carga web con NGINX;--class:lead;--theme:default;--style:section { font-size: 26px; }
 h1 { color: #009639; }
 h2 { color: #1f2937; }
 table { font-size: 20px; }
 .small { font-size: 18px; }
 .todo { color: #b91c1c; font-weight: bold; }
-;" data-marpit-pagination-total="17" data-size="16:9">
+;" data-marpit-pagination-total="20" data-size="16:9">
 <header>Servicios Telemáticos 2026-02 · Proyecto 2 · Grupo 3</header>
 
 <h1 id="%C2%BFpreguntas">¿Preguntas?</h1>

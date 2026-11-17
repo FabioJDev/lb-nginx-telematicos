@@ -497,7 +497,7 @@ si la afinidad de sesión pesara 26/100 o más. Detalle y forma de medir cada cr
 | R-01 | Todo en Docker/Compose, nada en el host | Todos los servicios, incluidos Artillery y el análisis, son contenedores; el Makefile solo invoca `docker` | `make ps`; este README |
 | R-02 | README con instrucciones, diagramas y despliegue paso a paso | Este documento | — |
 | R-03 | Informe IEEE ≤ 7 páginas | Plantilla IEEEtran (5 páginas), compilado por el flujo `documentos.yml` o `make informe` | [`docs/informe/informe.pdf`](docs/informe/informe.pdf) · fuente [`informe.tex`](docs/informe/informe.tex) |
-| R-04 | Diapositivas en el repositorio | Marp (17 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
+| R-04 | Diapositivas en el repositorio | Marp (20 diapositivas), `make slides` | [`slides/presentacion.pdf`](slides/presentacion.pdf) · fuente [`presentacion.md`](slides/presentacion.md) |
 | R-05 | Repositorio con configuración y aprovisionamiento | Estructura de la sección 12 | este repositorio |
 | R-06 | Presentación ≤ 20 min | Guion cronometrado | [`docs/guion-demo.md`](docs/guion-demo.md) |
 | R-07 | NGINX con `upstream` hacia ≥ 3 backends | `upstream backend_pool` + servicio `backend` con 3 réplicas | [`nginx/templates/http.conf.template`](nginx/templates/http.conf.template), `make smoke` |
