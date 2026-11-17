@@ -346,6 +346,33 @@ descartados, ≥ 3 repeticiones con **orden aleatorio**, 20 s de enfriamiento, `
 de política, y criterio de significancia práctica: si la diferencia entre dos configuraciones es
 menor que la desviación estándar observada se reporta como *no distinguible* (`results/significancia.txt`).
 
+### Artillery Cloud (opcional): ver las corridas en el tablero web
+
+Las pruebas usan **Artillery de código abierto** dentro de un contenedor y guardan todo en `results/`;
+Artillery Cloud es solo un tablero adicional para la presentación. Si se configura una clave, cada
+corrida se publica también en <https://app.artillery.io> con `--record`, un nombre
+(`lbnginx-<prueba>-<escenario>`) y etiquetas (`prueba`, `escenario`, `politica`, `replicas`,
+`sesiones`, `origen`). La clave **nunca** va en el código ni en la línea de comandos: Artillery la lee
+de la variable `ARTILLERY_CLOUD_API_KEY`.
+
+1. En Artillery Cloud, crear (o regenerar) la clave de API: **Settings → API keys**.
+2. **En GitHub Actions** (flujo `pruebas.yml`): guardarla como secreto del repositorio.
+   En la web: *Settings → Secrets and variables → Actions → New repository secret*, nombre
+   `ARTILLERY_CLOUD_API_KEY`. O desde una terminal (pide la clave sin mostrarla):
+
+   ```bash
+   gh secret set ARTILLERY_CLOUD_API_KEY -R FabioJDev/lb-nginx-telematicos
+   ```
+
+3. **En la máquina local**: escribirla en `.env` (que no se versiona): `ARTILLERY_CLOUD_API_KEY=a9_…`.
+4. Ejecutar cualquier prueba (`make test-min`, `make test-tienda`, o el flujo `pruebas` en GitHub).
+   La consola muestra el enlace del informe; queda en `metadata.json` (`artillery_cloud_url`) y, en
+   GitHub Actions, en el resumen de la ejecución.
+
+Para no publicar una corrida concreta: `ARTILLERY_CLOUD=off` (o desmarcar *artillery_cloud* al lanzar
+el flujo). Si la publicación falla (clave inválida, sin conexión), `run-test.sh` repite la prueba sin
+publicar para no perder los datos y lo registra (`"artillery_cloud": "fallo"`).
+
 ### Inyección de fallos manual
 
 ```bash

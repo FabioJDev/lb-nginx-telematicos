@@ -191,6 +191,9 @@ services:
       TARGET: http://lb
       WORK_PATH: ${WORK_PATH:-/api/work?ms=20}
       ARTILLERY_DISABLE_TELEMETRY: "true"
+      # Artillery Cloud (opcional): solo se usa si run-test.sh añade --record.
+      # Viene de .env (local) o de un secreto de GitHub Actions; nunca del repositorio.
+      ARTILLERY_CLOUD_API_KEY: ${ARTILLERY_CLOUD_API_KEY:-}
     volumes:
       - ./artillery:/scripts:ro
       - ./results:/results

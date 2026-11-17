@@ -106,15 +106,53 @@ fi
 ART_ARGS+=("/scripts/scenarios/$SCENARIO" --output "/results/$RUN_NAME/artillery.json")
 [ ${#EXTRA_ARGS[@]} -gt 0 ] && ART_ARGS+=("${EXTRA_ARGS[@]}")
 
+# ---------------------------------------------------------------------------
+# Artillery Cloud (OPCIONAL). Si existe ARTILLERY_CLOUD_API_KEY (en .env local o como
+# secreto de GitHub Actions) y ARTILLERY_CLOUD no es "off", la corrida también se
+# publica en el tablero web de Artillery Cloud con --record. La clave NO va en la
+# línea de comandos: el servicio artillery la recibe como variable de entorno, que
+# Artillery lee por sí mismo. Los resultados locales (artillery.json) no cambian.
+# ---------------------------------------------------------------------------
+CLOUD="off"
+CLOUD_ARGS=()
+if [ -n "${ARTILLERY_CLOUD_API_KEY:-}" ] && [ "${ARTILLERY_CLOUD:-on}" != "off" ]; then
+  CLOUD="on"
+  ORIGIN="local"; [ -n "${GITHUB_ACTIONS:-}" ] && ORIGIN="github-actions"
+  CLOUD_NAME="lbnginx-${ID}-${SCENARIO%.yml}"
+  CLOUD_TAGS="proyecto:lbnginx,prueba:${ID},escenario:${SCENARIO%.yml},politica:${POLICY},replicas:${REPLICAS},sesiones:${SESSION_STORE:-redis},origen:${ORIGIN}"
+  [ -n "$LABEL" ] && CLOUD_TAGS="${CLOUD_TAGS},etiqueta:${LABEL}"
+  CLOUD_ARGS=(--record --name "$CLOUD_NAME" --tags "$CLOUD_TAGS")
+  log "Artillery Cloud: la corrida se publicará en el tablero como '$CLOUD_NAME'"
+fi
+
 log_event "$RUN_DIR" artillery_start "scenario=$SCENARIO policy=$POLICY replicas=$REPLICAS target=$TARGET"
 grafana_annotate "Inicio $ID · $SCENARIO · $POLICY · ${REPLICAS}b" "artillery,inicio,$ID"
 
+run_artillery() {
+  compose run --rm -T --no-deps \
+    -e "TARGET=$TARGET" -e "WORK_PATH=$WORK_PATH" -e "TEST_ID=$ID" -e "RUN_NAME=$RUN_NAME" \
+    artillery "$@" 2>&1 | tee -a "$RUN_DIR/artillery.log"
+  return "${PIPESTATUS[0]}"
+}
+
 set +e
-compose run --rm -T --no-deps \
-  -e "TARGET=$TARGET" -e "WORK_PATH=$WORK_PATH" -e "TEST_ID=$ID" -e "RUN_NAME=$RUN_NAME" \
-  artillery "${ART_ARGS[@]}" 2>&1 | tee "$RUN_DIR/artillery.log"
-ART_EXIT=${PIPESTATUS[0]}
+: > "$RUN_DIR/artillery.log"
+run_artillery "${ART_ARGS[@]}" "${CLOUD_ARGS[@]}"
+ART_EXIT=$?
+if [ "$CLOUD" = "on" ] && [ ! -s "$RUN_DIR/artillery.json" ]; then
+  # La documentación no aclara qué pasa con una clave inválida o sin conexión a la
+  # nube: si la corrida no dejó resultados, se repite sin publicar para no perderla.
+  warn "la corrida con Artillery Cloud no produjo resultados (exit=$ART_EXIT); se repite sin publicar en la nube"
+  CLOUD="fallo"
+  run_artillery "${ART_ARGS[@]}"
+  ART_EXIT=$?
+fi
 set -e
+CLOUD_URL=""
+if [ "$CLOUD" = "on" ]; then
+  CLOUD_URL=$(grep -oE 'https://app\.artillery\.io/[^[:space:]"]+' "$RUN_DIR/artillery.log" 2>/dev/null | head -1 || true)
+fi
+[ -n "$CLOUD_URL" ] && log "informe en Artillery Cloud: $CLOUD_URL"
 
 END_EPOCH=$(date +%s)
 END_ISO=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -166,6 +204,8 @@ cat > "$RUN_DIR/metadata.json" <<EOF
   "nginx_log_lines": $LOG_LINES,
   "nginx_log_offset": $OFFSET,
   "publish_metrics": "$PUBLISH_METRICS",
+  "artillery_cloud": "$CLOUD",
+  "artillery_cloud_url": "$(json_str "${CLOUD_URL:-}")",
   "git_commit": "$GIT_COMMIT",
   "git_dirty": $GIT_DIRTY,
   "images": {

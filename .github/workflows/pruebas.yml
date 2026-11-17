@@ -51,6 +51,10 @@ on:
         description: "Para test-tienda: memory, redis o 'memory redis'"
         type: string
         default: "memory redis"
+      artillery_cloud:
+        description: "Publicar las corridas en Artillery Cloud (requiere el secreto ARTILLERY_CLOUD_API_KEY)"
+        type: boolean
+        default: true
 
 jobs:
   carga:
@@ -64,6 +68,9 @@ jobs:
       E03_WEIGHTED: ${{ inputs.e03_politicas == '' && '1' || '0' }}
       POLICIES: ${{ inputs.politicas }}
       SESSIONS: ${{ inputs.sesiones }}
+      # Artillery Cloud: si el secreto no existe, la variable queda vacía y no se publica nada
+      ARTILLERY_CLOUD_API_KEY: ${{ secrets.ARTILLERY_CLOUD_API_KEY }}
+      ARTILLERY_CLOUD: ${{ inputs.artillery_cloud && 'on' || 'off' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -72,6 +79,11 @@ jobs:
           cp .env.example .env
           echo "cpus=$(nproc) mem=$(awk '/MemTotal/ {printf "%d MB", $2/1024}' /proc/meminfo)"
           docker version --format 'docker {{.Server.Version}}'; docker compose version --short
+          if [ -n "$ARTILLERY_CLOUD_API_KEY" ] && [ "$ARTILLERY_CLOUD" = "on" ]; then
+            echo "Artillery Cloud: activado (las corridas se publican en app.artillery.io)"
+          else
+            echo "Artillery Cloud: desactivado (sin secreto ARTILLERY_CLOUD_API_KEY o artillery_cloud=false)"
+          fi
 
       - name: Levantar stack base
         run: |
@@ -104,6 +116,22 @@ jobs:
           sudo chown -R "$(id -u):$(id -g)" results docs || true
           ls -la results | head -40
           cat results/significancia.txt 2>/dev/null || true
+
+      - name: Enlaces a Artillery Cloud
+        if: always()
+        run: |
+          {
+            echo "### Corridas del lote ${{ inputs.lote }}"
+            echo
+            echo "| Corrida | Artillery Cloud |"
+            echo "|---|---|"
+            for m in results/2026*/metadata.json; do
+              [ -f "$m" ] || continue
+              run=$(basename "$(dirname "$m")")
+              url=$(grep -o '"artillery_cloud_url": *"[^"]*"' "$m" | sed 's/.*: *"//; s/"$//')
+              echo "| \`$run\` | ${url:-—} |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Comprimir logs grandes de NGINX
         if: always()
