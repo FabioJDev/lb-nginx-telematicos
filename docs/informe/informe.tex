@@ -86,12 +86,12 @@ Servidores estáticos (60), DNS con \texttt{resolve} (78) y regenerar configurac
 \section{Diseño de la solución}
 La Fig.~\ref{fig:arq} muestra la arquitectura. NGINX (\texttt{lb}) está en dos redes Docker con nombre: \texttt{lbnginx\_frontend}, desde la que se publica el puerto, y \texttt{lbnginx\_backend} (\texttt{internal: true}), donde viven las réplicas sin salida al host ni a Internet. Un único servicio \texttt{backend} se escala con \texttt{--scale backend=N}; el \texttt{upstream} declara \texttt{server backend:3000 resolve} con \texttt{zone} y \texttt{resolver 127.0.0.11 valid=5s}, por lo que NGINX re-resuelve el nombre y las réplicas nuevas reciben tráfico sin recarga. La configuración es 100\,\% externa: \texttt{nginx.conf}, plantillas, políticas y extras se montan en solo lectura; las plantillas se procesan con el \texttt{envsubst} del \emph{entrypoint} oficial~\cite{docker_nginx} y la política es un \texttt{include} de un archivo por algoritmo. El backend (Node.js sin dependencias) identifica el nodo con la cabecera \texttt{X-Backend-Node}, simula latencia y CPU, admite inyección de fallos (\texttt{error500}, \texttt{slow}, \texttt{hang}, \texttt{unhealthy}, \texttt{crash}) y expone \texttt{/metrics}. La observabilidad se compone de \texttt{stub\_status}~\cite{nginx_stub} (global), un log JSON con \texttt{\$upstream\_addr} y el nodo por petición, Prometheus/Grafana~\cite{nginx_exporter} y los contadores por backend de Artillery.
 
-\begin{figure}[t]
+\begin{figure*}[t]
 \centering
-\figura{arquitectura.png}
-\caption{Arquitectura: redes, servicios y flujos (punteado = monitoreo).}
+\IfFileExists{../diagramas/arquitectura.png}{\includegraphics[width=0.92\textwidth]{arquitectura.png}}{\figura{arquitectura.png}}
+\caption{Arquitectura: redes, servicios y flujos (punteado = monitoreo). Los backends viven en una red \texttt{internal} sin puertos al host.}
 \label{fig:arq}
-\end{figure}
+\end{figure*}
 
 \section{Implementación}
 Fragmento clave del \texttt{upstream} y de los reintentos (generado desde \texttt{.env}):
