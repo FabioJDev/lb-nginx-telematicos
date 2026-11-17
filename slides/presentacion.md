@@ -272,7 +272,7 @@ Con sesión local, la afinidad es obligatoria; con Redis, cualquier algoritmo si
 6. **El tiempo de respuesta de Artillery no ve la conexión** (ni el handshake TLS ni la espera del failover): hay que mirar la duración de la sesión.
 7. **VRRP con preempción corta dos veces**: `nopreempt` elimina el segundo corte.
 
-→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de `resolve`.
+<div class="small">→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de <code>resolve</code>.</div>
 
 ---
 
