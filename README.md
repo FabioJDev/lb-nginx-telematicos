@@ -194,7 +194,9 @@ Archivo `.env` (plantilla en [`.env.example`](.env.example)). Las más relevante
 ```bash
 make policy P=least_conn      # valida nginx/policies/least_conn.conf, actualiza .env y recrea SOLO lb
 make policy P=ip_hash
-make policy P=hash_client     # afinidad L7 por cabecera X-Client-Id (hash consistente)
+make policy P=hash_client     # afinidad L7 por cabecera X-Client-Id
+scripts/check-affinity.sh 30 5 # % de clientes fieles a un backend con la política activa
+scripts/check-remap.sh 5 200   # % de clientes que cambian de backend al retirar 1 de 5 réplicas
 make status                   # política vigente, stub_status, réplicas con IP
 ```
 
@@ -203,8 +205,9 @@ make status                   # política vigente, stub_status, réplicas con IP
 | `round_robin` | Turnos (ponderables con `weight`) | Backends homogéneos | Ignora la carga real |
 | `least_conn` | Menos conexiones activas | Costo variable / heterogéneos | Con peticiones cortas ≈ round-robin |
 | `ip_hash` | Hash de la IP (solo 3 octetos en IPv4) | Afinidad simple | Toda una `/24` cae en un backend (E-05) |
-| `hash_client` | `hash $http_x_client_id consistent` | Afinidad por cliente lógico (L7) | El cliente debe enviar la cabecera |
-| `hash_remote_addr` | `hash $remote_addr consistent` | Afinidad por IP completa | Un solo contenedor = una sola IP |
+| `hash_client` | `hash $http_x_client_id` | Afinidad por cliente lógico (L7) | El cliente debe enviar la cabecera; escalar remapea la mayoría (E-06) |
+| `hash_remote_addr` | `hash $remote_addr` | Afinidad por IP completa | Un solo contenedor = una sola IP |
+| `hash_client_consistent` | `hash $http_x_client_id consistent` | Reproduce el hallazgo H-1 | Con `resolve` no da afinidad |
 | `random_two` | `random two least_conn` | Muchos backends, buena cola de latencia | Comparar contra least_conn |
 
 ### Escalar backends (R-14 / E-10)
@@ -346,46 +349,48 @@ forma de medir cada criterio y el análisis de sensibilidad, están en
 
 ## 8. Resultados
 
-> **Regla:** ninguna cifra de este README, del informe o de las diapositivas existe sin un archivo
-> de origen en `results/`. Este repositorio se construyó en una máquina sin Docker; la CI de GitHub
-> Actions ya verificó el stack completo (compose, `nginx -t`, smoke 10/10/10, cambio de política,
-> escalado 3 → 5 sin recarga, Artillery y análisis; ver `docs/entorno.md`). Las corridas de carga las
-> ejecuta el equipo en la máquina de pruebas y luego se completan
-> [`docs/resultados-minimos.md`](docs/resultados-minimos.md) y
-> [`docs/resultados-extendidos.md`](docs/resultados-extendidos.md) y se copian las corridas de
-> referencia a [`results/ejemplos/`](results/ejemplos/).
+Todas las cifras salen de `results/`. Las pruebas se ejecutaron con el flujo
+[`pruebas.yml`](.github/workflows/pruebas.yml) en GitHub Actions (**2 vCPU**, 7,9 GB, NGINX 1.30.6,
+Artillery 2.0.34; backends con 0,5 CPU y 256 MB). Los resúmenes de cada corrida están en
+[`results/ejemplos/`](results/ejemplos/) y el detalle en
+[`docs/resultados-minimos.md`](docs/resultados-minimos.md),
+[`docs/resultados-extendidos.md`](docs/resultados-extendidos.md) y
+[`docs/hallazgos.md`](docs/hallazgos.md). El equipo repetirá las pruebas en su máquina para el informe final.
 
-### Resultados de referencia (GitHub Actions, corrida rápida `QUICK=1`)
-
-Fuente: [`results/ejemplos/lote-test-min-quick-actions/`](results/ejemplos/lote-test-min-quick-actions/)
-(runner `ubuntu-latest`, **2 vCPU**, 7,9 GB; NGINX 1.30.6; Artillery 2.0.34). Detalle y lectura en
-[`docs/resultados-minimos.md`](docs/resultados-minimos.md).
+### Pruebas mínimas (3 repeticiones)
 
 | Prueba | Resultado medido |
 |---|---|
 | M-00 smoke | 3 nodos, **10 / 10 / 10**, 0 fallos |
 | M-02 1000 peticiones secuenciales | 334 / 333 / 333 · Jain **1,000** · diferencia 0,3 % |
-| M-03 retirar un backend bajo 300 req/s | disponibilidad **100 %**, **0 errores**, 3 reintentos (las peticiones en vuelo), p99 22 ms antes/durante/después (round_robin y least_conn) |
-| M-04 1000 usuarios concurrentes | 1000 creados / 1000 completados / **0 fallidos**; meseta de **1000 activos durante 60 s**; 70 000 × HTTP 200; p99 44 ms |
-| M-05 rampa 5 → 150 VU/s (270 s) | 274 510 peticiones por política, 0 errores; p99 (log) 22,0 ms en round_robin, least_conn e ip_hash |
-| M-06 distribución (log vs Artillery) | round_robin y least_conn: 33,3 % cada réplica (Jain 1,000); **ip_hash: 100 % a una réplica (Jain 0,333)**; diferencia log vs Artillery 0,00 % |
-| Cuello de botella | Artillery (CPU 43–114 %); NGINX ≤ 11 %; backends ≤ 5 % → el runner limita al generador, no al balanceador |
+| M-03 retirar un backend bajo 300 req/s | disponibilidad **100 %**, **0 errores**, 3 reintentos, p99 22 ms estable (round_robin y least_conn) |
+| M-04 1000 usuarios concurrentes | 3/3 repeticiones: 1000 creados / 1000 completados / **0 fallidos**, **meseta de 1000 activos durante 60 s**, p99 ≤ 76 ms |
+| M-05 rampa 5 → 150 VU/s | media 20,30 / 20,35 / 20,33 ms y p99 22 ms (round_robin / least_conn / ip_hash): **no distinguibles** |
+| M-06 distribución real | log de NGINX = contadores de Artillery (100 %); round_robin y least_conn 33,3 % por réplica; **ip_hash 100 % a una réplica** |
+
+### Pruebas extendidas
+
+| Prueba | Resultado medido |
+|---|---|
+| E-02 escalabilidad (3 ms de CPU por petición) | goodput **170 → 271 → 472 → 783 req/s** con N = 1, 2, 3, 5; error 81 % → 0 %; eficiencia 0,79–0,92 |
+| E-13 punto de quiebre (3 ms de CPU) | carga máx. con error < 1 % y p99 < 1 s: ~185 / 582 / 875 req/s con 1 / 3 / 5 réplicas |
+| E-03 un backend lento (150 ms, 0,25 CPU) | p95: round_robin **171 ms** vs least_conn **23 ms**; al lento: 25 % vs 4,5 % del tráfico |
+| E-04 costo variable (5 / 300 ms de espera) | round_robin = least_conn = random_two (media 34,7 ms, p99 301 ms) |
+| E-05 / E-06 afinidad | hash simple por `X-Client-Id`: 100 % de afinidad en 3 nodos; al pasar de 5 a 4 réplicas remapea el **84 %** de los clientes |
+| E-07 modos de falla | stop / kill / crash: **0 errores**; pause / hang: 9 errores y p99 10 s (timeout); **error 500: 33 % de errores sin reintento** |
+| E-09 falla total | 0 errores con 2 y 1 réplicas; página de mantenimiento sin réplicas; recuperación en **0,84 s** |
+| E-10 / E-11 / E-14 | escalar 3 → 6, recargar la configuración y un pico × 16 de la tasa: **0 errores**; 6 → 2: 1 error en 54 000 |
+
+### Hallazgos
+
+1. **`hash … consistent` + `resolve` no da afinidad** en NGINX 1.30.6 (se comporta como round-robin). Se usa hash simple.
+2. **Errores 500 y lentitud son invisibles** para la detección pasiva de NGINX OSS con la configuración por defecto.
+3. **`resolve` envía tráfico a una réplica nueva antes de que su healthcheck la declare sana.**
+4. Con 2 vCPU **el generador de carga es el cuello de botella** con el endpoint de espera; la capacidad se midió con costo de CPU.
+
+![Escalabilidad E-02](docs/figuras/escalabilidad.png)
 
 ![Resiliencia M-03](docs/figuras/resiliencia_M03_round_robin.png)
-
-![Distribución por backend M-05](docs/figuras/algoritmos_distribucion_M05.png)
-
-Evidencia esperada por prueba mínima (se rellena con `make analyze`):
-
-| Prueba | Evidencia |
-|---|---|
-| M-00 smoke | salida de `make smoke` + captura del navegador cambiando de color |
-| M-01 stub_status por algoritmo | `docs/capturas/stub_status_<política>.png` + `stub_status.csv` de cada corrida M-05 |
-| M-02 reparto con round-robin | `results/*_M02_*/conteo_por_nodo.txt` (J > 0,99, diferencia < 2 %) |
-| M-03 resiliencia | `docs/figuras/resiliencia_*.png` (errores/s y p99/s con líneas en t = 60 s y 120 s) |
-| M-04 1000 usuarios · 60 s | `docs/figuras/usuarios_activos_*.png` + `resumen.json` (vusers.failed, p99 < 2000 ms) |
-| M-05 media/p99 por algoritmo | `docs/figuras/algoritmos_latencia_M05.png` + `results/resumen_comparativo.csv` |
-| M-06 distribución real (logs) | `docs/figuras/algoritmos_distribucion_M05.png` + `distribucion_backend.csv` (log vs Artillery) |
 
 ## 9. Cumplimiento de requisitos
 
@@ -412,8 +417,8 @@ Evidencia esperada por prueba mínima (se rellena con `make analyze`):
 | R-19 | Override con recarga en caliente | Watcher por checksum → `nginx -t && nginx -s reload` | [`docker-compose.override.yml`](docker-compose.override.yml), [`nginx/dev/40-config-watcher.sh`](nginx/dev/40-config-watcher.sh) |
 | R-20 | README con diagrama, comandos y resultados esperados | Secciones 1, 3, 8 | — |
 | R-21 | Cada algoritmo con capturas de `stub_status` | M-01 (stub_status.csv por corrida + capturas) | `docs/capturas/stub_status_<política>.png` |
-| R-22 | Resiliencia al eliminar un backend en caliente | M-03 (`make test-resiliencia`) | `docs/figuras/resiliencia_*.png` |
-| R-23 | 1000 usuarios concurrentes 60 s | M-04 (`p04-1000-usuarios.yml`, ley de Little) | `docs/figuras/usuarios_activos_*.png` |
+| R-22 | Resiliencia al eliminar un backend en caliente | M-03 (`make test-resiliencia`): 100 % de disponibilidad | `docs/figuras/resiliencia_M03_*.png` |
+| R-23 | 1000 usuarios concurrentes 60 s | M-04 (`p04-1000-usuarios.yml`, ley de Little): meseta de 1000 durante 60 s, 0 fallidos | `docs/figuras/usuarios_activos_M04.png` |
 | R-24 | Latencia media y p99 por algoritmo | M-05 (media ± desviación, 3 repeticiones) | `docs/figuras/algoritmos_latencia_M05.png` |
 | R-25 | Distribución real por backend desde los logs | M-06 (`nginx_access.jsonl` → Jain, CV, reintentos; contrastado con Artillery) | `distribucion_backend.csv`, `docs/figuras/algoritmos_distribucion_M05.png` |
 

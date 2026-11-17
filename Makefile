@@ -186,8 +186,8 @@ informe: ## Compila docs/informe/informe.tex a PDF con un contenedor TeX Live
 	  latexmk -pdf -interaction=nonstopmode -halt-on-error informe.tex
 
 slides: ## Exporta slides/presentacion.md (Marp) a PDF y HTML
-	docker run --rm -v "$$PWD/slides:/home/marp/app" -e LANG=C.UTF-8 marpteam/marp-cli:v4.5.1 presentacion.md --pdf --allow-local-files
-	docker run --rm -v "$$PWD/slides:/home/marp/app" -e LANG=C.UTF-8 marpteam/marp-cli:v4.5.1 presentacion.md --html --allow-local-files
+	docker run --rm -e MARP_USER="$$(id -u):$$(id -g)" -v "$$PWD:/home/marp/app" -e LANG=C.UTF-8 marpteam/marp-cli:v4.5.1 slides/presentacion.md --pdf --allow-local-files -o slides/presentacion.pdf
+	docker run --rm -e MARP_USER="$$(id -u):$$(id -g)" -v "$$PWD:/home/marp/app" -e LANG=C.UTF-8 marpteam/marp-cli:v4.5.1 slides/presentacion.md --html --allow-local-files -o slides/presentacion.html
 
 # ---------------------------------------------------------------------------
 # Calidad

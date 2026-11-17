@@ -129,46 +129,92 @@ Más allá: 6 políticas, inyección de 7 modos de falla, escalado en caliente s
 
 ---
 
-## Resultados: algoritmos (M-05)
+## Resultados: pruebas mínimas (3 repeticiones, GitHub Actions 2 vCPU)
 
-![h:380](../docs/figuras/algoritmos_latencia_M05.png)
+| Prueba | Resultado medido |
+|---|---|
+| M-00 / M-02 reparto | 10/10/10 · 1000 secuenciales: 334/333/333, **Jain 1,000** |
+| M-03 retirar un backend bajo 300 req/s | **100 % disponibilidad**, 0 errores, 3 reintentos, p99 22 ms estable |
+| M-04 1000 usuarios concurrentes | 3/3 reps: **meseta de 1000 activos 60 s**, 0 fallidos, p99 ≤ 76 ms |
+| M-05 round_robin vs least_conn vs ip_hash | media 20,30 / 20,35 / 20,33 ms · p99 22 ms → **no distinguibles** |
+| M-06 logs vs Artillery | coincidencia **100 %**; ip_hash: **100 % a un solo backend** |
 
-<span class="todo">Completar con results/resumen_comparativo.csv y significancia.txt (media ± desv., 3 repeticiones).</span>
-
----
-
-## Resultados: la trampa de ip_hash (E-05)
-
-![h:380](../docs/figuras/algoritmos_distribucion_M05.png)
-
-<span class="todo">ip_hash: % al backend más cargado = ___; hash_client: Jain = ___, afinidad = ___ %.</span>
+<div class="small">Fuente: results/ejemplos/lote-test-min-reps3-actions · el generador (Artillery) fue el cuello de botella: NGINX ≤ 14 % CPU.</div>
 
 ---
 
-## Resultados: resiliencia (M-03)
+## Resultados: algoritmos y la trampa de ip_hash
 
-![h:380](../docs/figuras/resiliencia_M03.png)
+![h:300](../docs/figuras/algoritmos_distribucion_M05.png)
 
-<span class="todo">Disponibilidad ___ %, errores en 30 s ___, detección ___ s, recuperación ___ s.</span>
+- Homogéneos y peticiones baratas: **round-robin ≈ least_conn** (hipótesis confirmada).
+- `ip_hash` usa la /24 → toda la carga de Artillery en un nodo. Afinidad correcta: **L7** con `hash $http_x_client_id`.
+
+---
+
+## Resultados: backends heterogéneos (E-03)
+
+3 réplicas rápidas + 1 lenta (150 ms, 0,25 CPU):
+
+| Política | Media | p95 | % al lento |
+|---|---|---|---|
+| round_robin | 58,2 ms | **171 ms** | 25 % |
+| round_robin 3:1 | 35,5 ms | 171 ms | 10 % |
+| **least_conn** | **27,1 ms** | **23 ms** | **4,5 %** |
+| random_two | 27,9 ms | 25,5 ms | 4,9 % |
+
+`least_conn` ve que el lento acumula conexiones y lo evita. Con peticiones que solo **esperan** (E-04) no hay diferencia: un temporizador no forma cola.
+
+---
+
+## Resultados: resiliencia (M-03 / E-07 / E-09)
+
+![h:250](../docs/figuras/resiliencia_M03_round_robin.png)
+
+<div class="small">
+
+| Falla | Errores (30 s) | p99 |
+|---|---|---|
+| stop / kill / crash | **0** | 22 ms |
+| pause / hang | 9 (0,1 %) | **10 s** (= proxy_read_timeout) |
+| responde 500 | **3001 (33 %)** — NGINX no reintenta 500 | 22 ms |
+| sin backends (E-09) | página de mantenimiento 30 s → recupera en **0,84 s** | — |
+
+</div>
 
 ---
 
 ## Resultados: escalabilidad y punto de quiebre (E-02 / E-13)
 
-![h:360](../docs/figuras/escalabilidad.png)
+![h:260](../docs/figuras/escalabilidad.png)
 
-<span class="todo">Eficiencia de escalado por N; carga máxima con error < 1 % y p99 < 1 s; cuello de botella (docker stats).</span>
+<div class="small">
+
+Endpoint con 3 ms de CPU: goodput **170 → 271 → 472 → 783 req/s** para N = 1, 2, 3, 5 (error 81 % → 0 %), eficiencia 0,79–0,92. Quiebre (error < 1 %, p99 < 1 s): ~185 / 582 / 875 req/s con 1 / 3 / 5 réplicas.
+
+</div>
+
+---
+
+## Hallazgos (lo que no estaba en el enunciado)
+
+1. **`hash … consistent` + `resolve` no da afinidad** en NGINX 1.30.6 (0 % de clientes fieles). Hash simple: 100 %, pero al pasar de 5 a 4 réplicas **remapea al 84 %** de los clientes (E-06).
+2. **Errores 500 y lentitud son invisibles** para la detección pasiva de NGINX OSS.
+3. **`resolve` envía tráfico antes del healthcheck** de Docker.
+4. `server.maxConnections = 0` en Node 24 = **cero** conexiones (lo detectó la CI).
+
+→ Matriz 4.3: si la afinidad estable pesara ≥ 15/100, convendría regenerar la configuración en lugar de `resolve`.
 
 ---
 
 ## Matriz 4.2 y conclusiones
 
 - **Algoritmo recomendado (con datos):** <span class="todo">___ (docs/decision-matrix-generada.md)</span>
-- Con backends homogéneos RR ≈ least_conn (no distinguible); con heterogéneos least_conn/random_two protegen la cola.
-- ip_hash no sirve detrás de NAT/una misma /24: afinidad L7 con `hash … consistent`.
-- Resiliencia: reintentos pasivos bastan para caídas; los cuelgues dependen de `proxy_read_timeout`.
-- Limitaciones: un solo host comparte CPU (generador + balanceador + backends).
-- Trabajo futuro: HA del balanceador (keepalived/VRRP), TLS/HTTP2, Kubernetes.
+- Homogéneos: no importa el algoritmo. Heterogéneos en **capacidad**: `least_conn` (p95 171 → 23 ms).
+- Afinidad: en L7 con `hash $http_x_client_id`, sabiendo que escalar remapea la mayoría de las sesiones.
+- Resiliencia: caídas sin errores; cuelgues cuestan el timeout; 500 requiere `proxy_next_upstream http_500`.
+- Limitación: 2 vCPU → generador como cuello de botella; capacidad medida con costo de CPU.
+- Trabajo futuro: HA del balanceador (keepalived/VRRP), health checks activos, TLS/HTTP2, Kubernetes.
 
 ---
 

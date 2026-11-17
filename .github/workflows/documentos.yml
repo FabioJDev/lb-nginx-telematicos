@@ -37,9 +37,10 @@ jobs:
 
       - name: Diapositivas (Marp -> PDF y HTML)
         run: |
-          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/home/marp/app" -e LANG=C.UTF-8 \
+          # La imagen de Marp arranca como root y cambia a MARP_USER (no admite -u)
+          docker run --rm -e MARP_USER="$(id -u):$(id -g)" -v "$PWD:/home/marp/app" -e LANG=C.UTF-8 \
             marpteam/marp-cli:v4.5.1 slides/presentacion.md --pdf --allow-local-files -o slides/presentacion.pdf
-          docker run --rm -u "$(id -u):$(id -g)" -v "$PWD:/home/marp/app" -e LANG=C.UTF-8 \
+          docker run --rm -e MARP_USER="$(id -u):$(id -g)" -v "$PWD:/home/marp/app" -e LANG=C.UTF-8 \
             marpteam/marp-cli:v4.5.1 slides/presentacion.md --html --allow-local-files -o slides/presentacion.html
 
       - name: Publicar documentos
